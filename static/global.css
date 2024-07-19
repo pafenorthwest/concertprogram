@@ -18,6 +18,7 @@
     --gutter: 16px;
     --media-gutter: 0px;
     --padding: 4px;
+    --border-radius: 4px;
 }
 
 body {
@@ -61,12 +62,11 @@ li p {
     text-align: right;
 }
 .topbar img {
-    height: 1em;
+    height: 2em;
 }
 .topbar p {
-    display: block;
-    margin-top: 0px;
-    font-size: .75em;
+    margin-top: 0;
+    font-size: 1em;
 }
 
 .login-icon {
@@ -80,8 +80,8 @@ li p {
     z-index: 10;
     background: white;
     color: black;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 1px solid var(--low-em-color);
+    border-radius: var(--border-radius);
     box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
     width: 300px;
 }
@@ -100,11 +100,11 @@ li p {
 }
 
 .login-container input {
-    width: 100%;
-    padding: 8px;
-    margin: 0 0 10px 0;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    width: 25%;
+    padding: calc(var(--padding)*2);
+    margin: 0 0 var(--margin) 0;
+    border: 1px solid var(--low-em-color);
+    border-radius: var(--border-radius);
 }
 
 .login-container button {
@@ -113,7 +113,7 @@ li p {
     background-color: #333;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     cursor: pointer;
 }
 
@@ -121,6 +121,7 @@ li p {
     padding-left: var(--media-gutter);
 }
 .navbar {
+    border-top: 1px solid var(--low-em-color);
     border-bottom: 1px solid var(--low-em-color);
     padding-left: var(--media-gutter);
 }
@@ -129,12 +130,6 @@ li p {
     flex-direction: row;
     flex-wrap: wrap;
     width: 100%;
-}
-.column {
-    display: flex;
-    flex-direction: column;
-    flex-basis: 100%;
-    flex: 1;
 }
 .navbutton {
     border: 1px solid var(--card-boarder-color);
@@ -145,7 +140,7 @@ li p {
     margin-right: var(--media-gutter);
     padding: var(--padding);
     text-align: center;
-    border-radius: 5px;
+    border-radius: var(--border-radius);
     filter: drop-shadow(var(--shadow-color) 0.25rem 0.25rem 0.25rem);
 }
 .navbutton a {
@@ -161,7 +156,13 @@ li p {
     margin-left: var(--gutter);
     margin-right: var(--media-gutter);
 }
-.card {
+.lookup-form {
+    margin-top: var(--margin);
+    margin-bottom: var(--gutter);
+    width: 40%;
+    max-width: 40em;
+}
+.lookup-form form {
     border: 1px solid var(--card-boarder-color);
     background-color: var(--card-bg-color);
     margin-top: var(--gutter);
@@ -169,27 +170,50 @@ li p {
     margin-left: var(--gutter);
     margin-right: var(--media-gutter);
     padding: var(--padding);
-    border-radius: 14px;
-    text-align: center;
+    border-radius: var(--border-radius);
 }
-.card > h3 {
-    text-align: left;
-    padding: calc(2 * var(--padding))
+.lookup-form h3 {
+    margin-bottom: var(--gutter);
 }
-.subtext {
-    font-size: 0.75em;
-    color: var(--low-em-color);
+
+.form-container {
+    background: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
-.note {
-    font-size: 1em;
-    font-weight: 100;
-    color: var(--text-color);
-    padding: var(--padding);
-    margin-right: var(--gutter);
-    margin-left: var(--gutter);
+.form-container h2 {
+    margin-top: 0;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius);
+}
+.form-group button {
+    width: 100%;
+    padding: 10px;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+}
+.form-group button:disabled {
+    background-color: #999;
+    cursor: not-allowed;
 }
 .table {
-    width: 100%
+    width: 100%;
     color: var(--text-color);
     vertical-align: top;
     margin-right: var(--gutter);
@@ -244,4 +268,3 @@ li p {
         --padding: 1px;
     }
 }
-
