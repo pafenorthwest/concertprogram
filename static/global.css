@@ -3,6 +3,7 @@
     --text-accent-color: #F29F67;
     --text-card-color: #1F1F1F;
     --low-em-color: #999;
+    --accent-button: #333;
     --text-color: #000000;
     --separator-color: #DEE2E6;
     --card-boarder-color: #FFFFEF;
@@ -19,6 +20,8 @@
     --media-gutter: 0px;
     --padding: 4px;
     --border-radius: 4px;
+    --popover-space: 20px;
+    --popover-padding: 10px;
 }
 
 body {
@@ -76,7 +79,7 @@ li p {
 .popover {
     position: absolute;
     top: 50px;
-    right: 20px;
+    right: var(--popover-space);
     z-index: 10;
     background: white;
     color: black;
@@ -87,21 +90,21 @@ li p {
 }
 
 .login-container {
-    padding: 20px;
+    padding: var(--popover-space);
 }
 
 .login-container h2 {
-    margin: 0 0 20px 0;
+    margin: 0 0 var(--popover-space) 0;
 }
 
 .login-container label {
     display: block;
-    margin: 0 0 5px 0;
+    margin: 0 0 var(--margin) 0;
 }
 
 .login-container input {
-    width: 25%;
-    padding: calc(var(--padding)*2);
+    width: 90%;
+    padding: var(--popover-padding);
     margin: 0 0 var(--margin) 0;
     border: 1px solid var(--low-em-color);
     border-radius: var(--border-radius);
@@ -109,8 +112,8 @@ li p {
 
 .login-container button {
     width: 100%;
-    padding: 10px;
-    background-color: #333;
+    padding: var(--popover-padding);
+    background-color: var(--accent-button);
     color: white;
     border: none;
     border-radius: var(--border-radius);

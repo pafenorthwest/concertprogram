@@ -1,3 +1,7 @@
+<svelte:head>
+    <title>About</title>
+</svelte:head>
+
 <h2>About</h2>
 <div class="row">
 <p>Website to register performers for PAFE's annual concert series. Lookup your performer by code or by name.

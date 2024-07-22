@@ -1,5 +1,8 @@
-<h2>PAFE Concert Registration</h2>
+<svelte:head>
+    <title>Lookup</title>
+</svelte:head>
 
+<h2>PAFE Concert Registration</h2>
 <div class="lookup-form">
     <h3>Lookup By Code</h3>
     <form id="codelookup">
