@@ -11,15 +11,3 @@
     PAFE tracks admin access and usage, and does not track performing artists or general public's usage of this concert registration website </p>
 <p>Contract Information: May be found on the artist's registration page</p>
 </div>
-
-<div class="navbar">
-    <div class="row">
-        <div class="navbutton">
-            <a href="/">
-                <p class="navicon"><span class="material-symbols-outlined">home</span></p>
-                <br/>
-                <p class="subtext">Home</p>
-            </a>
-        </div>
-    </div>
-</div>

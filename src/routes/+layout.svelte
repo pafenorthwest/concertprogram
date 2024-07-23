@@ -15,3 +15,38 @@
 {/if}
 
 <slot></slot>
+
+<div class="navbar">
+    <div class="row">
+        <div class="navbutton">
+            <a href="/">
+                <p class="navicon"><span class="material-symbols-outlined">home</span></p>
+                <br/>
+                <p class="subtext">Home</p>
+            </a>
+        </div>
+        <div class="navbutton">
+            <a href="/about">
+                <p class="navicon"><span class="material-symbols-outlined">info</span></p>
+                <br/>
+                <p class="subtext">About</p>
+            </a>
+        </div>
+        {#if data.isAuthenticated}
+            <div class="navbutton">
+                <a href="/admin/">
+                    <p class="navicon"><span class="material-symbols-outlined">shield_person</span></p>
+                    <br/>
+                    <p class="subtext">Admin</p>
+                </a>
+            </div>
+            <div class="navbutton">
+                <a href="/admin/list">
+                    <p class="navicon"><span class="material-symbols-outlined">queue_music</span></p>
+                    <br/>
+                    <p class="subtext">Performances</p>
+                </a>
+            </div>
+        {/if}
+    </div>
+</div>

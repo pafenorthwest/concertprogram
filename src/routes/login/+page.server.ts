@@ -1,4 +1,5 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
+import {admin, password} from '$env/static/private';
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')
@@ -12,15 +13,11 @@ export const actions = {
     login: async ({ cookies, request }) => {
         const data = await request.formData();
 
-        if (data.get('user') === 'eric' && data.get('password') === 'password') {
+        if (data.get('user') === admin && data.get('password') === password) {
             cookies.set('pafe_auth', 'admin_key', { path: '/' });
             redirect(307, '/admin');
         } else {
-            return fail(401, 'bad login attempt');
+            return error(401, 'bad login attempt');
         }
-    },
-    logout: async ({ cookies, locals }) => {
-        cookies.delete('pafe_auth', { path: '/' });
-        locals.isAuthenticated = false;
     }
 };

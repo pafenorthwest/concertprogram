@@ -29,16 +29,3 @@
         </div>
     </form>
 </div>
-
-<div class="navbar">
-    <div class="row">
-        <div class="navbutton">
-            <a href="/about">
-                <p class="navicon"><span class="material-symbols-outlined">info</span></p>
-                <br/>
-                <p class="subtext">About</p>
-            </a>
-        </div>
-    </div>
-</div>
-
