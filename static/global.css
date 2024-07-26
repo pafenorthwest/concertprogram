@@ -162,8 +162,7 @@ li p {
 .lookup-form {
     margin-top: var(--margin);
     margin-bottom: var(--gutter);
-    width: 40%;
-    max-width: 40em;
+    max-width: 100em;
 }
 .lookup-form form {
     border: 1px solid var(--card-boarder-color);
@@ -177,6 +176,9 @@ li p {
 }
 .lookup-form h3 {
     margin-bottom: var(--gutter);
+}
+.inline-add {
+    max-width: 50em;
 }
 
 .form-container {
@@ -237,9 +239,20 @@ li p {
     font-weight: 600;
     font-size: 0.875em;
 }
+.slim-button form {
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
 .maincontent div:hover.link {
     cursor: pointer;
     background-color: var(--action-color);
+    opacity: 0.8;
+}
+.table tr:hover td.editable {
+    background-color: var(--low-em-color);
+    opacity: 0.8;
+    border: 2px solid var(--action-color);
     opacity: 0.8;
 }
 .table tr:hover {
@@ -248,8 +261,9 @@ li p {
     opacity: 0.8;
 }
 .table td {
-    padding: calc(4 * var(--padding)) calc(2 * var(--padding));
+    padding: calc(.5 * var(--padding)) calc(2 * var(--padding));
     vertical-align: center;
+    text-align: right;
     line-height: 1;
     white-space: nowrap;
     border-top: 0;
