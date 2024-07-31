@@ -36,8 +36,8 @@ export const actions = {
         if ( !accompanist.full_name ) {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
-            const rowCount = await insertTable('accompanist', accompanist)
-            if (rowCount != null && rowCount > 0) {
+            const result = await insertTable('accompanist', accompanist)
+            if (result.rowCount != null && result.rowCount > 0) {
                 return { status: 200, body: { message: 'Insert successful' } };
             } else {
                 return { status: 500, body: { message: 'Insert failed' } };

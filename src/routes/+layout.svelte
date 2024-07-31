@@ -48,6 +48,20 @@
                 </a>
             </div>
             <div class="navbutton">
+                <a href="/admin/musicalpiece">
+                    <p class="navicon"><span class="material-symbols-outlined">library_music</span></p>
+                    <br/>
+                    <p class="subtext">Muiscal Pieces</p>
+                </a>
+            </div>
+            <div class="navbutton">
+                <a href="/admin/performer">
+                    <p class="navicon"><span class="material-symbols-outlined">artist</span></p>
+                    <br/>
+                    <p class="subtext">Performer</p>
+                </a>
+            </div>
+            <div class="navbutton">
                 <a href="/admin/composer">
                     <p class="navicon"><span class="material-symbols-outlined">face</span></p>
                     <br/>

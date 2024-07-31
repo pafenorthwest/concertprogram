@@ -1,10 +1,10 @@
-import {Accompanist} from "$lib/server/common";
+import {Performer} from "$lib/server/common";
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 
 export async function GET({params, request}) {
     try {
-        const res = await queryTable('accompanist',params.id)
+        const res = await queryTable('musical_piece',params.id)
         if (res.rowCount != 1) {
             return json({status: 'error', message: 'Not Found'}, {status: 404});
         }
@@ -15,16 +15,26 @@ export async function GET({params, request}) {
 }
 export async function PUT({params, request}) {
     try {
-        const { full_name } = await request.json();
-        const accompanist: Accompanist = {
+        const {
+            full_name,
+            instrument,
+            email,
+            phone
+        } = await request.json();
+
+        const performer: Performer = {
             id: params.id,
-            full_name: full_name
+            full_name: full_name,
+            instrument: instrument,
+            email: email,
+            phone: phone
         }
 
-        if ( !accompanist.full_name ) {
+
+        if (!performer.full_name || !performer.instrument) {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
-            const rowCount = await updateById('accompanist', accompanist)
+            const rowCount = await updateById('performer', performer)
             if (rowCount != null && rowCount > 0) {
                 return json( {id: params.id}, {status: 200, body: {message: 'Update successful'}});
             } else {
@@ -37,7 +47,7 @@ export async function PUT({params, request}) {
 }
 
 export async function DELETE({params, request}){
-    const rowCount = await deleteById('accompanist', params.id);
+    const rowCount = await deleteById('performer', params.id);
 
     if (rowCount != null && rowCount > 0) {
         return { status: 200, body: { message: 'Delete successful' } };

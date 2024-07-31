@@ -1,10 +1,10 @@
-import {Accompanist} from "$lib/server/common";
+import {MusicalPiece} from "$lib/server/common";
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 
 export async function GET({params, request}) {
     try {
-        const res = await queryTable('accompanist',params.id)
+        const res = await queryTable('musical_piece',params.id)
         if (res.rowCount != 1) {
             return json({status: 'error', message: 'Not Found'}, {status: 404});
         }
@@ -15,16 +15,25 @@ export async function GET({params, request}) {
 }
 export async function PUT({params, request}) {
     try {
-        const { full_name } = await request.json();
-        const accompanist: Accompanist = {
+        const {printed_name,
+            first_composer_id,
+            all_movements,
+            second_composer_id,
+            third_composer_id
+        } = await request.json();
+        const musicalPiece: MusicalPiece = {
             id: params.id,
-            full_name: full_name
+            printed_name: printed_name,
+            first_composer_id: first_composer_id,
+            all_movements: all_movements,
+            second_composer_id: second_composer_id,
+            third_composer_id: third_composer_id
         }
 
-        if ( !accompanist.full_name ) {
+        if (!musicalPiece.printed_name || !musicalPiece.first_composer_id) {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
-            const rowCount = await updateById('accompanist', accompanist)
+            const rowCount = await updateById('musical_piece', musicalPiece)
             if (rowCount != null && rowCount > 0) {
                 return json( {id: params.id}, {status: 200, body: {message: 'Update successful'}});
             } else {
@@ -37,7 +46,7 @@ export async function PUT({params, request}) {
 }
 
 export async function DELETE({params, request}){
-    const rowCount = await deleteById('accompanist', params.id);
+    const rowCount = await deleteById('musical_piece', params.id);
 
     if (rowCount != null && rowCount > 0) {
         return { status: 200, body: { message: 'Delete successful' } };

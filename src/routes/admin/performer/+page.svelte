@@ -6,27 +6,27 @@
     let editable = false;
     let editing = {};
 
-    async function handleSave(composer) {
+    async function handleSave(performer) {
         try {
-            const response = await fetch(`/api/composer/${composer.id}`, {
+            const response = await fetch(`/api/performer/${performer.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(composer)
+                body: JSON.stringify(performer)
             });
             if (!response.ok) {
-                throw new Error('Failed to save composer');
+                throw new Error('Failed to save performer');
             }
-            const index = composers.findIndex(c => c.id === composer.id);
-            composers[index] = { ...composer };
+            const index = performers.findIndex(c => c.id === performer.id);
+            performers[index] = { ...performer };
             editing = {};
         } catch (error) {
-            console.error('Error saving composer:', error);
+            console.error('Error saving performer:', error);
         }
     }
-    function handleEdit(composer) {
-        editing = { ...composer };
+    function handleEdit(performer) {
+        editing = { ...performer };
     }
     function handleInputChange(event, field) {
         editing[field] = event.target.value;
@@ -34,19 +34,19 @@
 
 </script>
 
-<h2>Composers</h2>
+<h2>Performers</h2>
 <div class="lookup-form">
     <h3>Add</h3>
-    <form id="composer" class="inline-add" method="POST" action="?/add" use:enhance>
+    <form id="performer" class="inline-add" method="POST" action="?/add" use:enhance>
         <div class="form-group">
-            <label for="printedName">Printed Name:</label>
-            <input type="text" id="printedName" name="printedName" maxlength="256" required>
-            <label for="fullName">Full Name:</label>
+            <label for="fullName">Printed Name:</label>
             <input type="text" id="fullName" name="fullName" maxlength="256" required>
-            <label for="yearsActive">Years Active:</label>
-            <input type="text" id="yearsActive" name="yearsActive" maxlength="25" required>
-            <label for="alias">Alias:</label>
-            <input type="text" id="alias" name="alias" maxlength="25">
+            <label for="instrument">Instrument:</label>
+            <input type="text" id="instrument" name="instrument" maxlength="256" required>
+            <label for="email">Email:</label>
+            <input type="text" id="email" name="email" maxlength="256" required>
+            <label for="phone">Phone:</label>
+            <input type="text" id="phone" name="phone" maxlength="18">
         </div>
         <div class="form-group">
             <button type="submit" disabled="{disableStatus}">Submit</button>
@@ -57,7 +57,7 @@
 <table class="table">
     <thead>
     <tr>
-        {#each data.composer_fields as field}
+        {#each data.performer_fields as field}
             <th>{field}</th>
         {/each}
         <th>Edit</th>
@@ -65,39 +65,39 @@
     </tr>
     </thead>
     <tbody>
-    {#each data.composers as composer}
+    {#each data.performers as performer}
         <tr>
-            <td>{composer.id}</td>
+            <td>{performer.id}</td>
             <td>
-                {#if editing.id === composer.id}
-                    <input type="text" value = {editing.printed_name} on:input={(event) => handleInputChange(event, 'printed_name')} />
+                {#if editing.id === performer.id}
+                    <input type="text" value = {editing.full_name} on:input={(event) => handleInputChange(event, 'fullName')} />
                 {:else}
-                    {composer.printed_name}
+                    {performer.full_name}
                 {/if}
             </td>
             <td>
-                {#if editing.id === composer.id}
-                    <input type="text" value = {editing.full_name} on:input={(event) => handleInputChange(event, 'full_name')} />
+                {#if editing.id === performer.id}
+                    <input type="text" value = {editing.email} on:input={(event) => handleInputChange(event, 'email')} />
                 {:else}
-                    {composer.full_name}
+                    {performer.email}
                 {/if}
             </td>
             <td>
-                {#if editing.id === composer.id}
-                    <input type="text" value = {editing.years_active} on:input={(event) => handleInputChange(event, 'years_active')} />
+                {#if editing.id === performer.id}
+                    <input type="text" value = {editing.phone} on:input={(event) => handleInputChange(event, 'phone')} />
                 {:else}
-                    {composer.years_active}
+                    {performer.phone}
                 {/if}
             </td>
             <td>
-                {#if editing.id === composer.id}
-                    <input type="text" value = {editing.alias} on:input={(event) => handleInputChange(event, 'alias')} />
+                {#if editing.id === performer.id}
+                    <input type="text" value = {editing.instrument} on:input={(event) => handleInputChange(event, 'instrument')} />
                 {:else}
-                    {composer.alias}
+                    {performer.instrument}
                 {/if}
             </td>
             <td>
-                {#if editing.id === composer.id}
+                {#if editing.id === performer.id}
                     <button on:click={() => handleSave(editing)}>
                         <span class="material-symbols-outlined">save</span>
                     </button>
@@ -105,14 +105,14 @@
                         <span class="material-symbols-outlined">cancel</span>
                     </button>
                 {:else}
-                    <button on:click={() => handleEdit(composer)}>
+                    <button on:click={() => handleEdit(performer)}>
                         <span class="material-symbols-outlined">edit</span>
                     </button>
                 {/if}
             </td>
             <td class="slim-button">
                 <form method="POST" action="?/delete" use:enhance>
-                    <input type="hidden" name="composerId" value={composer.id}>
+                    <input type="hidden" name="performerId" value={performer.id}>
                     <button type="submit">
                         <span class="material-symbols-outlined">delete</span>
                     </button>

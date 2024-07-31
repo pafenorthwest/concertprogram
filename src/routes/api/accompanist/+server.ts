@@ -13,11 +13,11 @@ export async function POST({params, request}) {
         if ( !accompanist.full_name ) {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
-            const rowCount = await insertTable('accompanist', accompanist)
-            if (rowCount != null && rowCount > 0) {
-                return json( {id: params.id}, {status: 200, body: {message: 'Update successful'}});
+            const result = await insertTable('accompanist', accompanist)
+            if (result.rowCount != null && result.rowCount > 0) {
+                return json(  {status: 200, body: {message: 'Update successful'}});
             } else {
-                return json({id: params.id}, {status: 500, body: {message: 'Update failed'}});
+                return json( {status: 500, body: {message: 'Update failed'}});
             }
         }
     } catch (error) {

@@ -13,12 +13,13 @@ CREATE DATABASE pafe
                                 'Tenor',
                                 'Clarinet',
                                 'Oboe',
-                                'Bassoon');
+                                'Bassoon',
+                                'Ensemble');
 
 
 CREATE TABLE performer (
     id SERIAL PRIMARY KEY,
-    performer VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NULL,
     phone VARCHAR(18) NULL,
     instrument instrument_list
@@ -36,30 +37,53 @@ CREATE TABLE composer (
     years_active VARCHAR(25) NOT NULL,
     alias VARCHAR(255) NULL
 );
+CREATE INDEX composer_name_idx ON composer(full_name);
 
 CREATE TABLE musical_piece (
     id SERIAL PRIMARY KEY,
     printed_name VARCHAR(512) NOT NULL,
+    first_composer_id INTEGER NOT NULL,
     all_movements VARCHAR(512) NULL,
-    first_composer_id INTEGER NULL,
     second_composer_id INTEGER NULL,
     third_composer_id INTEGER NULL
 );
+CREATE INDEX musical_piece_name_idx ON musical_piece(printed_name);
 
 CREATE TABLE performance_pieces (
-    performance_id INTEGER NOT NULL,
-    piece_id INTEGER NOT NULL,
-    movement VARCHAR(255) NULL,
+    performance_id SERIAL PRIMARY KEY,
+    musical_piece_id INTEGER NOT NULL,
+    movement VARCHAR(255) NULL
 );
+
+CREATE TABLE performer_lottery (
+    performer_id INTEGER NOT NULL,
+    lottery INTEGER NOT NULL,
+    lookup_code CHAR(4) NOT NULL,
+    pafe_series INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX lookup_performer_idx ON performer_lottery(lookup_code);
+
+CREATE TABLE performer_ranked_choice (
+    performer_id INTEGER NOT NULL,
+    concert_series VARCHAR(255) NOT NULL,
+    pafe_series INTEGER NOT NULL,
+    first_choice_time TIMESTAMP NOT NULL,
+    second_choice_time TIMESTAMP NULL,
+    third_choice_time TIMESTAMP NULL,
+    fourth_choice_time TIMESTAMP NULL
+);
+CREATE UNIQUE INDEX lookup_ranked_choice_idx ON performer_ranked_choice(performer_id, concert_series, pafe_series);
 
 CREATE TABLE performance (
     id SERIAL PRIMARY KEY,
-    performance_id INTEGER NOT NULL,
+    performer_id INTEGER NOT NULL,
+    performance_order INTEGER DEFAULT 100 NOT NULL,
     concert_series VARCHAR(255) NOT NULL,
     pafe_series INTEGER NOT NULL,
     duration INTEGER DEFAULT 0 NOT NULL,
     accompanist_id INTEGER NULL,
     concert_time TIMESTAMP NULL,
+    instrument instrument_list,
     warm_up_room_name VARCHAR(255) NULL,
     warm_up_room_start TIMESTAMP NULL,
     warm_up_room_end TIMESTAMP NULL
