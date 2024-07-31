@@ -276,7 +276,7 @@ export async function updatePerformerLottery(performerId: number, pafe_series: n
 
         const updateSQL= "UPDATE performer_lottery"+
             "        SET lottery = "+data.lottery+","
-            "        lookup_code = '"+data.base36Lottery+"',"+
+            "        lookup_code = '"+data.base34Lottery+"',"+
             "        pafe_series = "+pafe_series+
             "        WHERE performer_id = "+performerId
 
@@ -298,7 +298,7 @@ export async function insertPerformerLottery(performerId: number, pafe_series: n
 
         const insertSQL= "INSERT INTO performer_lottery"+
             "        (performer_id, lottery, lookup_code, pafe_series) "+
-            "        VALUES ("+performerId+", "+data.lottery+", '"+data.base36Lottery+"', "+pafe_series+")"
+            "        VALUES ("+performerId+", "+data.lottery+", '"+data.base34Lottery+"', "+pafe_series+")"
 
         console.log(insertSQL)
         const result = await connection.query(insertSQL)
@@ -330,12 +330,12 @@ export async function deletePerformerLottery(performerId: number) {
     }
 }
 
-export async function ticketCollision(base36Code: string){
+export async function ticketCollision(base34Code: string){
     try {
         const connection = await pool.connect();
 
         const result = connection.query(
-            "SELECT lookup_code FROM performer_lottery WHERE lookup_code ='"+base36Code+"'"
+            "SELECT lookup_code FROM performer_lottery WHERE lookup_code ='"+base34Code+"'"
         );
 
         // Release the connection back to the pool

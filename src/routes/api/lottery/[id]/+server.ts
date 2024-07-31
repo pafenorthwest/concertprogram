@@ -20,13 +20,13 @@ export async function GET({params, request}) {
 }
 export async function PUT({params, request}) {
     try {
-        const {lottery, base36Lottery} = await request.json();
+        const {lottery, base34Lottery} = await request.json();
         const ticket: Lottery = {
             lottery: lottery,
-            base36Lottery: base36Lottery
+            base34Lottery: base34Lottery
         }
 
-        if (!ticket.lottery || !ticket.base36Lottery) {
+        if (!ticket.lottery || !ticket.base34Lottery) {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
             const results = await updatePerformerLottery(params.id, pafe_series(), ticket)

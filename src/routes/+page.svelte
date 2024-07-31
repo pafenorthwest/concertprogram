@@ -19,8 +19,8 @@
         <div class="form-group">
             <label for="code">Performer's Last Name:</label>
             <input type="text" id="code" name="performername" maxlength="30">
-            <label for="code">Teacher's Last Name:</label>
-            <input type="text" id="code" name="teachername" maxlength="30">
+            <label for="code">Performers Grade:</label>
+            <input type="text" id="code" name="grade" maxlength="30">
             <label for="code">Composer's Last Name:</label>
             <input type="text" id="code" name="composername" maxlength="30">
         </div>

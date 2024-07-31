@@ -47,7 +47,7 @@ export interface Performance {
 
 export interface Lottery {
     lottery: number;
-    base36Lottery: string;
+    base34Lottery: string;
 }
 
 export interface PerformerRankedChoice {
@@ -79,13 +79,43 @@ export function generateLottery(): Lottery {
     // 0.3% chance of collision for 100 random numbers
     const lottery = Math.floor(Math.random() * (max - min + 1)) + min;
     // convert to base 36 string
-    const base36Lottery = lottery.toString(36).toUpperCase();
+    const base34Lottery = decimalToBase34(lottery);
 
-    return {lottery, base36Lottery};
+    return {lottery, base34Lottery};
 }
 
 export function pafe_series(): number {
     const currentYear = new Date().getFullYear();
     return currentYear - 1988;
 }
+
+// Initialize base 34 chars.
+// All Zeros are 'O'
+// ALL Ones are 'I'
+const BASE34_CHARACTERS = 'O23456789ABCDEFGHIJKLMNPQRSTUVWXYZ';
+const CHAR_TO_VALUE: { [key: string]: number } = {};
+
+for (let i = 0; i < BASE34_CHARACTERS.length; i++) {
+    CHAR_TO_VALUE[BASE34_CHARACTERS[i]] = i;
+}
+export function decimalToBase34(num: number): string {
+    if (num === 0) return 'O';
+    let base34 = '';
+    while (num > 0) {
+        const remainder = num % 34;
+        base34 = BASE34_CHARACTERS[remainder] + base34;
+        num = Math.floor(num / 34);
+    }
+    return base34;
+}
+
+export function base34ToDecimal(base34: string): number {
+    let num = 0;
+    for (let i = 0; i < base34.length; i++) {
+        num = num * 34 + CHAR_TO_VALUE[base34[i]];
+    }
+    return num;
+}
+
+
 
