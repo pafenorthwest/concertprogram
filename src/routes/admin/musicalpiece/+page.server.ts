@@ -6,12 +6,11 @@ import {MusicalPiece, formatFieldNames} from '$lib/server/common.ts'
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')
-    if (!pafeAuth) {
-        redirect(307, '/');
-    }
+    const isAuthenticated =  !!pafeAuth;
+
     const res= await queryTable('musical_piece');
     const columnNames: string[] =  res.fields.map(record => formatFieldNames(record.name));
-    return {musicalPieces: res.rows, musical_piece_fields: columnNames};
+    return {musicalPieces: res.rows, musical_piece_fields: columnNames, isAuthenticated: isAuthenticated};
 }
 
 export const actions = {

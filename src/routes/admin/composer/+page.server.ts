@@ -1,4 +1,4 @@
-import {error, json, redirect} from "@sveltejs/kit";
+import {error, json} from "@sveltejs/kit";
 import pg from 'pg';
 const { QueryArrayResult } = pg;
 import {queryTable, deleteById, insertTable} from "$lib/server/db";
@@ -6,12 +6,11 @@ import {Composer, formatFieldNames} from '$lib/server/common.ts'
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')
-    if (!pafeAuth) {
-        redirect(307, '/');
-    }
+    const isAuthenticated =  !!pafeAuth;
+
     const res= await queryTable('composer');
     const columnNames: string[] =  res.fields.map(record => formatFieldNames(record.name));
-    return {composers: res.rows, composer_fields: columnNames};
+    return {composers: res.rows, composer_fields: columnNames, isAuthenticated: isAuthenticated};
 }
 
 export const actions = {

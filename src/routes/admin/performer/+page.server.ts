@@ -8,12 +8,11 @@ const { QueryArrayResult } = pg;
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')
-    if (!pafeAuth) {
-        redirect(307, '/');
-    }
+    const isAuthenticated =  !!pafeAuth;
+
     const res= await queryTable('performer');
     const columnNames: string[] =  res.fields.map(record => formatFieldNames(record.name));
-    return {performers: res.rows, performer_fields: columnNames};
+    return {performers: res.rows, performer_fields: columnNames, isAuthenticated: isAuthenticated};
 }
 
 export const actions = {

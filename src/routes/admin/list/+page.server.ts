@@ -4,11 +4,10 @@ import {formatFieldNames, pafe_series, PerformanceFilter} from "$lib/server/comm
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')
-    if (!pafeAuth) {
-        redirect(307, '/');
-    }
+    const isAuthenticated =  !!pafeAuth;
+
     const filter: PerformanceFilter = { pafe_series: pafe_series(), concert_series: null }
     const res= await queryPerformances(filter);
     const columnNames: string[] =  res.fields.map(record => formatFieldNames(record.name));
-    return {performances: res.rows, performance_fields: columnNames};
+    return {performances: res.rows, performance_fields: columnNames, isAuthenticated: isAuthenticated};
 }

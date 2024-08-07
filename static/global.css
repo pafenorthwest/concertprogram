@@ -119,7 +119,10 @@ li p {
     border-radius: var(--border-radius);
     cursor: pointer;
 }
-
+.noauth {
+    margin-top: var(--media-gutter);
+    margin-bottom: var(--media-gutter);
+}
 .maincontent {
     padding-left: var(--media-gutter);
 }
