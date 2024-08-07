@@ -6,6 +6,7 @@ import {createPerformer} from "$lib/server/performer";
 export async function POST({params, request}) {
     try {
         const { full_name,
+            grade,
             instrument,
             email,
             phone
@@ -14,12 +15,13 @@ export async function POST({params, request}) {
         const performer: Performer = {
             id: null,
             full_name: full_name,
+            grade: grade,
             instrument: instrument,
             email: email,
             phone: phone
         }
 
-        if ( !performer.full_name || !performer.instrument ) {
+        if ( !performer.full_name || !performer.instrument || !performer.grade ) {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
             const success = await createPerformer(performer)

@@ -1,5 +1,6 @@
 <script>
     import { enhance } from '$app/forms';
+    import {MapGradeValuesToKeys} from "./helpers.js";
 
     let disableStatus = false;
     export let data;
@@ -18,8 +19,8 @@
             if (!response.ok) {
                 throw new Error('Failed to save performer');
             }
-            const index = performers.findIndex(c => c.id === performer.id);
-            performers[index] = { ...performer };
+            const index = data.performers.findIndex(c => c.id === performer.id);
+            data.performers[index] = { ...performer };
             editing = {};
         } catch (error) {
             console.error('Error saving performer:', error);
@@ -27,11 +28,11 @@
     }
     function handleEdit(performer) {
         editing = { ...performer };
+        editing.grade = MapGradeValuesToKeys[editing.grade]
     }
     function handleInputChange(event, field) {
         editing[field] = event.target.value;
     }
-
 </script>
 
 <h2>Performers</h2>
@@ -41,6 +42,8 @@
         <div class="form-group">
             <label for="fullName">Printed Name:</label>
             <input type="text" id="fullName" name="fullName" maxlength="256" required>
+            <label for="grade">Grade:</label>
+            <input type="text" id="grade" name="grade" maxlength="256" required>
             <label for="instrument">Instrument:</label>
             <input type="text" id="instrument" name="instrument" maxlength="256" required>
             <label for="email">Email:</label>
@@ -70,7 +73,7 @@
             <td>{performer.id}</td>
             <td>
                 {#if editing.id === performer.id}
-                    <input type="text" value = {editing.full_name} on:input={(event) => handleInputChange(event, 'fullName')} />
+                    <input type="text" value = {editing.full_name} on:input={(event) => handleInputChange(event, 'full_name')} />
                 {:else}
                     {performer.full_name}
                 {/if}
@@ -87,6 +90,13 @@
                     <input type="text" value = {editing.phone} on:input={(event) => handleInputChange(event, 'phone')} />
                 {:else}
                     {performer.phone}
+                {/if}
+            </td>
+            <td>
+                {#if editing.id === performer.id}
+                    <input type="text" value = {editing.grade} on:input={(event) => handleInputChange(event, 'grade')} />
+                {:else}
+                    {performer.grade}
                 {/if}
             </td>
             <td>

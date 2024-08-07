@@ -1,9 +1,10 @@
-import {error, json, redirect} from "@sveltejs/kit";
+import {redirect} from "@sveltejs/kit";
 import pg from 'pg';
-const { QueryArrayResult } = pg;
-import {queryTable, deleteById, insertTable} from "$lib/server/db";
-import {Performer, formatFieldNames} from '$lib/server/common.ts'
+import {deleteById, queryTable} from "$lib/server/db";
+import {formatFieldNames, Performer, selectGrade, selectInstrument} from '$lib/server/common.ts'
 import {createPerformer} from "$lib/server/performer";
+
+const { QueryArrayResult } = pg;
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')
@@ -29,10 +30,16 @@ export const actions = {
     },
     add: async ({request}) => {
         const formData = await request.formData();
+        const instrument = selectInstrument(formData.get('instrument'))
+        const grade = selectGrade(formData.get('grade'))
+        if (instrument == null || grade == null) {
+            return {status: 400, body: {message: 'Bad Instrument or Grade Value'}}
+        }
         const performer: Performer = {
             id: null,
             full_name: formData.get('fullName'),
-            instrument: formData.get('instrument'),
+            instrument: instrument!,
+            grade: grade!,
             email: formData.get('email'),
             phone: formData.get('phone')
         }
@@ -40,6 +47,7 @@ export const actions = {
         if ( !performer.full_name || !performer.instrument) {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
+
             const success = await createPerformer(performer)
             if (success) {
                 return { status: 200, body: { message: 'Insert successful' } };

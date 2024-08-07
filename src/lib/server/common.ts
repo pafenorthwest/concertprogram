@@ -1,3 +1,130 @@
+
+export enum Instrument {
+    Cello = 'Cello',
+    Flute = 'Flute',
+    Piano = 'Piano',
+    Violin = 'Violin',
+    Soprano = 'Soprano',
+    Viola = 'Viola',
+    Tenor = 'Tenor',
+    Clarinet = 'Clarinet',
+    Oboe = 'Oboe',
+    Bassoon = 'Bassoon',
+    Ensemble = 'Ensemble'
+}
+export function selectInstrument(input: string): Instrument | null {
+    input = input.toLowerCase()
+    let returnInstrument: Instrument | null = null
+    switch(input) {
+        case 'cello':
+            returnInstrument = Instrument.Cello
+            break
+        case 'flute':
+            returnInstrument = Instrument.Flute
+            break
+        case 'piano':
+            returnInstrument = Instrument.Piano
+            break
+        case 'violin':
+            returnInstrument = Instrument.Violin
+            break
+        case 'viola':
+            returnInstrument = Instrument.Viola
+            break
+        case 'soprano':
+            returnInstrument = Instrument.Soprano
+            break
+        case 'tenor':
+            returnInstrument = Instrument.Tenor
+            break
+        case 'oboe':
+            returnInstrument = Instrument.Oboe
+            break
+        case 'clarinet':
+            returnInstrument = Instrument.Clarinet
+            break
+        case 'bassoon':
+            returnInstrument = Instrument.Bassoon
+            break
+        case 'Ensemble':
+            returnInstrument = Instrument.Ensemble
+            break
+        default:
+            returnInstrument = null
+            break
+    }
+    return returnInstrument;
+}
+
+export enum Grade {
+    'GradePreto2'='Preschool - 2nd',
+    'GradePreto4'='Preschool - 4th',
+    'GradePreto6'='Preschool - 6th',
+    'GradePreto8'='Preschool - 8th',
+    'Grade3to4'='3rd - 4th',
+    'Grade3to5'='3rd - 5th',
+    'Grade3to8'='3rd - 8th',
+    'Grade5to6'='5th - 6th',
+    'Grade5to8'='5th - 8th',
+    'Grade6to8'='6th - 8th',
+    'Grade7to8'='7th - 8th',
+    'Grade9to10'='9th - 10th',
+    'Grade9to12'='9th - 12th',
+    'Grade11to12'='11th - 12th'
+}
+
+export function selectGrade(input: string): Grade | null {
+    input = input.toLowerCase()
+    let returnGrade: Grade | null = null
+
+    switch(input) {
+        case 'P-2':
+            returnGrade = Grade.GradePreto2
+            break
+        case 'P-4':
+            returnGrade = Grade.GradePreto4
+            break
+        case 'P-6':
+            returnGrade = Grade.GradePreto6
+            break
+        case 'P-8':
+            returnGrade = Grade.GradePreto8
+            break
+        case '3-4':
+            returnGrade = Grade.Grade3to4
+            break
+        case '3-5':
+            returnGrade = Grade.Grade3to5
+            break
+        case '3-8':
+            returnGrade = Grade.Grade3to8
+            break
+        case '5-6':
+            returnGrade = Grade.Grade5to6
+            break
+        case '5-8':
+            returnGrade = Grade.Grade5to8
+            break
+        case '6-8':
+            returnGrade = Grade.Grade6to8
+            break
+        case '7-8':
+            returnGrade = Grade.Grade7to8
+            break
+        case '9-10':
+            returnGrade = Grade.Grade9to10
+            break
+        case '9-12':
+            returnGrade = Grade.Grade9to12
+            break
+        case '11-12':
+            returnGrade = Grade.Grade11to12
+            break
+    }
+
+    return returnGrade
+}
+
 export interface Composer {
     id: number | null;
     printed_name: string;
@@ -23,9 +150,15 @@ export interface MusicalPiece {
 export interface Performer {
     id: number | null;
     full_name: string;
-    instrument: string;
+    grade: Grade;
+    instrument: Instrument;
     email: string | null;
     phone: string | null;
+}
+
+export interface PerformanceFilter {
+    concert_series: string | null;
+    pafe_series: number
 }
 
 /**
@@ -42,7 +175,7 @@ export interface Performance {
     accompanist_id: number | null;
     concert_series: string;
     pafe_series: number;
-    instrument: string;
+    instrument: Instrument;
 }
 
 export interface Lottery {
@@ -72,9 +205,9 @@ export function isNonEmptyString(value: any): boolean {
 }
 
 export function generateLottery(): Lottery {
-    // Lottery Number at most 4 digit base 36
+    // Lottery Number at most 4 digit base 34
     const min = 1;
-    const max = 1679615;
+    const max = 1337334;
 
     // 0.3% chance of collision for 100 random numbers
     const lottery = Math.floor(Math.random() * (max - min + 1)) + min;

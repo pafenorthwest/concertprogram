@@ -14,9 +14,9 @@
     --warning-color: #E0B50F;
     --error-color: #F95F53;
     --action-color: #0D6EFD;
-    --text-size: 16px;
+    --text-size: 18px;
     --margin: 32px;
-    --gutter: 16px;
+    --gutter: 8px;
     --media-gutter: 0px;
     --padding: 4px;
     --border-radius: 4px;
@@ -151,7 +151,7 @@ li p {
     color: var(--text-color);
 }
 .navicon .material-symbols-outlined {
-    font-size: 3em;
+    font-size: 2em;
 }
 .maincontent > h2 {
     margin-top: var(--gutter);
@@ -275,7 +275,7 @@ li p {
 
 @media screen and (min-width: 800px) {
     :root {
-        --media-gutter: 64px;
+        --media-gutter: 32px;
     }
 }
 @media screen and (max-width: 500px) {

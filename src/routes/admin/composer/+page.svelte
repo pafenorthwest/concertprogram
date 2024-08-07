@@ -18,8 +18,8 @@
             if (!response.ok) {
                 throw new Error('Failed to save composer');
             }
-            const index = composers.findIndex(c => c.id === composer.id);
-            composers[index] = { ...composer };
+            const index = data.composers.findIndex(c => c.id === composer.id);
+            data.composers[index] = { ...composer };
             editing = {};
         } catch (error) {
             console.error('Error saving composer:', error);

@@ -1,9 +1,16 @@
 import pkg from 'pg';
 const {Pool} = pkg;
-import {db_user, db_pass, db_name, db_host, db_port} from '$env/static/private';
-import type {Accompanist, Composer, MusicalPiece, Performer, PerformerRankedChoice, Lottery} from "$lib/server/common";
+import {db_user, db_pass, db_name, db_host, db_port, db_ssl} from '$env/static/private';
+import type {
+    Accompanist,
+    Composer,
+    MusicalPiece,
+    Performer,
+    PerformerRankedChoice,
+    Lottery,
+    PerformanceFilter
+} from "$lib/server/common";
 import {isNonEmptyString} from "$lib/server/common";
-
 
 const pool = new Pool({
     user: db_user,
@@ -11,25 +18,8 @@ const pool = new Pool({
     database: db_name,
     password: db_pass,
     port: db_port,
+    ssl: db_ssl==="true" ? { rejectUnauthorized: false } : undefined,
 });
-
-/**
-export async function openQuery(text: string) {
-    try {
-        const connection = await pool.connect();
-
-        const result = connection.query(text);
-
-        // Release the connection back to the pool
-        connection.release();
-
-        return result;
-    } catch (error) {
-        console.error('Error executing query:', error);
-        throw error;
-    }
-}
-*/
 
 export async function queryTable(table: string, id?: number) {
     try {
@@ -47,7 +37,7 @@ export async function queryTable(table: string, id?: number) {
                 fields = 'id, full_name'
                 break;
             case 'performer':
-                fields = 'id, full_name, email, phone, instrument'
+                fields = 'id, full_name, email, phone, grade, instrument'
                 break;
             case 'musical_piece':
                 fields = 'id, printed_name, first_composer_id, all_movements, second_composer_id, third_composer_id'
@@ -114,9 +104,12 @@ export async function insertTable(table: string, data: Composer | Accompanist | 
                 // return id
                 break;
             case 'performer':
-                inputCols = "(full_name, instrument)"
-                inputVals = "('"+data.full_name+"', '"+
-                    data.instrument+"')"
+                inputCols = "(full_name, grade, instrument)"
+                inputVals = "('"+
+                    data.full_name+"', '"+
+                    data.grade+"', '"+
+                    data.instrument+
+                    "')"
                 // add email
                 if (isNonEmptyString(data.email)) {
                     inputCols = inputCols.slice(0, -1) + ", email)"
@@ -202,12 +195,14 @@ export async function updateById(table: string, data: Composer | Accompanist | M
             case 'performer':
                 // don't wipe out data
                 if (! (isNonEmptyString(data.full_name) &&
-                    isNonEmptyString(data.instrument))
+                    isNonEmptyString(data.instrument) &&
+                    isNonEmptyString(data.grade))
                 ) {
                     return null
                 }
                 setCols = "full_name = '"+data.full_name+"'"
                 setCols = setCols + ", instrument = '"+data.instrument+"'"
+                setCols = setCols + ", grade = '"+data.grade+"'"
                 if (isNonEmptyString(data.email)) {
                     setCols = setCols + ", email = '" + data.email + "' "
                 }
@@ -348,7 +343,7 @@ export async function ticketCollision(base34Code: string){
     }
 }
 
-export async function queryPerformances(filters?: {name: string}) {
+export async function queryPerformances(filters?: PerformanceFilter) {
     /**
      *     id: number | null;
      *     musical_piece: string;
@@ -360,12 +355,12 @@ export async function queryPerformances(filters?: {name: string}) {
      *     composer3: string - almost always empty
      *     composer3_years_active: string -s almost always empty
      *     accompanist: string;
-     *     performance duration: number;
-     *     performance concert time: datetime;
-     *     performance instrument: string | null;
-     *     performance order: number default 100;
-     *     performance concert series: string (Eastside | Concerto Playoff);
-     *     performance pafe series: number of years of pafe
+     *     duration: number;
+     *     concert_time: datetime;
+     *     instrument: string | null;
+     *     performance_order: number default 100;
+     *     concert_series: string (Eastside | Concerto Playoff);
+     *     pafe_series: number of years of pafe
      *
      */
     try {
@@ -379,22 +374,24 @@ export async function queryPerformances(filters?: {name: string}) {
             "            Third.printed_name AS composer3, Third.years_active AS composer3_years_active,\n" +
             "            accompanist.full_name AS accompanist,\n" +
             "            performance.duration, performance.concert_time, performance.instrument,\n" +
-            "            performance.performance_order, performance.concert_series, performance.pafe_series"
-        const joins = "JOIN performance_pieces ON performance.performance_id = performance_pieces.performance_id\n" +
+            "            performance.performance_order, performance.concert_series, performance.pafe_series\n"
+        const joins = " JOIN performance_pieces ON performance.id = performance_pieces.performance_id\n" +
             "        JOIN musical_piece ON performance_pieces.musical_piece_id = musical_piece.id\n" +
             "        JOIN composer First ON First.id = musical_piece.first_composer_id\n" +
             "        LEFT JOIN composer Second ON Second.id = musical_piece.second_composer_id\n" +
             "        LEFT JOIN composer Third ON Third.id = musical_piece.second_composer_id\n" +
-            "        LEFT JOIN accompanist ON performance.accompanist_id = accompanist.id"
+            "        LEFT JOIN accompanist ON performance.accompanist_id = accompanist.id\n"
         const order = "ORDER BY performance.pafe_series, performance.concert_series, performance.performance_order"
 
 
         let queryFilter = ""
         if (typeof(filters) != "undefined" && Object.entries(filters).length > 0) {
             queryFilter = "WHERE "+Object.entries(filters)
+                .filter(([_, value]) => value !== null) // filter out null values
                 .map(([key, value]) => `${key} = ${value}`)
                 .join(', ');
         }
+        queryFilter = queryFilter + "\n";
 
         const result = connection.query(
             'SELECT '+fields+' FROM performance'+joins+queryFilter+order
