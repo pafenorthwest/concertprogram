@@ -2,7 +2,7 @@ import {error, json, redirect} from "@sveltejs/kit";
 import pg from 'pg';
 const { QueryArrayResult } = pg;
 import {queryTable, deleteById, insertTable} from "$lib/server/db";
-import {Accompanist, formatFieldNames} from '$lib/server/common.ts'
+import {AccompanistInterface, formatFieldNames} from '$lib/server/common.ts'
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')
@@ -27,7 +27,7 @@ export const actions = {
     },
     add: async ({request}) => {
         const formData = await request.formData();
-        const accompanist: Accompanist = {
+        const accompanist: AccompanistInterface = {
             id: null,
             full_name: formData.get('fullName'),
         }

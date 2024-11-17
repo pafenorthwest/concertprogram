@@ -1,4 +1,4 @@
-import {Performer, selectGrade, selectInstrument} from "$lib/server/common";
+import {PerformerInterface, selectGrade, selectInstrument} from "$lib/server/common";
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 
@@ -30,7 +30,7 @@ export async function PUT({params, request}) {
             return json({id: params.id}, {status: 400, body: {message: 'Invalidate Instrument or Grade'}});
         }
 
-        const performer: Performer = {
+        const performer: PerformerInterface = {
             id: params.id,
             full_name: full_name,
             grade: gradeEnum!,

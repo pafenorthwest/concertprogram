@@ -1,4 +1,4 @@
-import {Composer} from "$lib/server/common";
+import {ComposerInterface} from "$lib/server/common";
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 
@@ -16,7 +16,7 @@ export async function GET({params, request}) {
 export async function PUT({params, request}) {
     try {
         const {printed_name, full_name, years_active, alias} = await request.json();
-        const composer: Composer = {
+        const composer: ComposerInterface = {
             id: params.id,
             printed_name: printed_name,
             full_name: full_name,

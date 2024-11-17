@@ -1,4 +1,4 @@
-import {MusicalPiece} from "$lib/server/common";
+import {MusicalPieceInterface} from "$lib/server/common";
 import {insertTable} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 
@@ -11,7 +11,7 @@ export async function POST({params, request}) {
             third_composer_id
         } = await request.json();
 
-        const musicalPiece: MusicalPiece = {
+        const musicalPiece: MusicalPieceInterface = {
             id: null,
             printed_name: printed_name,
             first_composer_id: first_composer_id,

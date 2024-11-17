@@ -4,7 +4,7 @@ import {
     updatePerformerLottery
 } from "$lib/server/db";
 import {json} from "@sveltejs/kit";
-import {Lottery, pafe_series} from "$lib/server/common";
+import {LotteryInterface, pafe_series} from "$lib/server/common";
 import {createLottery} from "$lib/server/lottery";
 
 export async function GET({params, request}) {
@@ -21,7 +21,7 @@ export async function GET({params, request}) {
 export async function PUT({params, request}) {
     try {
         const {lottery, base34Lottery} = await request.json();
-        const ticket: Lottery = {
+        const ticket: LotteryInterface = {
             lottery: lottery,
             base34Lottery: base34Lottery
         }

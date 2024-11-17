@@ -1,8 +1,8 @@
-import {generateLottery, Lottery, pafe_series} from "$lib/server/common";
+import {generateLottery, LotteryInterface, pafe_series} from "$lib/server/common";
 import {insertPerformerLottery, ticketCollision} from "$lib/server/db";
 
 export async function createLottery(performerId: number): Promise<boolean> {
-    let ticket: Lottery = generateLottery()
+    let ticket: LotteryInterface = generateLottery()
 
     try {
         // table lookup for existing ticket

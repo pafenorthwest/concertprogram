@@ -1,11 +1,11 @@
-import {Accompanist} from "$lib/server/common";
+import {AccompanistInterface} from "$lib/server/common";
 import {insertTable} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 
 export async function POST({params, request}) {
     try {
         const { full_name } = await request.json();
-        const accompanist: Accompanist = {
+        const accompanist: AccompanistInterface = {
             id: null,
             full_name: full_name
         }

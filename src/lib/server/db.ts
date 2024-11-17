@@ -2,13 +2,14 @@ import pkg from 'pg';
 const {Pool} = pkg;
 import {db_user, db_pass, db_name, db_host, db_port, db_ssl} from '$env/static/private';
 import type {
-    Accompanist,
-    Composer,
-    MusicalPiece,
-    Performer,
-    PerformerRankedChoice,
-    Lottery,
-    PerformanceFilter
+    AccompanistInterface,
+    ComposerInterface,
+    MusicalPieceInterface,
+    PerformerInterface,
+    PerformanceInterface,
+    PerformerRankedChoiceInterface,
+    LotteryInterface,
+    PerformanceFilterInterface, PerformancePieceInterface
 } from "$lib/server/common";
 import {isNonEmptyString} from "$lib/server/common";
 
@@ -78,7 +79,7 @@ export async function deleteById(table: string, id: number): Promise<number | nu
     }
 }
 
-export async function insertTable(table: string, data: Composer | Accompanist | MusicalPiece | Performer){
+export async function insertTable(table: string, data: ComposerInterface | AccompanistInterface | MusicalPieceInterface | PerformerInterface){
     try {
         const connection = await pool.connect();
 
@@ -161,7 +162,121 @@ export async function insertTable(table: string, data: Composer | Accompanist | 
     }
 }
 
-export async function updateById(table: string, data: Composer | Accompanist | MusicalPiece | Performer | Lottery){
+export async function insertPerformance(data: PerformanceInterface,
+                                        performer_id: number,
+                                        musical_piece_id: number,
+                                        order: number | null,
+                                        concert_time: Date | null,
+                                        warm_up_room_name: string | null,
+                                        warm_up_room_start: Date | null,
+                                        warm_up_room_end: Date | null) {
+    try {
+        const connection = await pool.connect()
+
+        console.log("processing insert for performance");
+
+        let cols = "performer_id, concert_series, pafe_series, instrument"
+        let vals = performer_id+", '"+data.concert_series+"', "+data.pafe_series+", '"+data.instrument+"'"
+
+        if (order != null) {
+            cols = cols +", order"
+            vals = vals +", "+order
+        }
+        if (data.duration != null) {
+            cols = cols +", duration"
+            vals = vals +", "+ data.duration
+        }
+        if (data.accompanist_id != null) {
+            cols = cols +", accompanist_id"
+            vals = vals +", "+data.accompanist_id
+        }
+        if (concert_time != null) {
+            cols = cols +", concert_time"
+            vals = vals +", '"+concert_time.toTimeString()+"'"
+        }
+        if (warm_up_room_name != null) {
+            cols = cols +", warm_up_room_name"
+            vals = vals +", '"+warm_up_room_name+"'"
+        }
+        if (warm_up_room_start != null) {
+            cols = cols +", warm_up_room_start"
+            vals = vals +", '"+warm_up_room_start.toTimeString()+"'"
+        }
+        if (warm_up_room_end != null ) {
+            cols = cols +", warm_up_room_end"
+            vals = vals +", '"+warm_up_room_end.toTimeString()+"'"
+        }
+
+        cols = "("+cols+")"
+        vals = "("+vals+")"
+
+        const insertSQL= "INSERT INTO PERFORMANCE "+cols+" VALUES "+vals;
+        console.log(insertSQL)
+        const result = await connection.query(insertSQL)
+
+        // Release the connection back to the pool
+        connection.release();
+
+    } catch (error) {
+        console.error('Error executing insertPerformance:', error);
+        throw error;
+    }
+}
+
+export async function updatePerformance(data: PerformanceInterface,
+                                        performer_id: number,
+                                        musical_piece_id: number,
+                                        order: number | null,
+                                        concert_time: Date | null,
+                                        warm_up_room_name: string | null,
+                                        warm_up_room_start: Date | null,
+                                        warm_up_room_end: Date | null) {
+    try {
+        const connection = await pool.connect()
+
+        console.log("processing update for performance");
+
+        let setCols = "performer_id = "+performer_id+
+            ", concert_series = '"+data.concert_series+
+            ", pafe_series = "+data.pafe_series+
+            ", instrument = '"+data.instrument
+
+        if (order != null) {
+            setCols = setCols + ", order = "+order
+        }
+        if (data.duration != null) {
+            setCols = setCols + ", duration = "+data.duration
+        }
+        if (data.accompanist_id != null) {
+            setCols = setCols + ", accompanist_id = "+data.accompanist_id
+        }
+        if (concert_time != null) {
+            setCols = setCols + ", concert_time = '"+concert_time.toTimeString()+"'"
+        }
+        if (warm_up_room_name != null) {
+            setCols = setCols + ", warm_up_room_name = '"+warm_up_room_name+"'"
+        }
+        if (warm_up_room_start != null) {
+            setCols = setCols + ", warm_up_room_start = '"+warm_up_room_start.toTimeString()+"'"
+        }
+        if (warm_up_room_end != null ) {
+            setCols = setCols + ", warm_up_room_end = '"+warm_up_room_end.toTimeString()+"'"
+        }
+
+        const updateSQL= "UPDATE PERFORMANCE SET "+setCols+" WHERE performance.id = "+data.id;
+        console.log(updateSQL)
+        const result = await connection.query(updateSQL)
+
+        // Release the connection back to the pool
+        connection.release();
+
+    } catch (error) {
+        console.error('Error executing insertPerformance:', error);
+        throw error;
+    }
+}
+
+export async function updateById(table: string, data: ComposerInterface | AccompanistInterface | MusicalPieceInterface | PerformerInterface | LotteryInterface){
     try {
         const connection = await pool.connect();
 
@@ -240,9 +355,56 @@ export async function updateById(table: string, data: Composer | Accompanist | M
 
         return result.rowCount
     } catch (error) {
+        console.error('Error executing updateById:', error);
+        throw error;
+    }
+}
+
+export async function insertPerformancePieceMap(performancePieceMap: PerformancePieceInterface) {
+    try {
+        const connection = await pool.connect();
+
+        let insertSQL = "INSERT INTO performance_pieces "
+        if (performancePieceMap.movement != null) {
+            insertSQL = insertSQL + "(performance_id, musical_piece_id, movement) "
+            insertSQL = insertSQL + "VALUES ("+performancePieceMap.performance_id+", "+performancePieceMap.musical_piece_id+", "+performancePieceMap.movement+" )"
+        } else {
+            insertSQL = insertSQL + "(performance_id, musical_piece_id) "
+            insertSQL = insertSQL + "VALUES ("+performancePieceMap.performance_id+", "+performancePieceMap.musical_piece_id+" )"
+        }
+        const result = connection.query(insertSQL);
+
+        // Release the connection back to the pool
+        connection.release();
+
+        return result;
+    } catch (error) {
         console.error('Error executing query:', error);
         throw error;
     }
+}
+
+export async function deletePerformancePieceMap(performancePieceMap: PerformancePieceInterface) {
+    try {
+        const connection = await pool.connect();
+
+        let deleteSQL = "DELETE performance_pieces where performance_id = " + performancePieceMap.performance_id
+        + " AND musical_piece_id = " + performancePieceMap.musical_piece_id
+        const result = connection.query(deleteSQL);
+
+        // Release the connection back to the pool
+        connection.release();
+
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function updatePerformancePieceMap(performancePieceMap: PerformancePieceInterface) {
+    const delResult = await deletePerformancePieceMap(performancePieceMap)
+    const insResult = await insertPerformancePieceMap(performancePieceMap)
 }
 
 export async function getPerformerLottery(performerId: number) {
@@ -265,7 +427,7 @@ export async function getPerformerLottery(performerId: number) {
     }
 }
 
-export async function updatePerformerLottery(performerId: number, pafe_series: number, data: Lottery){
+export async function updatePerformerLottery(performerId: number, pafe_series: number, data: LotteryInterface){
     try {
         const connection = await pool.connect();
 
@@ -287,7 +449,7 @@ export async function updatePerformerLottery(performerId: number, pafe_series: n
     }
 }
 
-export async function insertPerformerLottery(performerId: number, pafe_series: number, data: Lottery){
+export async function insertPerformerLottery(performerId: number, pafe_series: number, data: LotteryInterface){
     try {
         const connection = await pool.connect();
 
@@ -343,7 +505,7 @@ export async function ticketCollision(base34Code: string){
     }
 }
 
-export async function queryPerformances(filters?: PerformanceFilter) {
+export async function queryPerformances(filters?: PerformanceFilterInterface) {
     /**
      *     id: number | null;
      *     musical_piece: string;
@@ -393,9 +555,120 @@ export async function queryPerformances(filters?: PerformanceFilter) {
         }
         queryFilter = queryFilter + "\n";
 
+        console.log('SELECT '+fields+' FROM performance'+joins+queryFilter+order)
         const result = connection.query(
             'SELECT '+fields+' FROM performance'+joins+queryFilter+order
         );
+
+        // Release the connection back to the pool
+        connection.release();
+
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function searchComposer(composer_name: string) {
+    try {
+        const connection = await pool.connect();
+
+        const searchSQL = "SELECT id, printed_name, full_name, years_active, alias " +
+            "FROM composer " +
+            "WHERE full_name = '" + composer_name + "' OR LOWER(alias) = '" + composer_name.toLowerCase() + "'"
+
+        const result = connection.query(searchSQL);
+
+        // Release the connection back to the pool
+        connection.release();
+
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function searchAccompanist(accompanist: string) {
+    try {
+        const connection = await pool.connect();
+
+        const searchSQL = "SELECT id, full_name " +
+            "FROM accompanist " +
+            "WHERE LOWER(full_name) = '" + accompanist.toLowerCase() + "'"
+
+        const result = connection.query(searchSQL);
+
+        // Release the connection back to the pool
+        connection.release();
+
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function searchPerformer(full_name: string, email: string | null, instrument: string) {
+    try {
+        const connection = await pool.connect();
+
+        let searchSQL = "SELECT id, full_name, grade, email, phone, instrument " +
+            "FROM performer " +
+            "WHERE (LOWER(full_name) = '" + full_name.toLowerCase() + "' AND instrument = '" + instrument + "') "
+        if (email != null) {
+            searchSQL = searchSQL + " OR (LOWER(email) = '" + email.toLowerCase() + "')"
+        }
+
+        const result = connection.query(searchSQL);
+
+        // Release the connection back to the pool
+        connection.release();
+
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function searchMusicalPiece(printed_name: string, first_composer_id: number) {
+    try {
+        const connection = await pool.connect();
+
+        let searchSQL = "SELECT id, printed_name, first_composer_id, all_movements, second_composer_id, third_composer_id " +
+            "FROM musical_piece " +
+            "WHERE LOWER(printed_name) = '" + printed_name.toLowerCase() + "' AND first_composer_id = " + first_composer_id
+
+        const result = connection.query(searchSQL);
+
+        // Release the connection back to the pool
+        connection.release();
+
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function searchPerformanceByPerformer(performer_id: number, concert_series: string, pafe_series: number) {
+    try {
+        const connection = await pool.connect();
+
+        let searchSQL = "SELECT performance.id, performer.printed_name as performer_name, "+
+            "musical_piece.printed_name as musical_piece_printed_name, "+
+            "performance.performer_id, performance.performance_order, "+
+            "performance.concert_series, performance.pafe_series, performance.duration, performance.accompanist_id, " +
+            " concert_time, instrument, warm_up_room_name, warm_up_room_start, warm_up_room_end " +
+            "JOIN performance_pieces ON performance.id = performance_pieces.performance_id " +
+            "JOIN musical_piece ON performance_pieces.musical_piece_id = musical_piece.id " +
+            "JOIN performance.performer_id = performer.id " +
+            "WHERE performer_id = " + performer_id + " AND LOWER(concert_series) = " + concert_series.toLowerCase() +
+            " AND pafe_series = " + pafe_series
+
+        const result = connection.query(searchSQL);
 
         // Release the connection back to the pool
         connection.release();

@@ -1,7 +1,7 @@
 import {redirect} from "@sveltejs/kit";
 import pg from 'pg';
 import {deleteById, queryTable} from "$lib/server/db";
-import {formatFieldNames, Performer, selectGrade, selectInstrument} from '$lib/server/common.ts'
+import {formatFieldNames, PerformerInterface, selectGrade, selectInstrument} from '$lib/server/common.ts'
 import {createPerformer} from "$lib/server/performer";
 
 const { QueryArrayResult } = pg;
@@ -34,7 +34,7 @@ export const actions = {
         if (instrument == null || grade == null) {
             return {status: 400, body: {message: 'Bad Instrument or Grade Value'}}
         }
-        const performer: Performer = {
+        const performer: PerformerInterface = {
             id: null,
             full_name: formData.get('fullName'),
             instrument: instrument!,
@@ -47,8 +47,8 @@ export const actions = {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
 
-            const success = await createPerformer(performer)
-            if (success) {
+            const new_id = await createPerformer(performer)
+            if (new_id != null) {
                 return { status: 200, body: { message: 'Insert successful' } };
             } else {
                 return { status: 500, body: { message: 'Insert failed' } };

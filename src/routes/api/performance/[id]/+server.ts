@@ -1,8 +1,19 @@
-import { json } from '@sveltejs/kit';
-import {PerformanceInterface, selectInstrument} from "$lib/server/common";
-import {insertPerformance} from "$lib/server/db";
+import {PerformanceInterface, selectInstrument, pafe_series} from "$lib/server/common";
+import {deleteById, queryTable, updatePerformance} from "$lib/server/db";
+import {json} from "@sveltejs/kit";
 
-export async function POST({ request }) {
+export async function GET({params, request}) {
+    try {
+        const res = await queryTable('performance',params.id)
+        if (res.rowCount != 1) {
+            return json({status: 'error', message: 'Not Found'}, {status: 404});
+        }
+        return json(res.rows);
+    } catch (error) {
+        return json({status: 'error', message: 'Failed to process the request'}, {status: 500});
+    }
+}
+export async function PUT({params, request}) {
     try {
         // the following fields are often not included
         // order, concert_time, warm_up_room_name, warm_up_room_start, warm_up_room_name
@@ -24,14 +35,14 @@ export async function POST({ request }) {
 
         const instrumentEnum = selectInstrument(instrument)
         if (instrumentEnum == null) {
-            return json({}, {status: 400, body: {message: 'Invalidate Instrument'}});
+            return json({id: params.id}, {status: 400, body: {message: 'Invalidate Instrument'}});
         }
 
         let cleaned_pafe_series = pafe_series
         if (cleaned_pafe_series == null) { cleaned_pafe_series = pafe_series() }
 
         const performance: PerformanceInterface = {
-            id: null,
+            id: params.id,
             performer_name: performer_name,
             musical_piece: musical_piece,
             movements: movements,
@@ -49,16 +60,26 @@ export async function POST({ request }) {
             const performer_id = 1
             // get musical_peice id
             const musical_piece_id = 0
-            const rowCount = await insertPerformance(performance, performer_id, musical_piece_id,
+            const rowCount = await updatePerformance(performance, performer_id, musical_piece_id,
                 order, concert_time,
                 warm_up_room_name, warm_up_room_start, warm_up_room_end)
-            if (rowCount > 0) {
-                return json( {status: 200, body: {message: 'Update successful'}});
+            if (rowCount != null && rowCount > 0) {
+                return json( {id: params.id}, {status: 200, body: {message: 'Update successful'}});
             } else {
-                return json({status: 500, body: {message: 'Update failed'}});
+                return json({id: params.id}, {status: 500, body: {message: 'Update failed'}});
             }
         }
     } catch (error) {
         return json({status: 'error', message: 'Failed to process the request'}, {status: 500});
+    }
+}
+
+export async function DELETE({params, request}){
+    const rowCount = await deleteById('performance', params.id);
+
+    if (rowCount != null && rowCount > 0) {
+        return { status: 200, body: { message: 'Delete successful' } };
+    } else {
+        return { status: 500, body: { message: 'Delete failed' } };
     }
 }

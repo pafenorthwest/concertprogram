@@ -2,7 +2,7 @@ import {error, json} from "@sveltejs/kit";
 import pg from 'pg';
 const { QueryArrayResult } = pg;
 import {queryTable, deleteById, insertTable} from "$lib/server/db";
-import {Composer, formatFieldNames} from '$lib/server/common.ts'
+import {ComposerInterface, formatFieldNames} from '$lib/server/common.ts'
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')
@@ -27,7 +27,7 @@ export const actions = {
     },
     add: async ({request}) => {
         const formData = await request.formData();
-        const composer: Composer = {
+        const composer: ComposerInterface = {
             id: null,
             printed_name: formData.get('printedName'),
             full_name: formData.get('fullName'),

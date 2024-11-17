@@ -125,7 +125,7 @@ export function selectGrade(input: string): Grade | null {
     return returnGrade
 }
 
-export interface Composer {
+export interface ComposerInterface {
     id: number | null;
     printed_name: string;
     full_name: string;
@@ -133,12 +133,12 @@ export interface Composer {
     alias: string;
 }
 
-export interface Accompanist {
+export interface AccompanistInterface {
     id: number | null;
     full_name: string;
 }
 
-export interface MusicalPiece {
+export interface MusicalPieceInterface {
     id: number | null;
     printed_name: string;
     first_composer_id: number;
@@ -147,7 +147,7 @@ export interface MusicalPiece {
     third_composer_id: number | null;
 }
 
-export interface Performer {
+export interface PerformerInterface {
     id: number | null;
     full_name: string;
     grade: Grade;
@@ -156,21 +156,20 @@ export interface Performer {
     phone: string | null;
 }
 
-export interface PerformanceFilter {
+export interface PerformanceFilterInterface {
     concert_series: string | null;
     pafe_series: number
 }
 
 /**
  * Performance can have multiple music pieces
- * Not represented in this data structure
- * Would simply call Performance insert multiple times with performance id
+ * mapping in PerformancePieces
  */
-export interface Performance {
+export interface PerformanceInterface {
     id: number | null;
     performer_name: string;
     musical_piece: string;
-    movements: string;
+    movements: string | null;
     duration: number | null;
     accompanist_id: number | null;
     concert_series: string;
@@ -178,12 +177,18 @@ export interface Performance {
     instrument: Instrument;
 }
 
-export interface Lottery {
+export interface PerformancePieceInterface {
+    performance_id: number;
+    musical_piece_id: number;
+    movement: string | null ;
+}
+
+export interface LotteryInterface {
     lottery: number;
     base34Lottery: string;
 }
 
-export interface PerformerRankedChoice {
+export interface PerformerRankedChoiceInterface {
     performer_id: number;
     concert_series: string;
     pafe_series: number;
@@ -191,6 +196,18 @@ export interface PerformerRankedChoice {
     second_choice_time: Date | null;
     third_choice_time: Date | null;
     fourth_choice_time: Date | null;
+}
+
+export interface ImportPerformance {
+    class_name: string;
+    performer: string;
+    email: string;
+    phone: string | null;
+    accompanist: string | null;
+    instrument: string;
+    piece_1: string;
+    piece_2: string | null;
+    concert_series: string;
 }
 
 export function formatFieldNames(input: string): string {
@@ -204,7 +221,7 @@ export function isNonEmptyString(value: any): boolean {
     return typeof value === 'string' && value.trim().length > 0;
 }
 
-export function generateLottery(): Lottery {
+export function generateLottery(): LotteryInterface {
     // Lottery Number at most 4 digit base 34
     const min = 1;
     const max = 1337334;
@@ -250,5 +267,27 @@ export function base34ToDecimal(base34: string): number {
     return num;
 }
 
-
+export function parseMusicalPiece(piece_performed: string): {
+    titleWithoutMovement: string;
+    movements: string | null;
+    composers: string[] | null
+} {
+    //const movementPattern1 =        /(.*?)(\b(?:\d+(?:st|nd|rd|th)?|I{1,3})\.\s*[^,]+)?(?: by (.+))?$/i;
+    //const movementPatter2 = /(.*?)(\b(?:[1-3](?:st|nd|rd|th)?\s*\w+|I{1,3}\.\s*[^,]+))?(?: by (.+))?$/i;
+    const movementPattern = /(.*?)(\b(?:(\d(st|nd|rd|th))?\s*\w+|I{1,3}\.\s*[^,]+))?(?: by (.+))?$/i;
+    const match = piece_performed.match(movementPattern);
+    if (match) {
+        return {
+            titleWithoutMovement: match[1].trim(),
+            movements: match[2] ? match[2].trim() : null,
+            composers: match[3] ? match[3].split(/,\s*/).map(composer => composer.trim()) : null
+        }
+    }
+    // If no match is found, return the title without modifications
+    return {
+        titleWithoutMovement: piece_performed.trim(),
+        movements: null,
+        composers: null
+    };
+}
 

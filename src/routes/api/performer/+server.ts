@@ -1,18 +1,23 @@
-import {Performer} from "$lib/server/common";
-import {insertTable} from "$lib/server/db";
+import {PerformerInterface, selectGrade, selectInstrument} from "$lib/server/common";
 import {json} from "@sveltejs/kit";
 import {createPerformer} from "$lib/server/performer";
 
 export async function POST({params, request}) {
     try {
-        const { full_name,
+        let { full_name,
             grade,
             instrument,
             email,
             phone
         } = await request.json();
 
-        const performer: Performer = {
+        instrument = selectInstrument(instrument)
+        grade = selectGrade(grade)
+        if (instrument == null || grade == null) {
+            return {status: 400, body: {message: 'Bad Instrument or Grade Value'}}
+        }
+
+        const performer: PerformerInterface = {
             id: null,
             full_name: full_name,
             grade: grade,
@@ -24,8 +29,8 @@ export async function POST({params, request}) {
         if ( !performer.full_name || !performer.instrument || !performer.grade ) {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
-            const success = await createPerformer(performer)
-            if (success) {
+            const new_id = await createPerformer(performer)
+            if (new_id != null) {
                 return json( {status: 200, body: {message: 'Update successful'}});
             } else {
                 return json({status: 500, body: {message: 'Update failed'}});

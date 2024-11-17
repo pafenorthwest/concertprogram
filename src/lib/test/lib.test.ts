@@ -1,5 +1,5 @@
 import { describe, it, assert } from 'vitest';
-import {decimalToBase34, base34ToDecimal, Lottery, generateLottery} from '../server/common';
+import {decimalToBase34, base34ToDecimal, LotteryInterface, generateLottery} from '$lib/server/common';
 
 describe('Base 34 Conversion Tests', () => {
     it('should convert decimal to base 34 correctly', () => {
@@ -21,7 +21,7 @@ describe('Base 34 Conversion Tests', () => {
     });
 
     it('should handle round-trip conversion', () => {
-        const tickets: Lottery[] = [
+        const tickets: LotteryInterface[] = [
             generateLottery(),
             generateLottery(),
             generateLottery(),

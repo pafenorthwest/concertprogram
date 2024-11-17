@@ -1,4 +1,4 @@
-import {Accompanist} from "$lib/server/common";
+import {AccompanistInterface} from "$lib/server/common";
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 
@@ -16,7 +16,7 @@ export async function GET({params, request}) {
 export async function PUT({params, request}) {
     try {
         const { full_name } = await request.json();
-        const accompanist: Accompanist = {
+        const accompanist: AccompanistInterface = {
             id: params.id,
             full_name: full_name
         }
