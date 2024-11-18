@@ -1,7 +1,8 @@
-CREATE USER concertchair WITH ENCRYPTED PASSWORD 'password';
+CREATE USER concertchair WITH ENCRYPTED PASSWORD '';
 
 CREATE DATABASE pafe
-    WITH OWNER = 'concertchair'
+    WITH TEMPLATE = 'template0'
+    OWNER = 'concertchair'
     LOCALE = 'en_US.UTF-8';
 
  CREATE TYPE instrument_list AS ENUM ('Cello',
