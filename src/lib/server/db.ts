@@ -7,7 +7,6 @@ import type {
     MusicalPieceInterface,
     PerformerInterface,
     PerformanceInterface,
-    PerformerRankedChoiceInterface,
     LotteryInterface,
     PerformanceFilterInterface, PerformancePieceInterface
 } from "$lib/server/common";
@@ -149,7 +148,7 @@ export async function insertTable(table: string, data: ComposerInterface | Accom
         if (return_id) {
             insertSQL = insertSQL + " RETURNING id"
         }
-        console.log(insertSQL)
+
         const result = await connection.query(insertSQL)
 
         // Release the connection back to the pool
@@ -210,13 +209,13 @@ export async function insertPerformance(data: PerformanceInterface,
         cols = "("+cols+")"
         vals = "("+vals+")"
 
-        const insertSQL= "INSERT INTO PERFORMANCE "+cols+" VALUES "+vals;
+        const insertSQL= "INSERT INTO PERFORMANCE " + cols + " VALUES " + vals + "RETURNING id";
         console.log(insertSQL)
         const result = await connection.query(insertSQL)
 
         // Release the connection back to the pool
         connection.release();
-
+        return result
     } catch (error) {
         console.error('Error executing insertPerformance:', error);
         throw error;
@@ -270,6 +269,8 @@ export async function updatePerformance(data: PerformanceInterface,
         // Release the connection back to the pool
         connection.release();
 
+        return result
+
     } catch (error) {
         console.error('Error executing insertPerformance:', error);
         throw error;
@@ -281,8 +282,6 @@ export async function updateById(table: string, data: ComposerInterface | Accomp
         const connection = await pool.connect();
 
         let setCols = "";
-
-        console.log("processing update for "+table);
 
         switch (table) {
             case 'composer':
@@ -347,7 +346,6 @@ export async function updateById(table: string, data: ComposerInterface | Accomp
         }
 
         const updateSQL="UPDATE "+table+" SET "+setCols+" WHERE id="+data.id
-        console.log(updateSQL)
         const result = await connection.query(updateSQL)
 
         // Release the connection back to the pool
@@ -367,11 +365,12 @@ export async function insertPerformancePieceMap(performancePieceMap: Performance
         let insertSQL = "INSERT INTO performance_pieces "
         if (performancePieceMap.movement != null) {
             insertSQL = insertSQL + "(performance_id, musical_piece_id, movement) "
-            insertSQL = insertSQL + "VALUES ("+performancePieceMap.performance_id+", "+performancePieceMap.musical_piece_id+", "+performancePieceMap.movement+" )"
+            insertSQL = insertSQL + "VALUES ("+performancePieceMap.performance_id+", "+performancePieceMap.musical_piece_id+", '"+performancePieceMap.movement+"' )"
         } else {
             insertSQL = insertSQL + "(performance_id, musical_piece_id) "
             insertSQL = insertSQL + "VALUES ("+performancePieceMap.performance_id+", "+performancePieceMap.musical_piece_id+" )"
         }
+        console.log(insertSQL);
         const result = connection.query(insertSQL);
 
         // Release the connection back to the pool
@@ -388,7 +387,7 @@ export async function deletePerformancePieceMap(performancePieceMap: Performance
     try {
         const connection = await pool.connect();
 
-        let deleteSQL = "DELETE performance_pieces where performance_id = " + performancePieceMap.performance_id
+        const deleteSQL = "DELETE FROM performance_pieces where performance_id = " + performancePieceMap.performance_id
         + " AND musical_piece_id = " + performancePieceMap.musical_piece_id
         const result = connection.query(deleteSQL);
 
@@ -403,8 +402,8 @@ export async function deletePerformancePieceMap(performancePieceMap: Performance
 }
 
 export async function updatePerformancePieceMap(performancePieceMap: PerformancePieceInterface) {
-    const delResult = await deletePerformancePieceMap(performancePieceMap)
-    const insResult = await insertPerformancePieceMap(performancePieceMap)
+    await deletePerformancePieceMap(performancePieceMap)
+    await insertPerformancePieceMap(performancePieceMap)
 }
 
 export async function getPerformerLottery(performerId: number) {
@@ -432,7 +431,7 @@ export async function updatePerformerLottery(performerId: number, pafe_series: n
         const connection = await pool.connect();
 
         const updateSQL= "UPDATE performer_lottery"+
-            "        SET lottery = "+data.lottery+","
+            "        SET lottery = "+data.lottery+","+
             "        lookup_code = '"+data.base34Lottery+"',"+
             "        pafe_series = "+pafe_series+
             "        WHERE performer_id = "+performerId
@@ -457,7 +456,6 @@ export async function insertPerformerLottery(performerId: number, pafe_series: n
             "        (performer_id, lottery, lookup_code, pafe_series) "+
             "        VALUES ("+performerId+", "+data.lottery+", '"+data.base34Lottery+"', "+pafe_series+")"
 
-        console.log(insertSQL)
         const result = await connection.query(insertSQL)
 
         // Release the connection back to the pool
@@ -474,13 +472,13 @@ export async function deletePerformerLottery(performerId: number) {
     try {
         const connection = await pool.connect();
 
-        const deleteSQL= "DELETE performer_lottery WHERE performer_id = "+performerId
+        const deleteSQL= "DELETE FROM performer_lottery WHERE performer_id = "+performerId
 
         const result = await connection.query(deleteSQL)
 
         // Release the connection back to the pool
         connection.release()
-
+        return result
     } catch (error) {
         console.error('Error executing query:', error);
         throw error
@@ -549,6 +547,7 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
         let queryFilter = ""
         if (typeof(filters) != "undefined" && Object.entries(filters).length > 0) {
             queryFilter = "WHERE "+Object.entries(filters)
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 .filter(([_, value]) => value !== null) // filter out null values
                 .map(([key, value]) => `${key} = ${value}`)
                 .join(', ');
@@ -637,7 +636,7 @@ export async function searchMusicalPiece(printed_name: string, first_composer_id
     try {
         const connection = await pool.connect();
 
-        let searchSQL = "SELECT id, printed_name, first_composer_id, all_movements, second_composer_id, third_composer_id " +
+        const searchSQL = "SELECT id, printed_name, first_composer_id, all_movements, second_composer_id, third_composer_id " +
             "FROM musical_piece " +
             "WHERE LOWER(printed_name) = '" + printed_name.toLowerCase() + "' AND first_composer_id = " + first_composer_id
 
@@ -657,16 +656,18 @@ export async function searchPerformanceByPerformer(performer_id: number, concert
     try {
         const connection = await pool.connect();
 
-        let searchSQL = "SELECT performance.id, performer.printed_name as performer_name, "+
-            "musical_piece.printed_name as musical_piece_printed_name, "+
-            "performance.performer_id, performance.performance_order, "+
-            "performance.concert_series, performance.pafe_series, performance.duration, performance.accompanist_id, " +
-            " concert_time, instrument, warm_up_room_name, warm_up_room_start, warm_up_room_end " +
-            "JOIN performance_pieces ON performance.id = performance_pieces.performance_id " +
-            "JOIN musical_piece ON performance_pieces.musical_piece_id = musical_piece.id " +
-            "JOIN performance.performer_id = performer.id " +
-            "WHERE performer_id = " + performer_id + " AND LOWER(concert_series) = " + concert_series.toLowerCase() +
-            " AND pafe_series = " + pafe_series
+        const searchSQL = "SELECT performance.id, performer.full_name as performer_name, \n"+
+            "musical_piece.printed_name as musical_piece_printed_name, \n"+
+            "performance.performer_id, performance.performance_order, \n"+
+            "performance.concert_series, performance.pafe_series, performance.duration, performance.accompanist_id \n" +
+            "concert_time, performance.instrument, warm_up_room_name, warm_up_room_start, warm_up_room_end \n" +
+            "FROM performance \n" +
+            "JOIN performance_pieces ON performance.id = performance_pieces.performance_id \n" +
+            "JOIN musical_piece ON performance_pieces.musical_piece_id = musical_piece.id \n" +
+            "JOIN performer ON performance.performer_id = performer.id \n" +
+            "WHERE performer_id = " + performer_id + "\n   "+
+            "    AND LOWER(concert_series) = '" + concert_series.toLowerCase() + "' \n" +
+            "    AND pafe_series = " + pafe_series
 
         const result = connection.query(searchSQL);
 

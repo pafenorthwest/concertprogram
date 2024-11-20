@@ -1,6 +1,6 @@
 import {describe, it, assert} from 'vitest';
 import {Performance} from "$lib/server/import";
-import {ImportPerformance, parseMusicalPiece} from "$lib/server/common";
+import { type ImportPerformance, parseMusicalPiece } from '$lib/server/common';
 
 describe('Test Import Code', () => {
     it("should parse music titles with movements", async () => {
@@ -16,26 +16,24 @@ describe('Test Import Code', () => {
             [
                 ' Sonata for Flute, H. 306 I. Allegro moderato by Bohuslav Martinu',
                 'Sonata for Flute, H. 306','I. Allegro moderato','Bohuslav Martinu'
+            ],
+            [
+                'Concerto No.4 in D minor, Opus 31, 1st movement by Henri Vieuxtemps',
+                'Concerto No.4 in D minor, Opus 31', '1st movement','Henri Vieuxtemps'
             ]
         ]
 
         const results = testTitlesWithMovements.map(entry => parseMusicalPiece(entry[0]))
 
         assert.isAbove(results.length, 0, 'Expected results from parsedMusicPieces and found none')
-        console.log('has results')
         results.forEach((musicalPiece, index) => {
-            console.log(musicalPiece)
 
             assert.equal(musicalPiece.titleWithoutMovement, testTitlesWithMovements[index][1], 'Expected titles to match')
-            console.log(`title ${musicalPiece.titleWithoutMovement} should match ${testTitlesWithMovements[index][1]}`)
 
             assert.equal(musicalPiece.movements!, testTitlesWithMovements[index][2], 'Expected movements to match')
-            console.log(`movements ${musicalPiece.movements} should match ${testTitlesWithMovements[index][2]}`)
 
             assert.isNotNull(musicalPiece.composers, 'Expected composers to not be null and failed')
-            console.log('composers is not null')
             assert.equal(musicalPiece.composers?.[0] ,  testTitlesWithMovements[index][3],'Expected composer to match')
-            console.log(`composer ${musicalPiece.composers?.[0]} should match ${testTitlesWithMovements[index][3]}`)
         })
     })
     it("should parse music titles with out movements", async () => {
@@ -62,18 +60,13 @@ describe('Test Import Code', () => {
             ]
         ]
 
-        const results = testTitlesWithOutMovements.map(parseMusicalPiece)
+        const results = testTitlesWithOutMovements.map(entry => parseMusicalPiece(entry[0]))
         assert.isAbove(results.length, 0, 'Expected results from parsedMusicPieces and found none')
-        console.log('Music Pieces with no movements has results')
         results.forEach(musicalPiece => {
             assert.isNotNull(musicalPiece.composers, 'Expected composers to not be null and failed')
-            console.log('composer not null')
             assert.isNotNull(musicalPiece.composers?.[0], 'Expected composer 1 is not null')
-            console.log(`Expected composer 1 is not null ${musicalPiece.composers?.[0]}`)
             assert.isAbove(musicalPiece.titleWithoutMovement.length, 5, 'Music title of length 12 or more')
-            console.log(`matched title ${musicalPiece.titleWithoutMovement}`)
             assert.isNull(musicalPiece.movements, 'Expected no movement')
-            console.log(`matched null movements`)
         })
     })
     it("should insert single performance", async () => {
@@ -92,11 +85,12 @@ describe('Test Import Code', () => {
         await singlePerformance.initialize(imported)
         await singlePerformance.delete()
 
-        assert(singlePerformance.musical_piece_1.id > 0)
-        assert(singlePerformance.accompanist?.full_name == 'Zhou Zhi')
-        assert(singlePerformance.performer.full_name == 'Nymphodoros Sýkorová')
-        assert(singlePerformance.performer.email = 'QFnl@example.com')
-        assert(singlePerformance.composer_1.full_name = "Johann Christian Bach")
+        assert.isNotNull(singlePerformance.musical_piece_1.id, 'Expected non null musical_piece id')
+        assert.isAbove(singlePerformance.musical_piece_1.id!, 0, ' Expected musical piece id positive integer')
+        assert.equal(singlePerformance.accompanist?.full_name,'Zhou Zhi','Expected accompanist ')
+        assert.equal(singlePerformance.performer.full_name,'Nymphodoros Sýkorová','Expected performer name')
+        assert.equal(singlePerformance.performer.email,'QFnl@example.com','Expected performer email')
+        assert.equal(singlePerformance.composer_1.full_name,"Johann Christian Bach",'Expected composer')
 
     });
 });

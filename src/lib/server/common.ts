@@ -198,7 +198,7 @@ export interface PerformerRankedChoiceInterface {
     fourth_choice_time: Date | null;
 }
 
-export interface ImportPerformance {
+export interface ImportPerformanceInterface {
     class_name: string;
     performer: string;
     email: string;
@@ -207,7 +207,7 @@ export interface ImportPerformance {
     instrument: string;
     piece_1: string;
     piece_2: string | null;
-    concert_series: string;
+    concert_series: string | null;
 }
 
 export function formatFieldNames(input: string): string {
@@ -272,22 +272,35 @@ export function parseMusicalPiece(piece_performed: string): {
     movements: string | null;
     composers: string[] | null
 } {
-    //const movementPattern1 =        /(.*?)(\b(?:\d+(?:st|nd|rd|th)?|I{1,3})\.\s*[^,]+)?(?: by (.+))?$/i;
-    //const movementPatter2 = /(.*?)(\b(?:[1-3](?:st|nd|rd|th)?\s*\w+|I{1,3}\.\s*[^,]+))?(?: by (.+))?$/i;
-    const movementPattern = /(.*?)(\b(?:(\d(st|nd|rd|th))?\s*\w+|I{1,3}\.\s*[^,]+))?(?: by (.+))?$/i;
-    const match = piece_performed.match(movementPattern);
+
+    // First split off the composer
+    let composers = null
+    const titleComposers: string[] = piece_performed.split(' by ').map(item => item.trim())
+    // failing here is likely an error
+    if (titleComposers.length <= 1) {
+        throw new Error('Invalid musical piece, no composer string')
+    } else {
+        // if composers split and trim
+        composers = titleComposers[1].split(',').map(item => item.trim());
+    }
+
+    // Second extract the movement from the remaining string
+    const movementPattern = /(.*?)(\b(?:\d+(?:st|nd|rd|th)?\s*[Mm]ovements*|I{1,3}\.\s*[^,]+))$/i;
+
+    const match = titleComposers[0].match(movementPattern);
     if (match) {
+        // trim and remove leading and trailing spaces and commas
         return {
-            titleWithoutMovement: match[1].trim(),
-            movements: match[2] ? match[2].trim() : null,
-            composers: match[3] ? match[3].split(/,\s*/).map(composer => composer.trim()) : null
+            titleWithoutMovement: match[1].replace(/^[ ,]+|[ ,]+$/g, ""),
+            movements: match[2] ? match[2].replace(/^[ ,]+|[ ,]+$/g, "") : null,
+            composers: composers
         }
     }
     // If no match is found, return the title without modifications
     return {
         titleWithoutMovement: piece_performed.trim(),
         movements: null,
-        composers: null
+        composers: composers
     };
 }
 
