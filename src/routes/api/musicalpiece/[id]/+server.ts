@@ -1,4 +1,4 @@
-import {MusicalPieceInterface} from "$lib/server/common";
+import { type MusicalPieceInterface} from "$lib/server/common";
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 

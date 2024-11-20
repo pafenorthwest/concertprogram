@@ -1,4 +1,4 @@
-import {PerformerInterface, selectGrade, selectInstrument} from "$lib/server/common";
+import { type PerformerInterface, selectGrade, selectInstrument} from "$lib/server/common";
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 

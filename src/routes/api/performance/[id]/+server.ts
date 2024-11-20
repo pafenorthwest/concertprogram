@@ -1,4 +1,4 @@
-import {PerformanceInterface, selectInstrument, pafe_series} from "$lib/server/common";
+import { type PerformanceInterface, selectInstrument} from "$lib/server/common";
 import {deleteById, queryTable, updatePerformance} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 

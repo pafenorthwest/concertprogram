@@ -4,7 +4,7 @@ import {
     updatePerformerLottery
 } from "$lib/server/db";
 import {json} from "@sveltejs/kit";
-import {LotteryInterface, pafe_series} from "$lib/server/common";
+import { type LotteryInterface, pafe_series } from '$lib/server/common';
 import {createLottery} from "$lib/server/lottery";
 
 export async function GET({params, request}) {

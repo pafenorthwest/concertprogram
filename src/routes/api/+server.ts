@@ -22,7 +22,7 @@ export async function POST({ request }) {
         const responseMessage = `Received message with size: ${data.message.length}`;
 
         return json({ status: 'success', message: responseMessage });
-    } catch (error) {
+    } catch {
         return json({ status: 'error', message: 'Failed to process the request' }, { status: 500 });
     }
 }

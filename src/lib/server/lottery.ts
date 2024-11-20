@@ -1,4 +1,4 @@
-import {generateLottery, LotteryInterface, pafe_series} from "$lib/server/common";
+import { generateLottery, type LotteryInterface, pafe_series } from '$lib/server/common';
 import {insertPerformerLottery, ticketCollision} from "$lib/server/db";
 
 export async function createLottery(performerId: number): Promise<boolean> {

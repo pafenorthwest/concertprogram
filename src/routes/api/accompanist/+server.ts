@@ -1,4 +1,4 @@
-import {AccompanistInterface} from "$lib/server/common";
+import type { AccompanistInterface } from '$lib/server/common';
 import {insertTable} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 

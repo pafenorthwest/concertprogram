@@ -1,5 +1,5 @@
 import {DataParser, Performance} from "$lib/server/import";
-import {ImportPerformance} from "$lib/server/common";
+import type { ImportPerformanceInterface } from '$lib/server/common';
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')
@@ -17,7 +17,7 @@ export const actions = {
             const importedData = new DataParser()
             await importedData.initialize(csvData, "CSV", concertSeries)
         } else {
-            const imported: ImportPerformance = {
+            const imported: ImportPerformanceInterface = {
                 class_name: formData.get('class'),
                 performer: formData.get('performer-name'),
                 email: formData.get('performer-email'),

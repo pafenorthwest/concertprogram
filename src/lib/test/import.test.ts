@@ -86,7 +86,7 @@ describe('Test Import Code', () => {
         await singlePerformance.delete()
 
         assert.isNotNull(singlePerformance.musical_piece_1.id, 'Expected non null musical_piece id')
-        assert.isAbove(singlePerformance.musical_piece_1.id!, 0, ' Expected musical piece id positive integer')
+        assert.isAbove(singlePerformance.musical_piece_1.id, 0, ' Expected musical piece id positive integer')
         assert.equal(singlePerformance.accompanist?.full_name,'Zhou Zhi','Expected accompanist ')
         assert.equal(singlePerformance.performer.full_name,'Nymphodoros Sýkorová','Expected performer name')
         assert.equal(singlePerformance.performer.email,'QFnl@example.com','Expected performer email')

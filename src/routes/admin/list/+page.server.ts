@@ -1,6 +1,5 @@
-import {redirect} from "@sveltejs/kit";
 import {queryPerformances} from "$lib/server/db";
-import {formatFieldNames, pafe_series, PerformanceFilterInterface} from "$lib/server/common";
+import { formatFieldNames, pafe_series, type PerformanceFilterInterface } from '$lib/server/common';
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')

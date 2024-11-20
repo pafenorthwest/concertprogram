@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import {PerformanceInterface, selectInstrument} from "$lib/server/common";
+import { type PerformanceInterface, selectInstrument } from '$lib/server/common';
 import {insertPerformance} from "$lib/server/db";
 
 export async function POST({ request }) {
@@ -49,16 +49,16 @@ export async function POST({ request }) {
             const performer_id = 1
             // get musical_peice id
             const musical_piece_id = 0
-            const rowCount = await insertPerformance(performance, performer_id, musical_piece_id,
+            const result = await insertPerformance(performance, performer_id, musical_piece_id,
                 order, concert_time,
                 warm_up_room_name, warm_up_room_start, warm_up_room_end)
-            if (rowCount > 0) {
+            if (result.rowCount != null && result.rowCount > 0) {
                 return json( {status: 200, body: {message: 'Update successful'}});
             } else {
                 return json({status: 500, body: {message: 'Update failed'}});
             }
         }
-    } catch (error) {
+    } catch {
         return json({status: 'error', message: 'Failed to process the request'}, {status: 500});
     }
 }

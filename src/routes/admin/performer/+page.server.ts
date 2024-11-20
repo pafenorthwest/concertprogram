@@ -1,10 +1,14 @@
-import {redirect} from "@sveltejs/kit";
-import pg from 'pg';
+//import pg from 'pg';
 import {deleteById, queryTable} from "$lib/server/db";
-import {formatFieldNames, PerformerInterface, selectGrade, selectInstrument} from '$lib/server/common.ts'
+import {
+	formatFieldNames,
+	type PerformerInterface,
+	selectGrade,
+	selectInstrument
+} from '$lib/server/common';
 import {createPerformer} from "$lib/server/performer";
 
-const { QueryArrayResult } = pg;
+//const { QueryArrayResult } = pg;
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')

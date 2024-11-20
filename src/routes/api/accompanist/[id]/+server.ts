@@ -1,4 +1,4 @@
-import {AccompanistInterface} from "$lib/server/common";
+import type { AccompanistInterface } from '$lib/server/common';
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 
@@ -9,7 +9,7 @@ export async function GET({params, request}) {
             return json({status: 'error', message: 'Not Found'}, {status: 404});
         }
         return json(res.rows);
-    } catch (error) {
+    } catch  {
         return json({status: 'error', message: 'Failed to process the request'}, {status: 500});
     }
 }
@@ -31,7 +31,7 @@ export async function PUT({params, request}) {
                 return json({id: params.id}, {status: 500, body: {message: 'Update failed'}});
             }
         }
-    } catch (error) {
+    } catch  {
         return json({status: 'error', message: 'Failed to process the request'}, {status: 500});
     }
 }

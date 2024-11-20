@@ -1,4 +1,4 @@
-import {ComposerInterface} from "$lib/server/common";
+import type { ComposerInterface } from '$lib/server/common';
 import {insertTable} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 
@@ -23,7 +23,7 @@ export async function POST({params, request}) {
                 return json( {status: 500, body: {message: 'Update failed'}});
             }
         }
-    } catch (error) {
+    } catch  {
         return json({status: 'error', message: 'Failed to process the request'}, {status: 500});
     }
 }

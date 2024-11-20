@@ -1,8 +1,7 @@
-import {error, json, redirect} from "@sveltejs/kit";
 import pg from 'pg';
 const { QueryArrayResult } = pg;
 import {queryTable, deleteById, insertTable} from "$lib/server/db";
-import {MusicalPieceInterface, formatFieldNames} from '$lib/server/common.ts'
+import { type MusicalPieceInterface, formatFieldNames } from '$lib/server/common.ts';
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')
