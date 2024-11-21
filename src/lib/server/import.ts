@@ -13,6 +13,12 @@ import {
     selectGrade,
     selectInstrument
 } from "$lib/server/common";
+import {
+	PerformanceError,
+	PerformerError,
+	ComposerError,
+	MusicalPieceError, GradeError, InstrumentError
+} from "$lib/server/customExceptions";
 import Papa from 'papaparse';
 import {
 	insertTable,
@@ -58,7 +64,7 @@ export class Performance {
 			if (parsedMusic.composers != null && parsedMusic.composers.length > 0) {
 				this.composer_1 = await this.processComposer(parsedMusic.composers[0]);
 			} else {
-				throw new Error('Unable to process composer for first musical piece');
+				throw new ComposerError('Unable to process composer for first musical piece');
 			}
 			if (this.composer_1?.id != null && parsedMusic.titleWithoutMovement != null) {
 				this.musical_piece_1 = await this.processMusicalPiece(
@@ -67,7 +73,7 @@ export class Performance {
 					this.composer_1.id
 				);
 			} else {
-				throw new Error('Returned null when parsing musical title');
+				throw new MusicalPieceError('Returned null when parsing musical title');
 			}
 			// last part add the performance
 			// added performance pieces and the performance
@@ -76,7 +82,7 @@ export class Performance {
 				accompanist_id = this.accompanist?.id;
 			}
 			if (this.musical_piece_1.id == null) {
-				throw new Error('Invalid musical piece id, id can not be null');
+				throw new MusicalPieceError('Invalid musical piece id, id can not be null');
 			}
 
       // set a default for concert series if not defined
@@ -92,7 +98,7 @@ export class Performance {
 				data.concert_series
 			);
 		} else {
-			throw new Error('Unable to process value for musical piece 1');
+			throw new MusicalPieceError('Unable to process value for musical piece 1');
 		}
 
 		// cont process musical pieces
@@ -118,7 +124,7 @@ export class Performance {
 				accompanist_id = this.accompanist?.id;
 			}
 			if (this.musical_piece_2 == null || this.musical_piece_2?.id == null) {
-				throw new Error('Invalid musical piece id, id can not be null');
+				throw new MusicalPieceError('Invalid musical piece id, id can not be null');
 			}
 			this.performance = await this.processPerformance(
 				this.performer,
@@ -219,7 +225,7 @@ export class Performance {
 		const grade: Grade = this.processGradeLevel(class_name);
 		let normalized_instrument: Instrument | null = selectInstrument(instrument);
 		if (normalized_instrument == null) {
-			throw new Error(`Can not parse instrument ${instrument} from performer ${full_name}`);
+			throw new PerformerError(`Can not parse instrument ${instrument} from performer ${full_name}`);
 		}
 
 		const res = await searchPerformer(full_name, email, normalized_instrument);
@@ -237,16 +243,16 @@ export class Performance {
 				importPerformer.id = new_id;
 				return importPerformer;
 			} else {
-				throw new Error('Unable to import new performer');
+				throw new PerformanceError('Unable to import new performer');
 			}
 		}
 		const normalized_grade: Grade | null = selectGrade(res.rows[0].grade);
 		if (normalized_grade == null) {
-			throw new Error('Grade can not be null for performer');
+			throw new GradeError('Grade can not be null for performer');
 		}
 		normalized_instrument = selectInstrument(res.rows[0].instrument);
 		if (normalized_instrument == null) {
-			throw new Error('Instrument can not be null for performer');
+			throw new InstrumentError('Instrument can not be null for performer');
 		}
 		return {
 			id: res.rows[0].id,
@@ -279,7 +285,7 @@ export class Performance {
 				musical_piece.id = result.rows[0].id;
 				return musical_piece;
 			} else {
-				throw new Error('Unable to create Musical Piece');
+				throw new MusicalPieceError('Unable to create Musical Piece');
 			}
 		}
 
@@ -301,10 +307,10 @@ export class Performance {
 		concert_series: string
 	): Promise<PerformanceInterface> {
 		if (performer?.id == null) {
-			throw new Error("Can't process Performance with null performer");
+			throw new PerformerError("Can't process Performance with null performer");
 		}
 		if (musical_piece.id == null) {
-			throw new Error("Can't process Performance with null musical piece");
+			throw new MusicalPieceError("Can't process Performance with null musical piece");
 		}
 
 		const res = await searchPerformanceByPerformer(performer.id, concert_series, pafe_series());
@@ -380,8 +386,15 @@ export class Performance {
 		}
 	}
 }
+
+interface FailedRecord {
+	reason: string;
+	data: ImportPerformanceInterface;
+}
+
 export class DataParser {
     public performances: Performance[] = [];
+	public failedImports: FailedRecord[] = [];
 
     async initialize(data: string, type: "CSV" | "JSON", concert_series: string) {
         let parsedData = []
@@ -392,22 +405,31 @@ export class DataParser {
         } else {
             throw new Error("Invalid data type. Expected 'CSV' or 'JSON'.");
         }
-        this.performances =  await Promise.all(parsedData.map(async record => {
-            const imported: ImportPerformanceInterface = {
-                class_name: record.class_name,
-                performer: record.performer,
-                email: record.email,
-                phone: record.phone,
-                accompanist: record.accompanist,
-                instrument: record.instrument,
-                piece_1: record.piece_1,
-                piece_2: record.piece_2,
-                concert_series: record.concert_series? record.concert_series : concert_series,
-            }
-            const singlePerformance = new Performance()
-            await singlePerformance.initialize(imported)
-            return singlePerformance
-        }))
+
+		for (const record of parsedData) {
+			const imported: ImportPerformanceInterface = {
+				class_name: record.class_name,
+				performer: record.performer,
+				email: record.email,
+				phone: record.phone,
+				accompanist: record.accompanist,
+				instrument: record.instrument,
+				piece_1: record.piece_1,
+				piece_2: record.piece_2,
+				concert_series: record.concert_series? record.concert_series : concert_series,
+			}
+			const singlePerformance = new Performance()
+			try {
+				await singlePerformance.initialize(imported)
+				this.performances.push(singlePerformance)
+			} catch (error) {
+				const failedRecord: FailedRecord = {
+					reason: (error as Error).message,
+					data: imported
+				}
+				this.failedImports.push(failedRecord);
+			}
+		}
     }
 
     private parseCSV(data: string): ImportPerformanceInterface[] {

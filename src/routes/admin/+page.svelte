@@ -1,10 +1,9 @@
-<script>
+<script lang="ts">
     import {enhance} from '$app/forms';
 
     let disableStatus = false;
     export let data;
-    let editable = false;
-    let editing = {};
+    export let formErrors;
     let showHelp = false;
 
     // Boolean variable to track which form to display
@@ -17,6 +16,10 @@
     function toggleHelp(event) {
         event.preventDefault()
         showHelp = !showHelp;
+    }
+    // connect return from form data
+    function handleFormResponse({ result }: { result: any }) {
+        formErrors = result;
     }
 </script>
 
@@ -108,5 +111,23 @@
                 <button type="submit" disabled="{disableStatus}">Submit</button>
             </div>
         </form>
+        {#if formErrors?.failedEntries.length > 0}
+            <div class="help-bar">Has Form Errors </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Message</th><th>Record</th>
+                    </tr>
+                </thead>
+                <tbody>
+            {#each formErrors.failedEntries as failures}
+                <tr>
+                    <td>{failures.reason}</td>
+                    <td>{failures.imported.performer}</td>
+                </tr>
+            {/each}
+                </tbody>
+            </table>
+        {/if}
     {/if}
 {/if}

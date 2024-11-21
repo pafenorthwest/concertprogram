@@ -1,6 +1,7 @@
-import {describe, it, assert} from 'vitest';
+import {describe, it, assert, expect} from 'vitest';
 import {Performance} from "$lib/server/import";
-import { type ImportPerformance, parseMusicalPiece } from '$lib/server/common';
+import {type ImportPerformanceInterface, parseMusicalPiece} from '$lib/server/common';
+import {GradeError} from "$lib/server/customExceptions";
 
 describe('Test Import Code', () => {
     it("should parse music titles with movements", async () => {
@@ -70,7 +71,7 @@ describe('Test Import Code', () => {
         })
     })
     it("should insert single performance", async () => {
-        const imported: ImportPerformance = {
+        const imported: ImportPerformanceInterface = {
             class_name: 'CC.P-4.A',
             performer: 'Nymphodoros Sýkorová',
             email: 'QFnl@example.com',
@@ -92,5 +93,26 @@ describe('Test Import Code', () => {
         assert.equal(singlePerformance.performer.email,'QFnl@example.com','Expected performer email')
         assert.equal(singlePerformance.composer_1.full_name,"Johann Christian Bach",'Expected composer')
 
+    });
+    it("should fail parsing grade", async () => {
+        const imported: ImportPerformanceInterface = {
+            class_name: 'XXXX?????',
+            performer: 'Nymphodoros Sýkorová',
+            email: 'QFnl@example.com',
+            phone: '999-555-4444',
+            accompanist: 'Zhi, Zhou',
+            instrument: 'Cello',
+            piece_1: 'J.C.Bach Concerto in C minor 3rd movement by Johann Christian Bach',
+            piece_2: null,
+            concert_series: 'Eastside'
+        }
+
+        const singlePerformance: Performance = new Performance()
+        try {
+            await singlePerformance.initialize(imported)
+        } catch (e) {
+            expect(e).to.be.an.instanceof(GradeError)
+        }
+        await singlePerformance.delete()
     });
 });

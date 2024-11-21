@@ -15,7 +15,12 @@ export const actions = {
             const csvData = formData.get('bigtext')
             const concertSeries = formData.get('concert-series')
             const importedData = new DataParser()
-            await importedData.initialize(csvData, "CSV", concertSeries)
+            if ( csvData != null && concertSeries != null ) {
+                await importedData.initialize(csvData.toString(), "CSV", concertSeries.toString())
+                if (importedData.failedImports.length > 0) {
+                    return importedData.failedImports;
+                }
+            }
         } else {
             const imported: ImportPerformanceInterface = {
                 class_name: formData.get('class'),
