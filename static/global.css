@@ -45,6 +45,10 @@ h3 {
     font-size: 1.2em;
     margin: 0;
 }
+h3.error-message {
+    font-size: 1.8em;
+    color: var(--error-color);
+}
 p {
     display: inline;
 }
@@ -223,12 +227,34 @@ li p {
 .form-group label i {
     font-size: .75em;
 }
+.base-icon {
+    display: inline-block;
+    opacity: 1; /* Fully visible */
+    visibility: visible; /* Element is interactive */
+    font-size: 1.8em;
+    padding: 1em 0 0 0; /* top padding */
+    margin: 0 0 0 1em; /* left margin */
+    font-weight: bold;
+}
+#error-icon p {
+    color: var(--error-color);
+}
+#success-icon p {
+    color: var(--allok-color);
+}
+.hidden {
+    opacity: 0; /* Fades out */
+    visibility: hidden; /* Prevents interaction after fading */
+}
 .table {
     width: 100%;
     color: var(--text-color);
     vertical-align: top;
     margin-right: var(--gutter);
     margin-left: var(--gutter);
+}
+.error-table {
+    color: var(--error-color);
 }
 .table > thead {
     vertical-align: bottom;
@@ -276,6 +302,9 @@ li p {
     border-bottom: 1px solid var(--separator-color);
     font-weight: 400;
     font-size: 0.875em;
+}
+.error-table td {
+    text-align: left;
 }
 .table > tbody > tr:last-child > td { border-bottom: 0; }
 

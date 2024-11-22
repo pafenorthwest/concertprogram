@@ -10,6 +10,7 @@
     {#if $page.status === 404}
         <h2>Not found!</h2>
     {:else}
-        <h2>{$page.error?.message || 'Something Went Wrong'}</h2>
+        <h2>Internal Error</h2>
+        <h3 class="error-message">{$page.error?.message || 'Something Went Wrong'}</h3>
     {/if}
 </div>

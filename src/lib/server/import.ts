@@ -58,9 +58,6 @@ export class Performance {
 			// process music piece one first
 			const parsedMusic = parseMusicalPiece(data.piece_1);
 			// process composers: music piece one
-			console.log(
-				`return from parse musical piece ${parsedMusic.titleWithoutMovement} ${parsedMusic.movements} ${parsedMusic.composers}`
-			);
 			if (parsedMusic.composers != null && parsedMusic.composers.length > 0) {
 				this.composer_1 = await this.processComposer(parsedMusic.composers[0]);
 			} else {
@@ -102,7 +99,7 @@ export class Performance {
 		}
 
 		// cont process musical pieces
-		if (data.piece_2 != null) {
+		if (data.piece_2 != null && data.piece_2.trim().length > 0) {
 			const parsedMusic = parseMusicalPiece(data.piece_2);
 			// process composers: music piece two
 			if (parsedMusic.composers != null && parsedMusic.composers.length > 0) {
@@ -138,7 +135,10 @@ export class Performance {
 	// searches for matching composer by name returning their id
 	// otherwise creates new composer entry
 	private async processComposer(composer_name: string): Promise<ComposerInterface> {
-		const res = await searchComposer(composer_name);
+		// normalize the string first remove all the Diacritic vowels
+		composer_name = composer_name.normalize('NFD').replace(/\p{Diacritic}/gu, '')
+		composer_name.replace(/Composer: /i, '')
+		const res = await searchComposer(composer_name)
 		if (res.rowCount == null || res.rowCount < 1) {
 			const composer: ComposerInterface = {
 				id: null,
@@ -194,12 +194,12 @@ export class Performance {
 		};
 	}
 
-	private processGradeLevel(class_name: string): Grade {
+	private processGradeLevel(class_name: string): Grade | undefined {
 		const parts = class_name.split('.');
 		if (parts.length > 1) {
 			return selectGrade(parts[1]) ? selectGrade(parts[1])! : Grade.Grade6to8;
 		}
-		return Grade.Grade6to8;
+		return undefined;
 	}
 
 	private reverseCommaSeparated(input: string): string {
@@ -222,7 +222,10 @@ export class Performance {
 		email: string | null,
 		phone: string | null
 	): Promise<PerformerInterface> {
-		const grade: Grade = this.processGradeLevel(class_name);
+		const grade: Grade | undefined = this.processGradeLevel(class_name);
+		if ( grade === undefined ) {
+			throw new GradeError(`Can't not parse class ${class_name} for ${full_name}`);
+		}
 		let normalized_instrument: Instrument | null = selectInstrument(instrument);
 		if (normalized_instrument == null) {
 			throw new PerformerError(`Can not parse instrument ${instrument} from performer ${full_name}`);
@@ -394,7 +397,7 @@ interface FailedRecord {
 
 export class DataParser {
     public performances: Performance[] = [];
-	public failedImports: FailedRecord[] = [];
+	  public failedImports: FailedRecord[] = [];
 
     async initialize(data: string, type: "CSV" | "JSON", concert_series: string) {
         let parsedData = []
@@ -408,7 +411,7 @@ export class DataParser {
 
 		for (const record of parsedData) {
 			const imported: ImportPerformanceInterface = {
-				class_name: record.class_name,
+				class_name: record.class,
 				performer: record.performer,
 				email: record.email,
 				phone: record.phone,

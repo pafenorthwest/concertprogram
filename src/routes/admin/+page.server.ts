@@ -1,5 +1,6 @@
 import {DataParser, Performance} from "$lib/server/import";
 import type { ImportPerformanceInterface } from '$lib/server/common';
+import { fail } from '@sveltejs/kit';
 
 export async function load({ cookies }) {
     const pafeAuth = cookies.get('pafe_auth')
@@ -11,14 +12,14 @@ export async function load({ cookies }) {
 export const actions = {
     add: async ({request}) => {
         const formData = await request.formData();
-        if (formData.has('bigext')) {
+        if (formData.has('bigtext')) {
             const csvData = formData.get('bigtext')
             const concertSeries = formData.get('concert-series')
             const importedData = new DataParser()
             if ( csvData != null && concertSeries != null ) {
                 await importedData.initialize(csvData.toString(), "CSV", concertSeries.toString())
                 if (importedData.failedImports.length > 0) {
-                    return importedData.failedImports;
+                    return fail(500, { error: JSON.stringify(importedData.failedImports) });
                 }
             }
         } else {
@@ -34,7 +35,11 @@ export const actions = {
                 concert_series: formData.get('concert-series')
             }
             const singlePerformance: Performance = new Performance()
-            await singlePerformance.initialize(imported)
+            try {
+                await singlePerformance.initialize(imported)
+            } catch (e) {
+                return fail(500, { error: (e as Error).message });
+            }
         }
     },
 };

@@ -75,6 +75,8 @@ export enum Grade {
 
 export function selectGrade(input: string): Grade | null {
     input = input.toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/(nd|rd|th)/g,"");
     let returnGrade: Grade | null = null
 
     switch(input) {
@@ -281,7 +283,7 @@ export function parseMusicalPiece(piece_performed: string): {
         throw new Error('Invalid musical piece, no composer string')
     } else {
         // if composers split and trim
-        composers = titleComposers[1].split(',').map(item => item.trim());
+        composers = titleComposers[1].split(/(,|\sand\s)/).map(item => item.trim());
     }
 
     // Second extract the movement from the remaining string
@@ -298,7 +300,7 @@ export function parseMusicalPiece(piece_performed: string): {
     }
     // If no match is found, return the title without modifications
     return {
-        titleWithoutMovement: piece_performed.trim(),
+        titleWithoutMovement: titleComposers[0],
         movements: null,
         composers: composers
     };

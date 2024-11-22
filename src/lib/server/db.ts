@@ -89,47 +89,47 @@ export async function insertTable(table: string, data: ComposerInterface | Accom
         switch (table) {
             case 'composer':
                 inputCols = "(printed_name, full_name, years_active)"
-                inputVals = "('"+data.printed_name+"', '"+
-                    data.full_name+"', '"+data.years_active+"')"
+                inputVals = "('"+data.printed_name.replaceAll("'","''").trim()+"', '"+
+                    data.full_name.replaceAll("'","''").trim()+"', '"+data.years_active+"')"
                 // add alias
                 if (isNonEmptyString(data.alias)) {
                     inputCols = inputCols.slice(0, -1) + ", alias)"
-                    inputVals = inputVals.slice(0, -1) +", '"+data.alias+"')"
+                    inputVals = inputVals.slice(0, -1) +", '"+data.alias.replaceAll("'","''").trim()+"')"
                 }
                 // return id
                 break;
             case 'accompanist':
                 inputCols = "(full_name)"
-                inputVals = "('"+data.full_name+"')"
+                inputVals = "('"+data.full_name.replaceAll("'","''").trim()+"')"
                 // return id
                 break;
             case 'performer':
                 inputCols = "(full_name, grade, instrument)"
                 inputVals = "('"+
-                    data.full_name+"', '"+
+                    data.full_name.replaceAll("'","''").trim()+"', '"+
                     data.grade+"', '"+
                     data.instrument+
                     "')"
                 // add email
-                if (isNonEmptyString(data.email)) {
+                if (isNonEmptyString(data.email.replaceAll("'","''").trim())) {
                     inputCols = inputCols.slice(0, -1) + ", email)"
-                    inputVals = inputVals.slice(0, -1) +", '"+data.email+"')"
+                    inputVals = inputVals.slice(0, -1) +", '"+data.email.replaceAll("'","''").trim()+"')"
                 }
                 // add phone
-                if (isNonEmptyString(data.phone)) {
+                if (isNonEmptyString(data.phone.replaceAll("'","''").trim())) {
                     inputCols = inputCols.slice(0, -1) + ", phone)"
-                    inputVals = inputVals.slice(0, -1) +", '"+data.phone+"')"
+                    inputVals = inputVals.slice(0, -1) +", '"+data.phone.replaceAll("'","''").trim()+"')"
                 }
                 // return id
                 break;
             case 'musical_piece':
                 inputCols = "(printed_name, first_composer_id)"
-                inputVals = "('"+data.printed_name+"', '"+
+                inputVals = "('"+data.printed_name.replaceAll("'","''").trim()+"', '"+
                     data.first_composer_id+"')"
                 // add movements
                 if (isNonEmptyString(data.all_movements)) {
                     inputCols = inputCols.slice(0, -1) + ", all_movements)"
-                    inputVals = inputVals.slice(0, -1) +", '"+data.all_movements+"')"
+                    inputVals = inputVals.slice(0, -1) +", '"+data.all_movements.replaceAll("'","''").trim()+"')"
                 }
                 // add another composer
                 if (isNonEmptyString(data.second_composer_id)) {
@@ -148,6 +148,7 @@ export async function insertTable(table: string, data: ComposerInterface | Accom
         if (return_id) {
             insertSQL = insertSQL + " RETURNING id"
         }
+        console.log(insertSQL);
 
         const result = await connection.query(insertSQL)
 
@@ -171,8 +172,6 @@ export async function insertPerformance(data: PerformanceInterface,
                                         warm_up_room_end: Date | null) {
     try {
         const connection = await pool.connect()
-
-        console.log("processing insert for performance");
 
         let cols = "performer_id, concert_series, pafe_series, instrument"
         let vals = performer_id+", '"+data.concert_series+"', "+data.pafe_series+", '"+data.instrument+"'"
@@ -210,7 +209,6 @@ export async function insertPerformance(data: PerformanceInterface,
         vals = "("+vals+")"
 
         const insertSQL= "INSERT INTO PERFORMANCE " + cols + " VALUES " + vals + "RETURNING id";
-        console.log(insertSQL)
         const result = await connection.query(insertSQL)
 
         // Release the connection back to the pool
@@ -232,8 +230,6 @@ export async function updatePerformance(data: PerformanceInterface,
                                         warm_up_room_end: Date | null) {
     try {
         const connection = await pool.connect()
-
-        console.log("processing update for performance");
 
         let setCols = "performer_id = "+performer_id+
             ", concert_series = '"+data.concert_series+
@@ -263,7 +259,6 @@ export async function updatePerformance(data: PerformanceInterface,
         }
 
         const updateSQL= "UPDATE PERFORMANCE SET "+setCols+" WHERE performance.id = "+data.id;
-        console.log(updateSQL)
         const result = await connection.query(updateSQL)
 
         // Release the connection back to the pool
@@ -331,10 +326,10 @@ export async function updateById(table: string, data: ComposerInterface | Accomp
                 ) {
                     return null
                 }
-                setCols = "printed_name = '"+data.printed_name+"'"
+                setCols = "printed_name = '"+data.printed_name.replaceAll("'","''").trim()+"'"
                 setCols = setCols + ", first_composer_id = '"+data.first_composer_id+"'"
                 if (isNonEmptyString(data.all_movements)) {
-                    setCols = setCols + ", all_movements = '" + data.all_movements + "' "
+                    setCols = setCols + ", all_movements = '" + data.all_movements.replaceAll("'","''").trim() + "' "
                 }
                 if (isNonEmptyString(data.second_composer_id)) {
                     setCols = setCols + ", email = '" + data.second_composer_id + "' "
@@ -370,7 +365,6 @@ export async function insertPerformancePieceMap(performancePieceMap: Performance
             insertSQL = insertSQL + "(performance_id, musical_piece_id) "
             insertSQL = insertSQL + "VALUES ("+performancePieceMap.performance_id+", "+performancePieceMap.musical_piece_id+" )"
         }
-        console.log(insertSQL);
         const result = connection.query(insertSQL);
 
         // Release the connection back to the pool
@@ -554,7 +548,6 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
         }
         queryFilter = queryFilter + "\n";
 
-        console.log('SELECT '+fields+' FROM performance'+joins+queryFilter+order)
         const result = connection.query(
             'SELECT '+fields+' FROM performance'+joins+queryFilter+order
         );
@@ -638,7 +631,8 @@ export async function searchMusicalPiece(printed_name: string, first_composer_id
 
         const searchSQL = "SELECT id, printed_name, first_composer_id, all_movements, second_composer_id, third_composer_id " +
             "FROM musical_piece " +
-            "WHERE LOWER(printed_name) = '" + printed_name.toLowerCase() + "' AND first_composer_id = " + first_composer_id
+            "WHERE LOWER(printed_name) = '" + printed_name.toLowerCase().replaceAll("'","''").trim() +
+            "' AND first_composer_id = " + first_composer_id
 
         const result = connection.query(searchSQL);
 
