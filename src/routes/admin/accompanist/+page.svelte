@@ -17,8 +17,8 @@
             if (!response.ok) {
                 throw new Error('Failed to save accompanist');
             }
-            const index = accompanist.findIndex(c => c.id === accompanist.id);
-            accompanist[index] = {...accompanist};
+            const index = data.accompanist.findIndex(c => c.id === accompanist.id);
+            data.accompanist[index] = {...accompanist};
             editing = {};
         } catch (error) {
             console.error('Error saving accompanist:', error);

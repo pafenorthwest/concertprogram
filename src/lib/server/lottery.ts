@@ -16,8 +16,8 @@ export async function createLottery(performerId: number): Promise<boolean> {
             pafe_series(),
             ticket
         )
-        return result.rowCount != null || result.rowCount > 0;
-    } catch (e) {
+        return (result.rowCount != null && result.rowCount > 0)
+    } catch {
         return false
     }
 

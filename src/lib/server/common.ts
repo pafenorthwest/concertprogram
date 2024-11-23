@@ -258,6 +258,9 @@ export function decimalToBase34(num: number): string {
         base34 = BASE34_CHARACTERS[remainder] + base34;
         num = Math.floor(num / 34);
     }
+    if (base34.length == 3) {
+        base34 = 'O' + base34;
+    }
     return base34;
 }
 

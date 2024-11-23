@@ -29,14 +29,16 @@ export async function PUT({params, request}) {
             second_composer_id: second_composer_id,
             third_composer_id: third_composer_id
         }
-
+        console.log(`Starting musical piece ${musicalPiece.printed_name} ${musicalPiece.first_composer_id} ${musicalPiece.all_movements} for ${musicalPiece.id}`);
         if (!musicalPiece.printed_name || !musicalPiece.first_composer_id) {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
+            console.log("sending update to DB")
             const rowCount = await updateById('musical_piece', musicalPiece)
             if (rowCount != null && rowCount > 0) {
                 return json( {id: params.id}, {status: 200, body: {message: 'Update successful'}});
             } else {
+                console.log("bad row count from musical piece updatedb")
                 return json({id: params.id}, {status: 500, body: {message: 'Update failed'}});
             }
         }

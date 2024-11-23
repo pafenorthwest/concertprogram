@@ -8,7 +8,7 @@
 
     async function handleSave(musicalPiece) {
         try {
-            const response = await fetch(`/api/performer/${musicalPiece.id}`, {
+            const response = await fetch(`/api/musicalpiece/${musicalPiece.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -18,8 +18,8 @@
             if (!response.ok) {
                 throw new Error('Failed to save Musical Piece');
             }
-            const index = musicalPieces.findIndex(c => c.id === musicalPiece.id);
-            musicalPieces[index] = {...musicalPiece};
+            const index = data.musicalPieces.findIndex(c => c.id === musicalPiece.id);
+            data.musicalPieces[index] = {...musicalPiece};
             editing = {};
         } catch (error) {
             console.error('Error saving Musical Piece:', error);

@@ -148,7 +148,6 @@ export async function insertTable(table: string, data: ComposerInterface | Accom
         if (return_id) {
             insertSQL = insertSQL + " RETURNING id"
         }
-        console.log(insertSQL);
 
         const result = await connection.query(insertSQL)
 
@@ -321,8 +320,8 @@ export async function updateById(table: string, data: ComposerInterface | Accomp
                 break;
             case 'musical_piece':
                 // don't wipe out data
-                if (! (isNonEmptyString(data.printed_name) &&
-                    isNonEmptyString(data.first_composer_id))
+                if (isNonEmptyString(data.printed_name) &&
+                    isNonEmptyString(data.first_composer_id)
                 ) {
                     return null
                 }
@@ -341,6 +340,7 @@ export async function updateById(table: string, data: ComposerInterface | Accomp
         }
 
         const updateSQL="UPDATE "+table+" SET "+setCols+" WHERE id="+data.id
+        console.log(`updateSQL: ${updateSQL}`)
         const result = await connection.query(updateSQL)
 
         // Release the connection back to the pool

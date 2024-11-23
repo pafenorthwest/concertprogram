@@ -86,13 +86,14 @@ describe('Test Import Code', () => {
         await singlePerformance.initialize(imported)
         await singlePerformance.delete()
 
+        assert.isDefined(singlePerformance.musical_piece_1,'Expected musical piece to be defined')
         assert.isNotNull(singlePerformance.musical_piece_1.id, 'Expected non null musical_piece id')
         assert.isAbove(singlePerformance.musical_piece_1.id, 0, ' Expected musical piece id positive integer')
         assert.equal(singlePerformance.accompanist?.full_name,'Zhou Zhi','Expected accompanist ')
         assert.equal(singlePerformance.performer.full_name,'Nymphodoros Sýkorová','Expected performer name')
         assert.equal(singlePerformance.performer.email,'QFnl@example.com','Expected performer email')
+        assert.isDefined(singlePerformance.composer_1,'Expected first composer to be defined')
         assert.equal(singlePerformance.composer_1.full_name,"Johann Christian Bach",'Expected composer')
-
     });
     it("should fail parsing grade", async () => {
         const imported: ImportPerformanceInterface = {
