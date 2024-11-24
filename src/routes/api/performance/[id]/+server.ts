@@ -15,10 +15,6 @@ export async function GET({params, request}) {
     }
 }
 export async function PUT({params, request}) {
-    // Get the Authorization header
-    if (!isAuthorized(request.headers.get('Authorization'))) {
-        return new Response('Unauthorized', { status: 401 });
-    }
     try {
         // the following fields are often not included
         // order, concert_time, warm_up_room_name, warm_up_room_start, warm_up_room_name

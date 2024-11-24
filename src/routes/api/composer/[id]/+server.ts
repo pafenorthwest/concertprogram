@@ -1,6 +1,7 @@
 import type { ComposerInterface } from '$lib/server/common';
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
+import { isAuthorized } from '$lib/server/apiAuth';
 
 export async function GET({params, request}) {
     try {
@@ -40,6 +41,11 @@ export async function PUT({params, request}) {
 }
 
 export async function DELETE({params, request}){
+
+    if (!isAuthorized(request.headers.get('Authorization'))) {
+        return new Response('Unauthorized', { status: 401 });
+    }
+
     const rowCount = await deleteById('composer', params.id);
 
     if (rowCount != null && rowCount > 0) {

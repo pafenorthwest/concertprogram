@@ -55,7 +55,7 @@ export async function POST({ request }) {
         }
 
         if (!performance.performer_name || !performance.musical_piece || !performance.concert_series) {
-            return {status: 400, body: {message: 'Missing Field, Try Again'}}
+            return json({status: 400, body: {message: 'Missing Field, Try Again'}})
         } else {
             // get performer id
             const performer_id = 1
@@ -75,13 +75,3 @@ export async function POST({ request }) {
     }
 }
 
-export const OPTIONS = async () => {
-    // Handle preflight requests for CORS
-    return new Response(null, {
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST',
-            'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-        }
-    });
-}

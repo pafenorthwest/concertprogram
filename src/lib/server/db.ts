@@ -1,15 +1,17 @@
 import pkg from 'pg';
 const {Pool} = pkg;
 import {db_user, db_pass, db_name, db_host, db_port, db_ssl} from '$env/static/private';
-import type {
-    AccompanistInterface,
-    ComposerInterface,
-    MusicalPieceInterface,
-    PerformerInterface,
-    PerformanceInterface,
-    LotteryInterface,
-    PerformanceFilterInterface, PerformancePieceInterface
-} from "$lib/server/common";
+import {
+    type AccompanistInterface,
+    type ComposerInterface,
+    type MusicalPieceInterface,
+    type PerformerInterface,
+    type PerformanceInterface,
+    type LotteryInterface,
+    type PerformanceFilterInterface,
+    type PerformancePieceInterface,
+    type PerformerSearchResultsInterface, pafe_series, selectGrade
+} from '$lib/server/common';
 import {isNonEmptyString} from "$lib/server/common";
 
 const pool = new Pool({
@@ -56,6 +58,71 @@ export async function queryTable(table: string, id?: number) {
         connection.release();
 
         return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function lookupByCode(code: string): Promise<PerformerSearchResultsInterface | null> {
+    try {
+        const connection = await pool.connect();
+        // order by Concerto comes first followed by EastSide
+        // if you are in the concerto playoff can't also perform in EastSide artists concert
+        const searchQuery = "SELECT performer_lottery.performer_id, performance.concert_series \n" +
+          "FROM performer_lottery JOIN performance ON performance.performer_id = performance.performer_id \n" +
+          "WHERE performer_lottery.lookup_code = '"+code+"' \n" +
+          "  AND performance.pafe_series =" + pafe_series() + " \n" +
+          "  ORDER BY performance.concert_series ASC";
+
+        const dbResult = await connection.query(searchQuery);
+        connection.release()
+
+        if (dbResult.rowCount != null && dbResult.rowCount > 0) {
+            return  {
+                "performer_id": dbResult.rows[0].performer_id,
+                "concert_series": dbResult.rows[0].concert_series
+            }
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function lookupByDetails(performerLastName: string, grade: string, composer: string): Promise<PerformerSearchResultsInterface | null> {
+
+    const gradeSearch = selectGrade(grade)
+
+    try {
+        const connection = await pool.connect();
+        // order by Concerto comes first followed by EastSide
+        // if you are in the concerto playoff can't also perform in EastSide artists concert
+        const searchQuery = "SELECT performer.id, performance.concert_series \n" +
+          "FROM performer \n"+
+          "JOIN performance ON performance.performer_id = performer.id \n" +
+          "JOIN performance_pieces ON performance_pieces.performance_id = performance.id \n" +
+          "JOIN musical_piece ON musical_piece.id = performance_pieces.musical_piece_id \n" +
+          "JOIN composer ON musical_piece.first_composer_id = composer.id \n" +
+          "WHERE performer.full_name like '%"+performerLastName+"' \n" +
+          "  AND (LOWER(composer.full_name) LIKE '%"+composer.toLowerCase()+"' OR LOWER(composer.alias) = '"+composer.toLowerCase()+"') \n" +
+          "  AND performer.grade = '"+gradeSearch+"' \n" +
+          "  AND performance.pafe_series =" + pafe_series() + " \n" +
+          "  ORDER BY performance.concert_series ASC";
+        
+        const dbResult = await connection.query(searchQuery);
+        connection.release()
+
+        if (dbResult.rowCount != null && dbResult.rowCount > 0) {
+            return  {
+                "performer_id": dbResult.rows[0].performer_id,
+                "concert_series": dbResult.rows[0].concert_series
+            }
+        } else {
+            return null;
+        }
     } catch (error) {
         console.error('Error executing query:', error);
         throw error;
@@ -111,12 +178,12 @@ export async function insertTable(table: string, data: ComposerInterface | Accom
                     data.instrument+
                     "')"
                 // add email
-                if (isNonEmptyString(data.email.replaceAll("'","''").trim())) {
+                if (isNonEmptyString(data.email)) {
                     inputCols = inputCols.slice(0, -1) + ", email)"
                     inputVals = inputVals.slice(0, -1) +", '"+data.email.replaceAll("'","''").trim()+"')"
                 }
                 // add phone
-                if (isNonEmptyString(data.phone.replaceAll("'","''").trim())) {
+                if (isNonEmptyString(data.phone)) {
                     inputCols = inputCols.slice(0, -1) + ", phone)"
                     inputVals = inputVals.slice(0, -1) +", '"+data.phone.replaceAll("'","''").trim()+"')"
                 }

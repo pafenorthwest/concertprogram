@@ -19,6 +19,10 @@ export async function GET({params, request}) {
     }
 }
 export async function PUT({params, request}) {
+    const access_control_headers =  {
+        'Access-Control-Allow-Origin': '*', // Allow all hosts
+        'Access-Control-Allow-Methods': 'POST', // Specify allowed methods
+    }
     try {
         const {lottery, base34Lottery} = await request.json();
         const ticket: LotteryInterface = {
@@ -31,7 +35,7 @@ export async function PUT({params, request}) {
         } else {
             const results = await updatePerformerLottery(params.id, pafe_series(), ticket)
             if (results.rowCount != null && results.rowCount > 0) {
-                return json( {id: params.id}, {status: 200, body: {message: 'Update successful'}});
+                return json( {id: params.id}, {status: 200, body: {message: 'Update successful'}, headers: access_control_headers});
             } else {
                 return json({id: params.id}, {status: 500, body: {message: 'Update failed'}});
             }
@@ -42,9 +46,13 @@ export async function PUT({params, request}) {
 }
 
 export async function POST({params, request}) {
+    const access_control_headers =  {
+        'Access-Control-Allow-Origin': '*', // Allow all hosts
+        'Access-Control-Allow-Methods': 'POST', // Specify allowed methods
+    }
     try {
         if (await createLottery(params.id)) {
-            return json({id: params.id}, {status: 200, body: {message: 'Update successful'}});
+            return json({id: params.id}, {status: 200, body: {message: 'Update successful'}, headers: access_control_headers});
         } else {
             return json({id: params.id}, {status: 500, body: {message: 'Update failed'}});
         }

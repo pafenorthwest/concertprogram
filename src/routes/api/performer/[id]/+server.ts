@@ -1,6 +1,7 @@
 import { type PerformerInterface, selectGrade, selectInstrument} from "$lib/server/common";
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
+import { isAuthorized } from '$lib/server/apiAuth';
 
 export async function GET({params, request}) {
     try {
@@ -55,11 +56,16 @@ export async function PUT({params, request}) {
 }
 
 export async function DELETE({params, request}){
+    // Get the Authorization header
+    if (!isAuthorized(request.headers.get('Authorization'))) {
+        return new Response('Unauthorized', { status: 401 });
+    }
+
     const rowCount = await deleteById('performer', params.id);
 
     if (rowCount != null && rowCount > 0) {
-        return { status: 200, body: { message: 'Delete successful' } };
+        return json({ status: 200, body: { message: 'Delete successful' }});
     } else {
-        return { status: 500, body: { message: 'Delete failed' } };
+        return json({ status: 500, body: { message: 'Delete failed' } });
     }
 }

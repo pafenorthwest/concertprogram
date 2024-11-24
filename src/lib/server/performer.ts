@@ -14,7 +14,7 @@ export async function createPerformer(performer: PerformerInterface): Promise<nu
             return performerResult.rows[0].id;
         } else {
             // failed clean up performer row
-            const rowCount = await deleteById("performer", performerResult.rows[0].id)
+            await deleteById("performer", performerResult.rows[0].id)
             return null
         }
     }

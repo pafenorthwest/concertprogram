@@ -12,7 +12,7 @@ export async function POST({request}) {
 
     const access_control_headers =  {
         'Access-Control-Allow-Origin': '*', // Allow all hosts
-          'Access-Control-Allow-Methods': 'POST', // Specify allowed methods
+        'Access-Control-Allow-Methods': 'POST', // Specify allowed methods
     }
 
     try {
@@ -38,15 +38,4 @@ export async function POST({request}) {
           {status: 500, headers: access_control_headers}
         );
     }
-}
-
-export const OPTIONS = async () => {
-    // Handle preflight requests for CORS
-    return new Response(null, {
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST',
-            'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-        }
-    });
 }

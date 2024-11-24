@@ -1,4 +1,4 @@
-<script>
+<script lang=ts>
     import {enhance} from '$app/forms';
 
     let disableStatus = false;
@@ -10,7 +10,7 @@
             const response = await fetch(`/api/accompanist/${accompanist.id}`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(accompanist)
             });

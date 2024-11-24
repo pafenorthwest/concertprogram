@@ -1,16 +1,17 @@
 <svelte:head>
-    <title>Schedule</title>
+    <title>Concert Scheduling</title>
 </svelte:head>
 
-<h2>Select Your Preferred Performance Times</h2>
+<h2>Concert Scheduling</h2>
 <div class="schedule-form">
-    <h3>Ranked Choice Form</h3>
+    <h3>Rank Performance Times</h3>
+    <form id="ranked-choice-form" class="inline-add" method="POST" action="?/add" use:enhance>
     <p>Please rank the following options (1 = most preferred, 4 = least preferred).</p>
 
     <!-- Option 1 -->
     <div class="option">
-      <label for="rank-sat2">Sat May 3rd 4pm:</label>
-      <select name="rank-sat2" id="rank-sat2">
+      <label for="rank-sat-first">Sat May 3rd 4pm:</label>
+      <select name="rank-sat-first" id="rank-sat-first">
         <option value="" selected disabled>Rank</option>
         <option value="1">1</option>
         <option value="2">2</option>
@@ -18,15 +19,15 @@
         <option value="4">4</option>
       </select>
       <label class="non-viable">
-        <input type="checkbox" name="nonviable-sat4" value="not-viable">
+        <input type="checkbox" name="nonviable-sat-first" value="not-viable">
         Mark as Not Available to Attend
       </label>
     </div>
 
     <!-- Option 2 -->
     <div class="option">
-      <label for="rank-sat5">Sat May 3rd 7pm:</label>
-      <select name="rank-sat5" id="rank-sat5">
+      <label for="rank-sat-second">Sat May 3rd 7pm:</label>
+      <select name="rank-sat-second" id="rank-sat-second">
         <option value="" selected disabled>Rank</option>
         <option value="1">1</option>
         <option value="2">2</option>
@@ -34,15 +35,15 @@
         <option value="4">4</option>
       </select>
       <label class="non-viable">
-        <input type="checkbox" name="nonviable-sat7" value="not-viable">
+        <input type="checkbox" name="nonviable-sat-second" value="not-viable">
         Mark as Not Available to Attend
       </label>
     </div>
 
     <!-- Option 3 -->
     <div class="option">
-      <label for="rank-sun2">Sun May 4th 2pm:</label>
-      <select name="rank-sun2" id="rank-sun2">
+      <label for="rank-sun-third">Sun May 4th 2pm:</label>
+      <select name="rank-sun-third" id="rank-sun-third">
         <option value="" selected disabled>Rank</option>
         <option value="1">1</option>
         <option value="2">2</option>
@@ -50,15 +51,15 @@
         <option value="4">4</option>
       </select>
       <label class="non-viable">
-        <input type="checkbox" name="nonviable-sun2" value="not-viable">
+        <input type="checkbox" name="nonviable-sun-third" value="not-viable">
         Mark as Not Available to Attend
       </label>
     </div>
 
     <!-- Option 4 -->
     <div class="option">
-      <label for="rank-sun5">Sun May 4th 5pm:</label>
-      <select name="rank-sun5" id="rank-sun5">
+      <label for="rank-sun-fourth">Sun May 4th 5pm:</label>
+      <select name="rank-sun-fourth" id="rank-sun-fourth">
         <option value="" selected disabled>Rank</option>
         <option value="1">1</option>
         <option value="2">2</option>
@@ -66,7 +67,7 @@
         <option value="4">4</option>
       </select>
       <label class="non-viable">
-        <input type="checkbox" name="nonviable-sun5" value="not-viable">
+        <input type="checkbox" name="nonviable-sun-fourth" value="not-viable">
         Mark as Not Available to Attend
       </label>
     </div>

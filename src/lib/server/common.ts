@@ -212,6 +212,11 @@ export interface ImportPerformanceInterface {
     concert_series: string | null;
 }
 
+export interface PerformerSearchResultsInterface {
+    performer_id: number;
+    concert_series: string;
+}
+
 export function formatFieldNames(input: string): string {
     return input
         .split('_') // Split the string by underscores

@@ -15,10 +15,6 @@ export async function GET({params, request}) {
     }
 }
 export async function PUT({params, request}) {
-    // Get the Authorization header
-    if (!isAuthorized(request.headers.get('Authorization'))) {
-        return new Response('Unauthorized', { status: 401 });
-    }
 
     try {
         const { full_name } = await request.json();

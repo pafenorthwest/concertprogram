@@ -1,8 +1,20 @@
 import { type PerformerInterface, selectGrade, selectInstrument } from '$lib/server/common';
 import {json} from "@sveltejs/kit";
 import {createPerformer} from "$lib/server/performer";
+import { isAuthorized } from '$lib/server/apiAuth';
 
 export async function POST({params, request}) {
+
+    // Get the Authorization header
+    if (!isAuthorized(request.headers.get('Authorization'))) {
+        return new Response('Unauthorized', { status: 401 });
+    }
+
+    const access_control_headers =  {
+        'Access-Control-Allow-Origin': '*', // Allow all hosts
+        'Access-Control-Allow-Methods': 'POST', // Specify allowed methods
+    }
+
     try {
         let { full_name,
             grade,
@@ -31,7 +43,7 @@ export async function POST({params, request}) {
         } else {
             const new_id = await createPerformer(performer)
             if (new_id != null) {
-                return json( {status: 200, body: {message: 'Update successful'}});
+                return json( {status: 200, body: {message: 'Update successful', id: `${new_id}`}, headers: access_control_headers});
             } else {
                 return json({status: 500, body: {message: 'Update failed'}});
             }
