@@ -224,11 +224,35 @@ li p {
     background-color: #999;
     cursor: not-allowed;
 }
+.form-group select {
+    font-size: 1.2em;
+}
 .form-group label i {
     font-size: .75em;
 }
-.base-icon {
+.form-group p {
+    font-size: .75em;
+    color: var(--low-em-color);
+}
+.inline-form input {
+    display: inline;
+}
+.inline-form select {
+    padding: var(--padding);
+}
+input[type="checkbox"] {
+    width: 20px; /* Adjust width */
+}
+.inline-form label {
     display: inline-block;
+    padding: var(--padding)
+}
+.inline-form p {
+    display: inline;
+}
+
+.base-icon {
+    display: none;
     opacity: 1; /* Fully visible */
     visibility: visible; /* Element is interactive */
     font-size: 1.8em;

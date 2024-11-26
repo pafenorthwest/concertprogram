@@ -111,13 +111,13 @@ export async function lookupByDetails(performerLastName: string, grade: string, 
           "  AND performer.grade = '"+gradeSearch+"' \n" +
           "  AND performance.pafe_series =" + pafe_series() + " \n" +
           "  ORDER BY performance.concert_series ASC";
-        
+
         const dbResult = await connection.query(searchQuery);
         connection.release()
 
         if (dbResult.rowCount != null && dbResult.rowCount > 0) {
             return  {
-                "performer_id": dbResult.rows[0].performer_id,
+                "performer_id": dbResult.rows[0].id,
                 "concert_series": dbResult.rows[0].concert_series
             }
         } else {

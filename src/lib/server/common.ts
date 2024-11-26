@@ -314,3 +314,16 @@ export function parseMusicalPiece(piece_performed: string): {
     };
 }
 
+export async function unpackBody(stream: ReadableStream<Uint8Array>): Promise<string> {
+    const reader = stream.getReader();
+    const decoder = new TextDecoder(); // Initialize a TextDecoder for UTF-8 by default
+    let result = '';
+
+    while (reader != undefined) {
+        const { done, value } = await reader.read(); // Read the stream chunk by chunk
+        if (done) break; // Exit the loop if there are no more chunks
+        result += decoder.decode(value, { stream: true }); // Decode and append the chunk
+    }
+    return result
+}
+
