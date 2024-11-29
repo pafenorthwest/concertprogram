@@ -50,6 +50,7 @@ export async function queryTable(table: string, id?: number) {
         } else {
             sort = ' ORDER BY id'
         }
+
         const result = connection.query(
             'SELECT '+fields+' FROM '+table+filter+sort
         );
@@ -64,23 +65,38 @@ export async function queryTable(table: string, id?: number) {
     }
 }
 
-export async function lookupByCode(code: string): Promise<PerformerSearchResultsInterface | null> {
+export async function lookupByDetails(performerLastName: string, grade: string, composer: string): Promise<PerformerSearchResultsInterface | null> {
+
+    const gradeSearch = selectGrade(grade)
+
     try {
         const connection = await pool.connect();
         // order by Concerto comes first followed by EastSide
         // if you are in the concerto playoff can't also perform in EastSide artists concert
-        const searchQuery = "SELECT performer_lottery.performer_id, performance.concert_series \n" +
-          "FROM performer_lottery JOIN performance ON performance.performer_id = performance.performer_id \n" +
-          "WHERE performer_lottery.lookup_code = '"+code+"' \n" +
-          "  AND performance.pafe_series =" + pafe_series() + " \n" +
-          "  ORDER BY performance.concert_series ASC";
+        const searchQuery = "SELECT performer.id, performer.full_name as performer_name, \n" +
+            "performer_lottery.lookup_code as lottery_code, \n"+
+            "musical_piece.printed_name as musical_piece,  performance.concert_series \n" +
+            "FROM performer \n"+
+            "JOIN performance ON performance.performer_id = performer.id \n" +
+            "JOIN performer_lottery on performer.id = performer_lottery.performer_id \n" +
+            "JOIN performance_pieces ON performance_pieces.performance_id = performance.id \n" +
+            "JOIN musical_piece ON musical_piece.id = performance_pieces.musical_piece_id \n" +
+            "JOIN composer ON musical_piece.first_composer_id = composer.id \n" +
+            "WHERE performer.full_name like '%"+performerLastName+"' \n" +
+            "  AND (LOWER(composer.full_name) LIKE '%"+composer.toLowerCase()+"' OR LOWER(composer.alias) = '"+composer.toLowerCase()+"') \n" +
+            "  AND performer.grade = '"+gradeSearch+"' \n" +
+            "  AND performance.pafe_series =" + pafe_series() + " \n" +
+            "  ORDER BY performance.concert_series ASC";
 
         const dbResult = await connection.query(searchQuery);
         connection.release()
 
         if (dbResult.rowCount != null && dbResult.rowCount > 0) {
             return  {
-                "performer_id": dbResult.rows[0].performer_id,
+                "performer_id": dbResult.rows[0].id,
+                "performer_name": dbResult.rows[0].performer_name,
+                "musical_piece": dbResult.rows[0].musical_piece,
+                "lottery_code": dbResult.rows[0].lottery_code,
                 "concert_series": dbResult.rows[0].concert_series
             }
         } else {
@@ -92,25 +108,23 @@ export async function lookupByCode(code: string): Promise<PerformerSearchResults
     }
 }
 
-export async function lookupByDetails(performerLastName: string, grade: string, composer: string): Promise<PerformerSearchResultsInterface | null> {
-
-    const gradeSearch = selectGrade(grade)
+export async function lookupByCode(code: string): Promise<PerformerSearchResultsInterface | null> {
 
     try {
         const connection = await pool.connect();
         // order by Concerto comes first followed by EastSide
         // if you are in the concerto playoff can't also perform in EastSide artists concert
-        const searchQuery = "SELECT performer.id, performance.concert_series \n" +
-          "FROM performer \n"+
-          "JOIN performance ON performance.performer_id = performer.id \n" +
-          "JOIN performance_pieces ON performance_pieces.performance_id = performance.id \n" +
-          "JOIN musical_piece ON musical_piece.id = performance_pieces.musical_piece_id \n" +
-          "JOIN composer ON musical_piece.first_composer_id = composer.id \n" +
-          "WHERE performer.full_name like '%"+performerLastName+"' \n" +
-          "  AND (LOWER(composer.full_name) LIKE '%"+composer.toLowerCase()+"' OR LOWER(composer.alias) = '"+composer.toLowerCase()+"') \n" +
-          "  AND performer.grade = '"+gradeSearch+"' \n" +
-          "  AND performance.pafe_series =" + pafe_series() + " \n" +
-          "  ORDER BY performance.concert_series ASC";
+        const searchQuery = "SELECT performer.id, performer.full_name as performer_name, \n" +
+            "performer_lottery.lookup_code as lottery_code, \n"+
+            "musical_piece.printed_name as musical_piece,  performance.concert_series \n" +
+            "FROM performer \n"+
+            "JOIN performance ON performance.performer_id = performer.id \n" +
+            "JOIN performer_lottery on performer.id = performer_lottery.performer_id \n" +
+            "JOIN performance_pieces ON performance_pieces.performance_id = performance.id \n" +
+            "JOIN musical_piece ON musical_piece.id = performance_pieces.musical_piece_id \n" +
+            "WHERE performer_lottery.lookup_code = '"+code.toUpperCase()+"' \n" +
+            "  AND performance.pafe_series =" + pafe_series() + " \n" +
+            "  ORDER BY performance.concert_series ASC";
 
         const dbResult = await connection.query(searchQuery);
         connection.release()
@@ -118,6 +132,9 @@ export async function lookupByDetails(performerLastName: string, grade: string, 
         if (dbResult.rowCount != null && dbResult.rowCount > 0) {
             return  {
                 "performer_id": dbResult.rows[0].id,
+                "performer_name": dbResult.rows[0].performer_name,
+                "musical_piece": dbResult.rows[0].musical_piece,
+                "lottery_code": dbResult.rows[0].lottery_code,
                 "concert_series": dbResult.rows[0].concert_series
             }
         } else {
@@ -735,6 +752,73 @@ export async function searchPerformanceByPerformer(performer_id: number, concert
         // Release the connection back to the pool
         connection.release();
 
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function seelectPerformerLottery(pafe_series: number) {
+    try {
+        const connection = await pool.connect();
+
+        const searchSQL = "SELECT performer_lottery.lookup_code as lookupCode, \n" +
+            "performer.full_name as fullName, \n" +
+            "performer.grade,  \n" +
+            "composer.printed_name as composer, \n" +
+            "performer_ranked_choice.first_choice_time as first_choice_time \n" +
+            "FROM performer_lottery \n" +
+            "JOIN performer ON performer.id = performer_lottery.performer_id \n" +
+            "JOIN performance ON performer.id = performance.performer_id \n" +
+            "JOIN performance_pieces ON performance.id = performance_pieces.performance_id \n" +
+            "JOIN musical_piece ON musical_piece.id = performance_pieces.musical_piece_id \n" +
+            "JOIN composer ON musical_piece.first_composer_id = composer.id \n" +
+            "LEFT JOIN performer_ranked_choice ON performer_ranked_choice.performer_id = performer.id \n" +
+            "WHERE performance.pafe_series = "  + pafe_series + " \n" +
+            "ORDER BY performer_lottery.lottery"
+
+        const result = connection.query(searchSQL)
+        connection.release();
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function createDBSchedule(performer_id : number,
+                                       concert_series: string,
+                                       pafe_series: number,
+                                       first_concert_time: string,
+                                       second_concert_time: string | null,
+                                       third_concert_time: string | null,
+                                       fourth_concert_time: string | null
+) {
+    try {
+        const connection = await pool.connect();
+
+        let insertSQL = "INSERT INTO performer_ranked_choice "
+        let insertCOLS = "(performer_id,concert_series,pafe_series,first_choice_time"
+        let insertVALS = "VALUES ("+performer_id+", '"+concert_series+"', "+pafe_series+", '"+first_concert_time+"'"
+        if (second_concert_time != null) {
+            insertCOLS += ", second_choice_time"
+            insertVALS += ", '"+second_concert_time+"'"
+        }
+        if (third_concert_time != null) {
+            insertCOLS += ", third_choice_time"
+            insertVALS += ", '"+third_concert_time+"'"
+        }
+        if (fourth_concert_time != null) {
+            insertCOLS += ", fourth_choice_time"
+            insertVALS += ", '"+fourth_concert_time+"'"
+        }
+        insertCOLS += ") \n"
+        insertVALS += ") \n"
+        insertSQL += insertCOLS + insertVALS
+
+        const result = connection.query(insertSQL);
+        connection.release();
         return result;
     } catch (error) {
         console.error('Error executing query:', error);

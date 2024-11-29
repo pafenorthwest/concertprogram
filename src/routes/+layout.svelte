@@ -75,6 +75,13 @@
                     <p class="subtext">Accompanist</p>
                 </a>
             </div>
+            <div class="navbutton">
+                <a href="/admin/lottery">
+                    <p class="navicon"><span class="material-symbols-outlined">confirmation_number</span></p>
+                    <br/>
+                    <p class="subtext">Lottery Results</p>
+                </a>
+            </div>
         {/if}
     </div>
 </div>

@@ -213,7 +213,11 @@ export interface ImportPerformanceInterface {
 }
 
 export interface PerformerSearchResultsInterface {
+    status: 'OK'|'ERROR'|'NOTFOUND';
     performer_id: number;
+    performer_name: string;
+    musical_piece: string;
+    lottery_code: string;
     concert_series: string;
 }
 
@@ -244,6 +248,20 @@ export function generateLottery(): LotteryInterface {
 export function pafe_series(): number {
     const currentYear = new Date().getFullYear();
     return currentYear - 1988;
+}
+
+export function reformatISODate(isoDate: string): string {
+    const date = new Date(isoDate);
+
+    // Format the date
+    return date.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false // Use 24-hour format
+    });
 }
 
 // Initialize base 34 chars.

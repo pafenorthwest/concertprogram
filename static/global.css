@@ -250,14 +250,20 @@ input[type="checkbox"] {
 .inline-form p {
     display: inline;
 }
+#ranked-choice-form {
+    margin-left: var(--margin);
+}
+.lowemphasis {
+    color: var(--low-em-color);
+}
 
 .base-icon {
     display: none;
     opacity: 1; /* Fully visible */
     visibility: visible; /* Element is interactive */
     font-size: 1.8em;
-    padding: 1em 0 0 0; /* top padding */
-    margin: 0 0 0 1em; /* left margin */
+    padding: 0 0 0 0; /* top padding no-good on schedule form */
+    margin: -1em 0 0 1em; /* left margin */
     font-weight: bold;
 }
 #error-icon p {
@@ -269,6 +275,13 @@ input[type="checkbox"] {
 .hidden {
     opacity: 0; /* Fades out */
     visibility: hidden; /* Prevents interaction after fading */
+}
+.with-star::before {
+    content: "★"; /* Unicode character for a star */
+    font-size: 0.6em; /* Smaller size for the superscript effect */
+    vertical-align: super; /* Align it as superscript */
+    color: gold; /* Gold color for the star */
+    margin-left: 5px; /* Space between the text and the star */
 }
 .table {
     width: 100%;
@@ -327,6 +340,10 @@ input[type="checkbox"] {
     font-weight: 400;
     font-size: 0.875em;
 }
+.table td.concerttime {
+    font-size: .8em;
+}
+
 .error-table td {
     text-align: left;
 }
@@ -389,6 +406,15 @@ button.action:hover {
 
 .expanded {
     max-height: 150px; /* Adjust based on your content */
+}
+h3.schedule {
+    margin-top: var(--margin);
+    margin-left: var(--margin);
+    margin-bottom: calc(var(--margin)/2)
+}
+p.top-message {
+    margin-bottom: var(--margin);
+    margin-left: var(--margin);
 }
 
 @media screen and (min-width: 800px) {

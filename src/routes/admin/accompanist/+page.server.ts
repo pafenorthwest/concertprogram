@@ -26,6 +26,7 @@ export const actions = {
     },
     add: async ({request}) => {
         const formData = await request.formData();
+
         const accompanist: AccompanistInterface = {
             id: null,
             full_name: formData.get('fullName'),

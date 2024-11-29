@@ -19,7 +19,6 @@
       // Navigate to the /schedule page with the parameters
       // params binding in form definition, cap size
       performerName = performerName.slice(0,30)
-      grade = grade.slice(0,4)
       composerName = composerName.slice(0,30)
       goto(`/schedule?performerLastName=${performerName}&grade=${grade}&composerName=${composerName}`);
   }
@@ -35,7 +34,7 @@
     <form id="codeLookup" on:submit={handleSubmitLookupByCode}>
         <div class="form-group">
             <label for="code">Enter 4-Char Code:</label>
-            <input type="text" id="code" bind:value={lookupCode} name="code" maxlength="4" required pattern="[A-Za-z0-9]{4}">
+            <input type="text" id="code" bind:value={lookupCode} name="code" maxlength="4" required pattern="[A-Za-z0-9]+">
         </div>
         <div class="form-group">
             <button type="submit">Lookup</button>
