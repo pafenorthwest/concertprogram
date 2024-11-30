@@ -221,6 +221,11 @@ export interface PerformerSearchResultsInterface {
     concert_series: string;
 }
 
+export interface ScheduleFormInterface {
+    rank: number | null;
+    notSelected: boolean;
+}
+
 export function formatFieldNames(input: string): string {
     return input
         .split('_') // Split the string by underscores
@@ -250,7 +255,7 @@ export function pafe_series(): number {
     return currentYear - 1988;
 }
 
-export function reformatISODate(isoDate: string): string {
+export function displayReformatISODate(isoDate: string): string {
     const date = new Date(isoDate);
 
     // Format the date
@@ -262,6 +267,24 @@ export function reformatISODate(isoDate: string): string {
         minute: '2-digit',
         hour12: false // Use 24-hour format
     });
+}
+
+export function compareReformatISODate(isoDate: string): string {
+    const date = new Date(isoDate);
+
+    // Format date part (dd/MM/yyyy)
+    const datePart = date.toLocaleDateString('en-US');
+
+    // Format time part (HH:mm:ss)
+    const timePart = date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false // Use 24-hour time format
+    });
+
+    // Combine date and time parts
+    return `${datePart}T${timePart}`;
 }
 
 // Initialize base 34 chars.

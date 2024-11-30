@@ -1,8 +1,13 @@
 import {fail, redirect} from '@sveltejs/kit';
 import DOMPurify from 'dompurify';
 import { JSDOM } from 'jsdom';
-import {type PerformerSearchResultsInterface, isNonEmptyString, pafe_series} from '$lib/server/common'
-import {createDBSchedule, lookupByCode, lookupByDetails} from "$lib/server/db";
+import {
+	type PerformerSearchResultsInterface,
+	isNonEmptyString,
+	pafe_series,
+	type ScheduleFormInterface, compareReformatISODate
+} from '$lib/server/common'
+import {createDBSchedule, lookupByCode, lookupByDetails, selectDBSchedule} from "$lib/server/db";
 
 function parseRankChoice(choice:string|null): number | null {
 	if (!choice || choice === '') {
@@ -67,6 +72,28 @@ function createRankedChoiceTimestamps(
 	return rankedOrderTimeStamps
 }
 
+function timestampsToFormValues(timestamps:string[]): ScheduleFormInterface[] {
+	const mapTimesToRanks: Map<string, number> = new Map([
+		["05/03/2025T04:00:00", 1],
+		["05/03/2025T07:00:00", 2],
+		["05/04/2025T02:00:00", 3],
+		["05/04/2025T05:00:00", 4]
+	]);
+
+	const initValues: ScheduleFormInterface = {rank: null, notSelected: true}
+	let formData: ScheduleFormInterface[] = [initValues,initValues,initValues,initValues]
+	for (const [index, value] of timestamps.entries()) {
+		if (value) {
+			const rank = mapTimesToRanks.get(compareReformatISODate(value))
+			if (rank)  {
+				formData[index].rank = rank
+				formData[index].notSelected = false
+			}
+		}
+	}
+	return formData
+}
+
 export async function load({url}) {
 	// setup purify to clean out any injected JS
 	const window = new JSDOM('').window;
@@ -83,17 +110,36 @@ export async function load({url}) {
 					performer_id: '',
 					performer_name: '',
 					musical_piece: '',
-					lottery_code: '',
-					concert_series: code
+					lottery_code: code,
+					concert_series: '',
+					formValues: null
 				}
 			}
+			// found performer id now see if schedule already exists
+			let formValues = null
+			try {
+				const scheduleRes = await selectDBSchedule(result.performer_id)
+				if (scheduleRes.rowCount != null && scheduleRes.rowCount > 0) {
+					formValues = timestampsToFormValues(
+						[scheduleRes.rows[0].first_choice_time,
+						scheduleRes.rows[0].second_choice_time,
+						scheduleRes.rows[0].third_choice_time,
+						scheduleRes.rows[0].fourth_choice_time]
+						)
+				}
+			} catch {
+				// eat the error performer can resubmit
+				console.error('Error performing fetchSchedule')
+			}
+
 			return {
 				status: 'OK',
 				performer_id: result.performer_id,
 				performer_name: result.performer_name,
 				musical_piece: result.musical_piece,
 				lottery_code: result.lottery_code,
-				concert_series: result.concert_series
+				concert_series: result.concert_series,
+				formValues: formValues
 			}
 		} catch {
 			return {
@@ -102,7 +148,8 @@ export async function load({url}) {
 				performer_name: '',
 				musical_piece: '',
 				lottery_code: '',
-				concert_series: ''
+				concert_series: '',
+				formValues: null
 			}
 		}
 	} else {
@@ -116,7 +163,8 @@ export async function load({url}) {
 					performer_name: '',
 					musical_piece: '',
 					lottery_code: '',
-					concert_series: ''
+					concert_series: '',
+					formValues: null
 				}
 			}
 
@@ -135,8 +183,25 @@ export async function load({url}) {
 					performer_name: performerLastName,
 					musical_piece: '',
 					lottery_code: '',
-					concert_series: ''
+					concert_series: '',
+					formValues: null
 				}
+			}
+			// found performer id now see if schedule already exists
+			let formValues = null
+			try {
+				const scheduleRes = await selectDBSchedule(result.performer_id)
+				if (scheduleRes.rowCount != null && scheduleRes.rowCount > 0) {
+					formValues = timestampsToFormValues(
+						[scheduleRes.rows[0].first_choice_time,
+							scheduleRes.rows[0].second_choice_time,
+							scheduleRes.rows[0].third_choice_time,
+							scheduleRes.rows[0].fourth_choice_time]
+					)
+				}
+			} catch {
+				// eat the error performer can resubmit
+				console.error('Error performing fetchSchedule')
 			}
 			return {
 				status: 'OK',
@@ -144,7 +209,8 @@ export async function load({url}) {
 				performer_name: result.performer_name,
 				musical_piece: result.musical_piece,
 				lottery_code: result.lottery_code,
-				concert_series: result.concert_series
+				concert_series: result.concert_series,
+				formValues: formValues
 			}
 		} catch {
 			return {
@@ -153,7 +219,8 @@ export async function load({url}) {
 				performer_name: '',
 				musical_piece: '',
 				lottery_code: '',
-				concert_series: ''
+				concert_series: '',
+				formValues: null
 			}
 		}
 	}

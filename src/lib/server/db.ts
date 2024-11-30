@@ -759,7 +759,7 @@ export async function searchPerformanceByPerformer(performer_id: number, concert
     }
 }
 
-export async function seelectPerformerLottery(pafe_series: number) {
+export async function selectPerformerLottery(pafe_series: number) {
     try {
         const connection = await pool.connect();
 
@@ -779,6 +779,23 @@ export async function seelectPerformerLottery(pafe_series: number) {
             "ORDER BY performer_lottery.lottery"
 
         const result = connection.query(searchSQL)
+        connection.release();
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function selectDBSchedule(performer_id: number) {
+    try {
+        const connection = await pool.connect();
+
+        const selectSQL = "SELECT performer_id, concert_series, pafe_series, \n" +
+            "first_choice_time, second_choice_time, third_choice_time, fourth_choice_time \n"+
+            "FROM public.performer_ranked_choice"
+
+        const result = connection.query(selectSQL);
         connection.release();
         return result;
     } catch (error) {

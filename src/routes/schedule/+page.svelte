@@ -1,4 +1,6 @@
 <script>
+    import { onMount } from 'svelte';
+
     let disableStatus = true;
     let firstTimeEntry = true;
     export let data;
@@ -32,6 +34,10 @@
     function handleCheckboxChange(event) {
         // Find the checkbox's sibling elements
         const checkbox = event.target;
+        updateCheckBoxDisplay(checkbox);
+    }
+
+    function updateCheckBoxDisplay(checkbox) {
         const siblingSelect = checkbox.previousElementSibling; // The next sibling (assumes the <select> is directly after the checkbox)
         const siblingP = checkbox.nextElementSibling; // The sibling <p> element after the <select>
 
@@ -74,6 +80,26 @@
         }
         disableStatus = lacksGoodChoices
     }
+
+    onMount(() => {
+        console.log("In On Mount")
+        if (data.formValues && data.formValues.length > 0) {
+            const form = document.getElementById("ranked-choice-form");
+            if (form) {
+                const selectCheckboxes = form.querySelectorAll('input[type="checkbox"]');
+                let index = 0
+                console.log("looping over form data values")
+                data.formValues.forEach((value, index) => {
+                    console.log(`Value ${value.notSelected} for index ${index}`);
+                    if (value.notSelected && selectCheckboxes.length > index) {
+                        selectCheckboxes[index].checked = true;
+                        updateCheckBoxDisplay(selectCheckboxes[index]);
+                    }
+                    index += 1
+                });
+            }
+        }
+    })
 </script>
 
 <svelte:head>
@@ -82,7 +108,7 @@
 
 <h2>Concert Scheduling</h2>
 <div class="schedule-form">
-    {#if data.status == 'OK' }
+    {#if data.status === 'OK' }
         {#if data.concert_series === "Concerto"}
             <h3 class="schedule">Confirmation of Concerto Performance</h3>
             <p class="top-message">Scheduling for {data.performer_name} </p><br/>
@@ -95,7 +121,7 @@
                 <div class="form-group">
                     <input type="hidden" name="performerId" value={data.performer_id}/>
                     <input type="hidden" name="concertSeries" value={data.concert_series}/>
-                    <input type="checkbox" name="concert-confirm" id="concert-confirm">
+                    <input type="checkbox" name="concert-confirm" id="concert-confirm" >
                     <p>Confirm Attendance</p>
                 </div>
             </form>
