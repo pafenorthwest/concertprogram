@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
 
-    let disableStatus = true;
+    let disableFormSubmit = true;
     let firstTimeEntry = true;
     export let data;
 
@@ -72,30 +72,35 @@
             const error_icon = document.getElementById('error-icon');
             appear_then_fade(error_icon)
         } else {
-            if (disableStatus && !firstTimeEntry) {
+            if (disableFormSubmit && !firstTimeEntry) {
                 const success_icon = document.getElementById('success-icon');
                 appear_then_fade(success_icon)
             }
             firstTimeEntry = false;
         }
-        disableStatus = lacksGoodChoices
+        disableFormSubmit = lacksGoodChoices
     }
 
     onMount(() => {
-        console.log("In On Mount")
         if (data.formValues && data.formValues.length > 0) {
             const form = document.getElementById("ranked-choice-form");
             if (form) {
+                // Gat all checkboxes within the form
                 const selectCheckboxes = form.querySelectorAll('input[type="checkbox"]');
-                let index = 0
-                console.log("looping over form data values")
+                // Get all select elements within the form
+                const selectElements = form.querySelectorAll("select");
                 data.formValues.forEach((value, index) => {
-                    console.log(`Value ${value.notSelected} for index ${index}`);
-                    if (value.notSelected && selectCheckboxes.length > index) {
+                    // re-hydrating we can allow submits
+                    disableFormSubmit = false;
+                    // update checkboxes and styling to respect non-available
+                    if (value.notSelected && selectCheckboxes.length >= index) {
                         selectCheckboxes[index].checked = true;
                         updateCheckBoxDisplay(selectCheckboxes[index]);
                     }
-                    index += 1
+                    // update ranked choices in drop down box
+                    if (value.rank && selectElements.length >= index) {
+                        selectElements[index].value = value.rank.toString();
+                    }
                 });
             }
         }
@@ -112,7 +117,7 @@
         {#if data.concert_series === "Concerto"}
             <h3 class="schedule">Confirmation of Concerto Performance</h3>
             <p class="top-message">Scheduling for {data.performer_name} </p><br/>
-            <p class="top-message">Playing {data.musical_piece} </p><br/>
+            <p class="top-message">Performing {data.musical_piece} </p><br/>
             <p class="top-message">Lookup code {data.lottery_code}</p>
             <br/><br/><br/>
             <form id="concerto-confirmation" method="POST" action="?/schedule">
@@ -128,7 +133,7 @@
         {:else}
             <h3 class="schedule">Rank Performance Times</h3>
             <p class="top-message">Scheduling for {data.performer_name}</p><br/>
-            <p class="top-message">Playing {data.musical_piece} </p><br/>
+            <p class="top-message">Performing {data.musical_piece} </p><br/>
             <p class="top-message">Lookup code {data.lottery_code}</p>
             <br/><br/><br/>
             <div id="error-icon" class="base-icon hidden"><p>Duplicate Rankings Selected</p></div>
@@ -201,7 +206,7 @@
                     </div>
                     <br/>
                     <div class="form-group">
-                        <button type="submit" disabled="{disableStatus}">Submit</button>
+                        <button type="submit" disabled="{disableFormSubmit}">Submit</button>
                     </div>
                 </div>
             </form>

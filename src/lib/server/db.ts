@@ -793,7 +793,8 @@ export async function selectDBSchedule(performer_id: number) {
 
         const selectSQL = "SELECT performer_id, concert_series, pafe_series, \n" +
             "first_choice_time, second_choice_time, third_choice_time, fourth_choice_time \n"+
-            "FROM public.performer_ranked_choice"
+            "FROM public.performer_ranked_choice \n" +
+            "WHERE performer_id = " + performer_id;
 
         const result = connection.query(selectSQL);
         connection.release();
@@ -814,6 +815,13 @@ export async function createDBSchedule(performer_id : number,
 ) {
     try {
         const connection = await pool.connect();
+
+        // first delete if exists, then insert, this handles new entries and updates
+        const deleteSQL = "DELETE FROM performer_ranked_choice \n" +
+          "WHERE performer_id = " + performer_id + "\n" +
+          "  AND concert_series = '" + concert_series + "' \n"
+
+        await connection.query(deleteSQL);
 
         let insertSQL = "INSERT INTO performer_ranked_choice "
         let insertCOLS = "(performer_id,concert_series,pafe_series,first_choice_time"

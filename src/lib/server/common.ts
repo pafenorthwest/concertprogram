@@ -272,8 +272,10 @@ export function displayReformatISODate(isoDate: string): string {
 export function compareReformatISODate(isoDate: string): string {
     const date = new Date(isoDate);
 
-    // Format date part (dd/MM/yyyy)
-    const datePart = date.toLocaleDateString('en-US');
+    // Format the date with leading zeros for day and month
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
 
     // Format time part (HH:mm:ss)
     const timePart = date.toLocaleTimeString('en-US', {
@@ -284,7 +286,7 @@ export function compareReformatISODate(isoDate: string): string {
     });
 
     // Combine date and time parts
-    return `${datePart}T${timePart}`;
+    return `${month}/${day}/${year}T${timePart}`;
 }
 
 // Initialize base 34 chars.

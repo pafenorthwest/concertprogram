@@ -32,190 +32,201 @@ function createRankedChoiceTimestamps(
 	fourthConcertRankChoice: number | null
 ): (string|null)[] {
 	const concertTimeStamps = [
-		"05/03/2025T04:00:00",
-		"05/03/2025T07:00:00",
-		"05/04/2025T02:00:00",
-		"05/04/2025T05:00:00"
+		"05/03/2025T16:00:00",
+		"05/03/2025T19:00:00",
+		"05/04/2025T14:00:00",
+		"05/04/2025T17:00:00"
 	]
 
-	// filter out nulls and pack into an array
-	// not available yields null
-	let rankedChoices: number[] = [
+	// initialize what we will return
+	const rankedConcertTimeStamps: (string|null)[] = [null,null,null,null]
+	// consolidate not available and rank into single field
+	const rankedChoices: (number|null)[] = [
 		notAvailableFirstConcert ? null: firstConcertRankChoice,
 		notAvailableSecondConcert ? null: secondConcertRankChoice,
 		notAvailableThirdConcert ? null : thirdConcertRankChoice,
 		notAvailableFourthConcert ? null : fourthConcertRankChoice
-	].filter((value): value is number => value !== null);
+	]
 
-	// dedupe, preserve order
-	const noDupesRankedChoices: number[] = Array.from(new Set(rankedChoices));
-	// renumber starting at zero, extra safety measure
-	// - step 1 sort
-	const sortedNumbers: number[] = [...noDupesRankedChoices].sort((a, b) => a - b);
-	// - step 2 map old to new, renumber starting at 1
-	const mapping = new Map<number, number>();
-	sortedNumbers.forEach((num, index) => {
-		mapping.set(num, index + 1);
-	});
-	// - step 3 update using map
-	rankedChoices = noDupesRankedChoices.map(num => mapping.get(num)!);
-
-	let rankedOrderTimeStamps: (string|null)[] = [null,null,null,null]
-	let timeStampIndex = 0;
-	// parse validated rank in range
-	for (const rank of rankedChoices) {
-		// rank to array index minus 1
-		rankedOrderTimeStamps[rank-1] = concertTimeStamps[timeStampIndex]
-		timeStampIndex += 1
+	// the rank is 1-4 a priority for each concert in series
+	// the lowest ranked (#1) timestamp goes in the beginning of the array
+	// the higher ranked timestamps are push on inorder
+	for (const [index, rank] of rankedChoices.entries()) {
+		if (rank) {
+			rankedConcertTimeStamps[rank - 1] = concertTimeStamps[index];
+		}
 	}
 
-	return rankedOrderTimeStamps
+	// compact and remove the nulls
+	// now that we have the timestamps that is all we need
+	// this filter also removed gaps if the user had non-contiguous ranks
+	return rankedConcertTimeStamps.filter((value): value is string => value !== null);
 }
 
 function timestampsToFormValues(timestamps:string[]): ScheduleFormInterface[] {
 	const mapTimesToRanks: Map<string, number> = new Map([
-		["05/03/2025T04:00:00", 1],
-		["05/03/2025T07:00:00", 2],
-		["05/04/2025T02:00:00", 3],
-		["05/04/2025T05:00:00", 4]
+		["05/03/2025T16:00:00", 1],
+		["05/03/2025T19:00:00", 2],
+		["05/04/2025T14:00:00", 3],
+		["05/04/2025T17:00:00", 4]
 	]);
 
-	const initValues: ScheduleFormInterface = {rank: null, notSelected: true}
-	let formData: ScheduleFormInterface[] = [initValues,initValues,initValues,initValues]
+	// init array
+	const formData: ScheduleFormInterface[] = [
+		{rank: null, notSelected: true},
+		{rank: null, notSelected: true},
+		{rank: null, notSelected: true},
+		{rank: null, notSelected: true}
+	]
+	/*
+	 * formData has an entry for each possible concert ordered chronologically
+	 * The first element for formData represents the first concert, the second element
+	 * represents the second concert etc
+	 * The timestamps passed in are concert times in order of preference
+	 * The first element in timestamps represents the most desired concert slot,
+	 * while the fourth element in timestamps represents the least desired concert slot
+	 * The array of timestamps must contain at least one value
+	 *
+	 */
 	for (const [index, value] of timestamps.entries()) {
 		if (value) {
-			const rank = mapTimesToRanks.get(compareReformatISODate(value))
-			if (rank)  {
-				formData[index].rank = rank
-				formData[index].notSelected = false
+			// map the timestamp to a concert in the series
+			const concertNumberInSeries = mapTimesToRanks.get(compareReformatISODate(value))
+			// set the nth element in the form to the rank conferred by the index
+			// for example the first element of timestamps might be the 4th concert in the series
+			// that means the 4th concert is the most desirable and should have rank 1
+			// index start from zero so we need to add one
+			// concert series minus one to map back to array indexes which start at zero
+			if (concertNumberInSeries)  {
+				formData[concertNumberInSeries-1].rank = index+1
+				formData[concertNumberInSeries-1].notSelected = false
 			}
 		}
 	}
 	return formData
 }
 
+async function retrievePerformerByCode(code: string): Promise<PerformerSearchResultsInterface> {
+	try {
+		const result: PerformerSearchResultsInterface | null = await lookupByCode(code)
+		if (result == null) {
+			return {
+				status: 'NOTFOUND',
+				performer_id: 0,
+				performer_name: '',
+				musical_piece: '',
+				lottery_code: code,
+				concert_series: ''
+			}
+		}
+		return {
+			status: 'OK',
+			performer_id: result.performer_id,
+			performer_name: result.performer_name,
+			musical_piece: result.musical_piece,
+			lottery_code: result.lottery_code,
+			concert_series: result.concert_series
+		}
+	} catch {
+		return {
+			status: 'ERROR',
+			performer_id: 0,
+			performer_name: '',
+			musical_piece: '',
+			lottery_code: '',
+			concert_series: ''
+		}
+	}
+}
+async function retrievePerformerByDetails(performerLastName:string, grade: string, composerName:string) : Promise<PerformerSearchResultsInterface> {
+	try {
+		const result: PerformerSearchResultsInterface | null = await lookupByDetails(performerLastName, grade, composerName);
+		if (result == null) {
+			return {
+				status: 'NOTFOUND',
+				performer_id: 0,
+				performer_name: performerLastName,
+				musical_piece: '',
+				lottery_code: '',
+				concert_series: ''
+			}
+		}
+		return {
+			status: 'OK',
+			performer_id: result.performer_id,
+			performer_name: result.performer_name,
+			musical_piece: result.musical_piece,
+			lottery_code: result.lottery_code,
+			concert_series: result.concert_series
+		}
+	} catch {
+		return {
+			status: 'ERROR',
+			performer_id: 0,
+			performer_name: '',
+			musical_piece: '',
+			lottery_code: '',
+			concert_series: ''
+		}
+	}
+}
+
 export async function load({url}) {
 	// setup purify to clean out any injected JS
 	const window = new JSDOM('').window;
 	const purify = DOMPurify(window);
+	let performerSearchResults: PerformerSearchResultsInterface = {
+		status: 'ERROR',
+		performer_id: 0,
+		performer_name: '',
+		musical_piece: '',
+		lottery_code: '',
+		concert_series: ''
+	}
+	let formValues = null
 
 	if (url.searchParams.get('code') != null && isNonEmptyString(url.searchParams.get('code'))) {
-		// @ts-ignore
-		const code = purify.sanitize(url.searchParams.get('code'))
-		try {
-			const result: PerformerSearchResultsInterface | null = await lookupByCode(code)
-			if (result == null) {
-				return {
-					status: 'NOTFOUND',
-					performer_id: '',
-					performer_name: '',
-					musical_piece: '',
-					lottery_code: code,
-					concert_series: '',
-					formValues: null
-				}
-			}
-			// found performer id now see if schedule already exists
-			let formValues = null
-			try {
-				const scheduleRes = await selectDBSchedule(result.performer_id)
-				if (scheduleRes.rowCount != null && scheduleRes.rowCount > 0) {
-					formValues = timestampsToFormValues(
-						[scheduleRes.rows[0].first_choice_time,
-						scheduleRes.rows[0].second_choice_time,
-						scheduleRes.rows[0].third_choice_time,
-						scheduleRes.rows[0].fourth_choice_time]
-						)
-				}
-			} catch {
-				// eat the error performer can resubmit
-				console.error('Error performing fetchSchedule')
-			}
-
+		const code = purify.sanitize(url.searchParams.get('code')!)
+		performerSearchResults = await retrievePerformerByCode(code)
+		if (performerSearchResults.status != 'OK') {
 			return {
-				status: 'OK',
-				performer_id: result.performer_id,
-				performer_name: result.performer_name,
-				musical_piece: result.musical_piece,
-				lottery_code: result.lottery_code,
-				concert_series: result.concert_series,
-				formValues: formValues
-			}
-		} catch {
-			return {
-				status: 'ERROR',
-				performer_id: '',
-				performer_name: '',
-				musical_piece: '',
-				lottery_code: '',
-				concert_series: '',
+				status: performerSearchResults.status,
+				performer_id: performerSearchResults.performer_id,
+				performer_name: performerSearchResults.performer_name,
+				musical_piece: performerSearchResults.musical_piece,
+				lottery_code: performerSearchResults.lottery_code,
+				concert_series: performerSearchResults.concert_series,
 				formValues: null
 			}
 		}
 	} else {
-		try {
-			if ((url.searchParams.get('performerLastName') == null && isNonEmptyString(url.searchParams.get('performerLastName')))
-				|| (url.searchParams.get('grade') == null && isNonEmptyString(url.searchParams.get('grade')))
-				|| (url.searchParams.get('composerName') == null && isNonEmptyString(url.searchParams.get('composerName')))) {
+		if (
+			url.searchParams.get('performerLastName') != null
+			&& isNonEmptyString(url.searchParams.get('performerLastName'))
+			&& url.searchParams.get('grade') != null
+			&& isNonEmptyString(url.searchParams.get('grade'))
+			&& url.searchParams.get('composerName') != null
+			&& isNonEmptyString(url.searchParams.get('composerName'))
+		) {
+			const performerLastName = purify.sanitize(url.searchParams.get('performerLastName')!)
+			const grade = purify.sanitize(url.searchParams.get('grade')!)
+			const composerName = purify.sanitize(url.searchParams.get('composerName')!)
+			performerSearchResults = await retrievePerformerByDetails(performerLastName, grade, composerName)
+			if (performerSearchResults.status != 'OK') {
 				return {
-					status: 'ERROR',
-					performer_id: '',
-					performer_name: '',
-					musical_piece: '',
-					lottery_code: '',
-					concert_series: '',
+					status: performerSearchResults.status,
+					performer_id: performerSearchResults.performer_id,
+					performer_name: performerSearchResults.performer_name,
+					musical_piece: performerSearchResults.musical_piece,
+					lottery_code: performerSearchResults.lottery_code,
+					concert_series: performerSearchResults.concert_series,
 					formValues: null
 				}
 			}
-
-			// @ts-ignore
-			const performerLastName = purify.sanitize(url.searchParams.get('performerLastName'))
-			// @ts-ignore
-			const grade = purify.sanitize(url.searchParams.get('grade'))
-			// @ts-ignore
-			const composerName = purify.sanitize(url.searchParams.get('composerName'))
-
-			const result: PerformerSearchResultsInterface | null = await lookupByDetails(performerLastName, grade, composerName);
-			if (result == null) {
-				return {
-					status: 'NOTFOUND',
-					performer_id: '',
-					performer_name: performerLastName,
-					musical_piece: '',
-					lottery_code: '',
-					concert_series: '',
-					formValues: null
-				}
-			}
-			// found performer id now see if schedule already exists
-			let formValues = null
-			try {
-				const scheduleRes = await selectDBSchedule(result.performer_id)
-				if (scheduleRes.rowCount != null && scheduleRes.rowCount > 0) {
-					formValues = timestampsToFormValues(
-						[scheduleRes.rows[0].first_choice_time,
-							scheduleRes.rows[0].second_choice_time,
-							scheduleRes.rows[0].third_choice_time,
-							scheduleRes.rows[0].fourth_choice_time]
-					)
-				}
-			} catch {
-				// eat the error performer can resubmit
-				console.error('Error performing fetchSchedule')
-			}
+		} else {
 			return {
-				status: 'OK',
-				performer_id: result.performer_id,
-				performer_name: result.performer_name,
-				musical_piece: result.musical_piece,
-				lottery_code: result.lottery_code,
-				concert_series: result.concert_series,
-				formValues: formValues
-			}
-		} catch {
-			return {
-				status: 'ERROR',
-				performer_id: '',
+				status: 'NOTFOUND',
+				performer_id: 0,
 				performer_name: '',
 				musical_piece: '',
 				lottery_code: '',
@@ -223,6 +234,31 @@ export async function load({url}) {
 				formValues: null
 			}
 		}
+	}
+
+	// found performer id now see if schedule already exists
+	try {
+		const scheduleRes = await selectDBSchedule(performerSearchResults.performer_id);
+		if (scheduleRes.rowCount != null && scheduleRes.rowCount > 0) {
+			formValues = timestampsToFormValues(
+				[scheduleRes.rows[0].first_choice_time,
+					scheduleRes.rows[0].second_choice_time,
+					scheduleRes.rows[0].third_choice_time,
+					scheduleRes.rows[0].fourth_choice_time]
+			);
+		}
+	} catch {
+		// eat the error performer can resubmit
+		console.error('Error performing fetchSchedule');
+	}
+	return {
+		status: 'OK',
+		performer_id: performerSearchResults.performer_id,
+		performer_name: performerSearchResults.performer_name,
+		musical_piece: performerSearchResults.musical_piece,
+		lottery_code: performerSearchResults.lottery_code,
+		concert_series: performerSearchResults.concert_series,
+		formValues: formValues
 	}
 }
 
@@ -276,7 +312,6 @@ export const actions = {
 					notAvailableFirstConcert,notAvailableSecondConcert,notAvailableThirdConcert,notAvailableFourthConcert,
 					firstConcertRankChoice,secondConcertRankChoice,thirdConcertRankChoice,fourthConcertRankChoice
 				)
-
 				if (rankedChoiceTimeStamps[0] != null ) {
 					const results = await createDBSchedule(
 						performerIdAsNumber,
