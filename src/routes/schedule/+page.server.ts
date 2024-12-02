@@ -8,6 +8,7 @@ import {
 	type ScheduleFormInterface, compareReformatISODate
 } from '$lib/server/common'
 import {createDBSchedule, lookupByCode, lookupByDetails, selectDBSchedule} from "$lib/server/db";
+import { getCachedTimeStamps } from '$lib/cache';
 
 function parseRankChoice(choice:string|null): number | null {
 	if (!choice || choice === '') {
@@ -31,12 +32,13 @@ function createRankedChoiceTimestamps(
 	thirdConcertRankChoice: number | null,
 	fourthConcertRankChoice: number | null
 ): (string|null)[] {
-	const concertTimeStamps = [
-		"05/03/2025T16:00:00",
-		"05/03/2025T19:00:00",
-		"05/04/2025T14:00:00",
-		"05/04/2025T17:00:00"
-	]
+	const concertStartTimes = getCachedTimeStamps()
+	const concertTimeStamps: string[] =
+		concertStartTimes.data
+			.slice() // Create a shallow copy to avoid mutating the original array
+			.sort((a, b) => a.concert_number_in_series - b.concert_number_in_series) // Sort by concert_num
+			.map(concert => concert.concert_series !== "Concerto" ? concert.normalizedStartTime : null) // Eastside Only
+			.filter(mapped => mapped !== null);  // rm nulls rm entry previously labeled Concert
 
 	// initialize what we will return
 	const rankedConcertTimeStamps: (string|null)[] = [null,null,null,null]
@@ -64,12 +66,14 @@ function createRankedChoiceTimestamps(
 }
 
 function timestampsToFormValues(timestamps:string[]): ScheduleFormInterface[] {
-	const mapTimesToRanks: Map<string, number> = new Map([
-		["05/03/2025T16:00:00", 1],
-		["05/03/2025T19:00:00", 2],
-		["05/04/2025T14:00:00", 3],
-		["05/04/2025T17:00:00", 4]
-	]);
+	const concertStartTimes = getCachedTimeStamps()
+	const mapTimesToRanks = new Map<string, number>();
+
+	concertStartTimes.data.forEach(concert => {
+		if (concert.concert_series !== "Concerto") {
+			mapTimesToRanks.set(concert.normalizedStartTime, concert.concert_number_in_series);
+		}
+	});
 
 	// init array
 	const formData: ScheduleFormInterface[] = [
@@ -280,10 +284,17 @@ export const actions = {
 			}
 
 			if (concertSeries.toLowerCase() === "concerto") {
+				// get concerto start time from cache
+				const concertStartTimes = getCachedTimeStamps()
+				const starttime: string = concertStartTimes.data
+					.find(concert => concert.concert_series === "Concerto")?.normalizedStartTime;
+				if (starttime === undefined) {
+					return fail(500, {error: "unable to retrieve Concerto starttime from Cache"})
+				}
 				const results = await createDBSchedule(
 					performerIdAsNumber,
 					concertSeries,pafe_series(),
-					"04/27/2025T15:00:00",
+					starttime,
 					null,
 					null,
 					null
