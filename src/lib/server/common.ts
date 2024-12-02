@@ -264,8 +264,7 @@ export function displayReformatISODate(isoDate: string): string {
         month: 'short',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit',
-        hour12: false // Use 24-hour format
+        hour12: true // Use 12-hour format
     });
 }
 

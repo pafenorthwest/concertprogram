@@ -121,7 +121,7 @@
             <p class="top-message">Lookup code {data.lottery_code}</p>
             <br/><br/><br/>
             <form id="concerto-confirmation" method="POST" action="?/schedule">
-                <p>Please confirm your attendance for Concerto Performance Sunday 3pm April 27th 2025</p>
+                <p>Please confirm your attendance for Concerto Performance Sunday {data.concertTimes[0].displayStartTime}</p>
                 <br/><br/>
                 <div class="form-group">
                     <input type="hidden" name="performerId" value={data.performer_id}/>
@@ -147,7 +147,7 @@
                     <div class="inline-form">
                         <input type="hidden" name="performerId" value={data.performer_id}/>
                         <input type="hidden" name="concertSeries" value={data.concert_series}/>
-                        <label for="rank-sat-first" style="width:150px">Sat May 3rd 4pm:</label>
+                        <label for="rank-sat-first" style="width:180px">{data.concertTimes[1].displayStartTime}:</label>
                         <select name="rank-sat-first" id="rank-sat-first" on:change={enforceValidSelect}>
                             <option value="" selected disabled>Rank</option>
                             <option value="1">1</option>
@@ -162,7 +162,7 @@
 
                     <!-- Option 2 -->
                     <div class="inline-form">
-                        <label for="rank-sat-second" style="width:150px">Sat May 3rd 7pm:</label>
+                        <label for="rank-sat-second" style="width:180px">{data.concertTimes[2].displayStartTime}:</label>
                         <select name="rank-sat-second" id="rank-sat-second" on:change={enforceValidSelect}>
                             <option value="" selected disabled>Rank</option>
                             <option value="1">1</option>
@@ -177,7 +177,7 @@
 
                     <!-- Option 3 -->
                     <div class="inline-form">
-                        <label for="rank-sun-third" style="width:150px">Sun May 4th 2pm:</label>
+                        <label for="rank-sun-third" style="width:180px">{data.concertTimes[3].displayStartTime}:</label>
                         <select name="rank-sun-third" id="rank-sun-third" on:change={enforceValidSelect}>
                             <option value="" selected disabled>Rank</option>
                             <option value="1">1</option>
@@ -192,7 +192,7 @@
 
                     <!-- Option 4 -->
                     <div class="inline-form">
-                        <label for="rank-sun-fourth" style="width:150px">Sun May 4th 5pm:</label>
+                        <label for="rank-sun-fourth" style="width:180px">{data.concertTimes[4].displayStartTime}:</label>
                         <select name="rank-sun-fourth" id="rank-sun-fourth" on:change={enforceValidSelect}>
                             <option value="" selected disabled>Rank</option>
                             <option value="1">1</option>

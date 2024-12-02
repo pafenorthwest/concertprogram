@@ -189,6 +189,8 @@ export async function load({url}) {
 	}
 	let formValues = null
 
+	const concertStartTimes = getCachedTimeStamps()
+
 	if (url.searchParams.get('code') != null && isNonEmptyString(url.searchParams.get('code'))) {
 		const code = purify.sanitize(url.searchParams.get('code')!)
 		performerSearchResults = await retrievePerformerByCode(code)
@@ -200,7 +202,8 @@ export async function load({url}) {
 				musical_piece: performerSearchResults.musical_piece,
 				lottery_code: performerSearchResults.lottery_code,
 				concert_series: performerSearchResults.concert_series,
-				formValues: null
+				formValues: null,
+				concertTimes: concertStartTimes.data
 			}
 		}
 	} else {
@@ -224,7 +227,8 @@ export async function load({url}) {
 					musical_piece: performerSearchResults.musical_piece,
 					lottery_code: performerSearchResults.lottery_code,
 					concert_series: performerSearchResults.concert_series,
-					formValues: null
+					formValues: null,
+					concertTimes: concertStartTimes.data
 				}
 			}
 		} else {
@@ -235,7 +239,8 @@ export async function load({url}) {
 				musical_piece: '',
 				lottery_code: '',
 				concert_series: '',
-				formValues: null
+				formValues: null,
+				concertTimes: null
 			}
 		}
 	}
@@ -262,7 +267,8 @@ export async function load({url}) {
 		musical_piece: performerSearchResults.musical_piece,
 		lottery_code: performerSearchResults.lottery_code,
 		concert_series: performerSearchResults.concert_series,
-		formValues: formValues
+		formValues: formValues,
+		concertTimes: concertStartTimes.data
 	}
 }
 
