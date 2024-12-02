@@ -82,6 +82,13 @@
                     <p class="subtext">Lottery Results</p>
                 </a>
             </div>
+            <div class="navbutton">
+                <a href="/admin/program">
+                    <p class="navicon"><span class="material-symbols-outlined">menu_book</span></p>
+                    <br/>
+                    <p class="subtext">Concert Program</p>
+                </a>
+            </div>
         {/if}
     </div>
 </div>

@@ -87,6 +87,7 @@ CREATE TABLE performer_ranked_choice (
     performer_id INTEGER NOT NULL,
     concert_series VARCHAR(255) NOT NULL,
     pafe_series INTEGER NOT NULL,
+    concert_chair_choice BOOLEAN NOT NULL DEFAULT FALSE,
     first_choice_time TIMESTAMP NOT NULL,
     second_choice_time TIMESTAMP NULL,
     third_choice_time TIMESTAMP NULL,
@@ -108,6 +109,25 @@ CREATE TABLE performance (
     warm_up_room_start TIMESTAMP NULL,
     warm_up_room_end TIMESTAMP NULL
 );
+
+CREATE TABLE concert_times (
+    concert_series VARCHAR(255) NOT NULL,
+    pafe_series INTEGER NOT NULL,
+    concert_number_in_series INTEGER NOT NULL DEFAULT 0,
+    start_time TIMESTAMP NOT NULL
+);
+
+INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
+VALUES ('Concerto',36,0,'04/27/2025T15:00:00');
+INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
+VALUES ('EastSide',36,1,'05/03/2025T16:00:00');
+INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
+VALUES ('EastSide',36,2,'05/03/2025T19:00:00');
+INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
+VALUES ('EastSide',36,3,'05/04/2025T14:00:00');
+INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
+VALUES ('EastSide',36,4,'05/04/2025T17:00:00');
+
 
 INSERT INTO composer (printed_name, full_name, years_active) VALUES ('Adele Adkins','Adele Adkins','1988 - current');
 INSERT INTO composer (printed_name, full_name, years_active) VALUES ('Amy Beach','Amy Beach','1867 - 1944');

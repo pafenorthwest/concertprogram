@@ -32,23 +32,34 @@ export async function queryTable(table: string, id?: number) {
         let sort = ""
 
         switch (table) {
-            case 'composer':
-                fields = 'id, printed_name, full_name, years_active, alias'
-                break;
-            case 'accompanist':
-                fields = 'id, full_name'
-                break;
-            case 'performer':
-                fields = 'id, full_name, email, phone, grade, instrument'
-                break;
-            case 'musical_piece':
-                fields = 'id, printed_name, first_composer_id, all_movements, second_composer_id, third_composer_id'
-                break;
-        }
+					case 'composer':
+						fields = 'id, printed_name, full_name, years_active, alias';
+						break;
+					case 'accompanist':
+						fields = 'id, full_name';
+						break;
+					case 'performer':
+						fields = 'id, full_name, email, phone, grade, instrument';
+						break;
+					case 'musical_piece':
+						fields =
+							'id, printed_name, first_composer_id, all_movements, second_composer_id, third_composer_id';
+						break;
+					case 'concert_times':
+						fields = 'concert_series, pafe_series,concert_number_in_series,start_time';
+						break;
+				}
         if (id != null) {
             filter = ' WHERE id='+id
         } else {
             sort = ' ORDER BY id'
+        }
+
+        // tables with no id field
+        switch (table) {
+            case 'concert_times':
+                sort = ''
+            break;
         }
 
         const result = connection.query(
@@ -766,8 +777,10 @@ export async function selectPerformerLottery(pafe_series: number) {
         const searchSQL = "SELECT performer_lottery.lookup_code as lookupCode, \n" +
             "performer.full_name as fullName, \n" +
             "performer.grade,  \n" +
+            "performer.instrument, \n" +
             "composer.printed_name as composer, \n" +
-            "performer_ranked_choice.first_choice_time as first_choice_time \n" +
+            "performer_ranked_choice.first_choice_time as first_choice_time, \n" +
+            "performer_ranked_choice.concert_chair_choice as concert_chair_choice \n" +
             "FROM performer_lottery \n" +
             "JOIN performer ON performer.id = performer_lottery.performer_id \n" +
             "JOIN performance ON performer.id = performance.performer_id \n" +

@@ -6,7 +6,9 @@ export async function load({ cookies }) {
     const isAuthenticated =  !!pafeAuth;
 
     const res= await selectPerformerLottery(pafe_series())
-    const columnNames: string[] =  res.fields.map(record => formatFieldNames(record.name));
+    const columnNames: string[] =  res.fields
+      .filter(record => record.name !== "concert_chair_choice")
+      .map(record => formatFieldNames(record.name));
     for (const row of res.rows) {
         if (row.first_choice_time) {
             row.first_choice_time = displayReformatISODate(row.first_choice_time)
