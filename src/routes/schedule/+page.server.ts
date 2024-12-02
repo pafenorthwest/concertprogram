@@ -65,8 +65,19 @@ function createRankedChoiceTimestamps(
 	return rankedConcertTimeStamps.filter((value): value is string => value !== null);
 }
 
-function timestampsToFormValues(timestamps:string[]): ScheduleFormInterface[] {
+function timestampsToFormValues(concert_series: string, timestamps:string[]): ScheduleFormInterface[] {
 	const concertStartTimes = getCachedTimeStamps()
+
+	if (concert_series === 'Concerto') {
+		// get concerto start time from cache
+		const starttime: string = concertStartTimes.data
+			.find(concert => concert.concert_series === "Concerto")?.normalizedStartTime;
+		if (compareReformatISODate(timestamps[0]) === starttime) {
+			return [{confirmed: true}]
+		}
+	}
+
+
 	const mapTimesToRanks = new Map<string, number>();
 
 	concertStartTimes.data.forEach(concert => {
@@ -250,6 +261,7 @@ export async function load({url}) {
 		const scheduleRes = await selectDBSchedule(performerSearchResults.performer_id);
 		if (scheduleRes.rowCount != null && scheduleRes.rowCount > 0) {
 			formValues = timestampsToFormValues(
+				scheduleRes.rows[0].concert_series,
 				[scheduleRes.rows[0].first_choice_time,
 					scheduleRes.rows[0].second_choice_time,
 					scheduleRes.rows[0].third_choice_time,
@@ -305,7 +317,9 @@ export const actions = {
 					null,
 					null
 				);
-				if (results.rowCount == null || results.rowCount <= 0 ) {
+				if (results.rowCount != null && results.rowCount > 0 ) {
+					throw redirect(303, '/');
+				} else {
 					return fail(500, {error: "unable to confirm Concerto schedule please try again"})
 				}
 			} else if (concertSeries.toLowerCase() === "eastside") {
