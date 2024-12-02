@@ -807,7 +807,8 @@ export async function selectDBSchedule(performer_id: number) {
         const selectSQL = "SELECT performer_id, concert_series, pafe_series, \n" +
             "first_choice_time, second_choice_time, third_choice_time, fourth_choice_time \n"+
             "FROM public.performer_ranked_choice \n" +
-            "WHERE performer_id = " + performer_id;
+            "WHERE performer_id = " + performer_id + " \n" +
+            "ORDER BY concert_series \n"
 
         const result = connection.query(selectSQL);
         connection.release();

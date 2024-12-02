@@ -221,10 +221,16 @@ export interface PerformerSearchResultsInterface {
     concert_series: string;
 }
 
-export interface ScheduleFormInterface {
+export interface EastSideFormInterface {
     rank: number | null;
     notSelected: boolean;
 }
+
+export interface ConcertoFormInterface {
+    confirmed: boolean;
+}
+
+export type ScheduleFormInterface = EastSideFormInterface | ConcertoFormInterface
 
 export function formatFieldNames(input: string): string {
     return input

@@ -120,16 +120,27 @@
             <p class="top-message">Performing {data.musical_piece} </p><br/>
             <p class="top-message">Lookup code {data.lottery_code}</p>
             <br/><br/><br/>
-            <form id="concerto-confirmation" method="POST" action="?/schedule">
-                <p>Please confirm your attendance for Concerto Performance Sunday {data.concertTimes[0].displayStartTime}</p>
+            {#if data.formValues !== null && data.formValues[0].confirmed}
+                <h3>You are all set, thank you for confirming you
+                    attendance {data.concertTimes[0].displayStartTime}</h3>
+                <p>Please contact concertchair@pafenorthwest.com with any questions</p>
                 <br/><br/>
-                <div class="form-group">
-                    <input type="hidden" name="performerId" value={data.performer_id}/>
-                    <input type="hidden" name="concertSeries" value={data.concert_series}/>
-                    <input type="checkbox" name="concert-confirm" id="concert-confirm" >
-                    <p>Confirm Attendance</p>
-                </div>
-            </form>
+            {:else}
+                <form id="concerto-confirmation" method="POST" action="?/add">
+                    <p>Please confirm your attendance for Concerto Playoff
+                        on {data.concertTimes[0].displayStartTime}</p>
+                    <br /><br />
+                    <div class="form-group">
+                        <input type="hidden" name="performerId" value={data.performer_id} />
+                        <input type="hidden" name="concertSeries" value={data.concert_series} />
+                        <input type="checkbox" name="concert-confirm" id="concert-confirm">
+                        <p>Confirm Attendance</p>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit">Submit</button>
+                    </div>
+                </form>
+            {/if}
         {:else}
             <h3 class="schedule">Rank Performance Times</h3>
             <p class="top-message">Scheduling for {data.performer_name}</p><br/>
