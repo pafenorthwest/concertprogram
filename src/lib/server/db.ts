@@ -864,3 +864,33 @@ export async function createDBSchedule(performer_id : number,
         throw error;
     }
 }
+
+export async function retrievePerformanceByLottery(pafe_series: number) {
+    try {
+        const connection = await pool.connect();
+
+        const querySQL =
+          "SELECT performance.id, performance.performer_id, performance.performance_order, \n" +
+          "performance.concert_series, performance.pafe_series, performer_lottery.lookup_code, \n" +
+          "performer_lottery.lottery, \n" +
+          "performer_ranked_choice.concert_chair_choice, performer_ranked_choice.first_choice_time, \n" +
+          "performer_ranked_choice.second_choice_time, performer_ranked_choice.third_choice_time, \n" +
+          "performer_ranked_choice.fourth_choice_time\n" +
+          "FROM performance \n" +
+          "JOIN performer_lottery ON performance.performer_id = performer_lottery.performer_id\n" +
+          "         AND performance.pafe_series = performer_lottery.pafe_series\n" +
+          "JOIN performer_ranked_choice ON performance.performer_id = performer_ranked_choice.performer_id\n" +
+          "        AND performance.pafe_series = performer_ranked_choice.pafe_series\n" +
+          "        AND performance.concert_series = performer_ranked_choice.concert_series\n" +
+          "WHERE performance.pafe_series = " + pafe_series + "\n" +
+          "ORDER BY performance.concert_series, performer_lottery.lottery"
+
+        const result = await connection.query(querySQL);
+
+        connection.release();
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
