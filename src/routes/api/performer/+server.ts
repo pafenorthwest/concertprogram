@@ -2,11 +2,13 @@ import { type PerformerInterface, selectGrade, selectInstrument } from '$lib/ser
 import {json} from "@sveltejs/kit";
 import {createPerformer} from "$lib/server/performer";
 import { isAuthorized } from '$lib/server/apiAuth';
+import { auth_code } from '$env/static/private';
 
-export async function POST({params, request}) {
+export async function POST({params, request, cookies}) {
 
     // Get the Authorization header
-    if (!isAuthorized(request.headers.get('Authorization'))) {
+    const pafeAuth = cookies.get('pafe_auth')
+    if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
         return new Response('Unauthorized', { status: 401 });
     }
 

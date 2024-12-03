@@ -2,6 +2,7 @@ import type { AccompanistInterface } from '$lib/server/common';
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 import { isAuthorized } from '$lib/server/apiAuth';
+import { auth_code } from '$env/static/private';
 
 export async function GET({params, request}) {
     try {
@@ -38,9 +39,10 @@ export async function PUT({params, request}) {
     }
 }
 
-export async function DELETE({params, request}){
+export async function DELETE({params, request, cookies}) {
     // Get the Authorization header
-    if (!isAuthorized(request.headers.get('Authorization'))) {
+    const pafeAuth = cookies.get('pafe_auth')
+    if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
         return new Response('Unauthorized', { status: 401 });
     }
 

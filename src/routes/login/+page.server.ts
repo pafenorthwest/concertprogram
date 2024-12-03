@@ -14,6 +14,7 @@ export const actions = {
         const data = await request.formData();
 
         if (data.get('user') === admin && data.get('password') === password) {
+            // suggest add httpOnly: true  secure: true sameSite: 'strict'
             cookies.set('pafe_auth', auth_code, { path: '/' });
             redirect(307, '/admin');
         } else {

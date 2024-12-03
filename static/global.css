@@ -322,7 +322,6 @@ input[type="checkbox"] {
     background-color: var(--low-em-color);
     opacity: 0.8;
     border: 2px solid var(--action-color);
-    opacity: 0.8;
 }
 .table tr:hover {
     cursor: pointer;
@@ -348,6 +347,27 @@ input[type="checkbox"] {
     text-align: left;
 }
 .table > tbody > tr:last-child > td { border-bottom: 0; }
+
+
+.sortable-row {
+    cursor: grab;
+}
+.sortable-row.dragging {
+    opacity: 0.5;
+    background-color: var(--card-bg-color);
+}
+
+.grab-button {
+    margin-right: 10px;
+    border: none;
+    background: var(--card-bg-color);
+    font-size: var(--text-size);
+    cursor: grab;
+}
+
+.grab-button:active {
+    cursor: grabbing;
+}
 
 .action {
     padding: 10px;

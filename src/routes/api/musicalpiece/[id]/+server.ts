@@ -2,6 +2,7 @@ import { type MusicalPieceInterface} from "$lib/server/common";
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 import { isAuthorized } from '$lib/server/apiAuth';
+import { auth_code } from '$env/static/private';
 
 export async function GET({params, request}) {
     try {
@@ -14,7 +15,13 @@ export async function GET({params, request}) {
         return json({status: 'error', message: 'Failed to process the request'}, {status: 500});
     }
 }
-export async function PUT({params, request}) {
+export async function PUT({params, request, cookies}) {
+    // Get the Authorization header
+    const pafeAuth = cookies.get('pafe_auth')
+    if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
+        return new Response('Unauthorized', { status: 401 });
+    }
+
     try {
         const {printed_name,
             first_composer_id,
@@ -30,11 +37,9 @@ export async function PUT({params, request}) {
             second_composer_id: second_composer_id,
             third_composer_id: third_composer_id
         }
-        console.log(`Starting musical piece ${musicalPiece.printed_name} ${musicalPiece.first_composer_id} ${musicalPiece.all_movements} for ${musicalPiece.id}`);
         if (!musicalPiece.printed_name || !musicalPiece.first_composer_id) {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
-            console.log("sending update to DB")
             const rowCount = await updateById('musical_piece', musicalPiece)
             if (rowCount != null && rowCount > 0) {
                 return json( {id: params.id}, {status: 200, body: {message: 'Update successful'}});
@@ -48,8 +53,10 @@ export async function PUT({params, request}) {
     }
 }
 
-export async function DELETE({params, request}){
-    if (!isAuthorized(request.headers.get('Authorization'))) {
+export async function DELETE({params, request, cookies}){
+    // Get the Authorization header
+    const pafeAuth = cookies.get('pafe_auth')
+    if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
         return new Response('Unauthorized', { status: 401 });
     }
 

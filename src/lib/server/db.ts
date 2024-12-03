@@ -410,13 +410,13 @@ export async function updateById(table: string, data: ComposerInterface | Accomp
                     setCols = setCols + ", email = '" + data.email + "' "
                 }
                 if (isNonEmptyString(data.phone)) {
-                    setCols = setCols + ", email = '" + data.phone + "' "
+                    setCols = setCols + ", phone = '" + data.phone + "' "
                 }
                 break;
             case 'musical_piece':
                 // don't wipe out data
-                if (isNonEmptyString(data.printed_name) &&
-                    isNonEmptyString(data.first_composer_id)
+                if (!isNonEmptyString(data.printed_name) &&
+                    !isNonEmptyString(data.first_composer_id)
                 ) {
                     return null
                 }
@@ -881,7 +881,8 @@ export async function retrievePerformanceByLottery(pafe_series: number) {
           "         AND performance.pafe_series = performer_lottery.pafe_series\n" +
           "JOIN performer_ranked_choice ON performance.performer_id = performer_ranked_choice.performer_id\n" +
           "        AND performance.pafe_series = performer_ranked_choice.pafe_series\n" +
-          "        AND performance.concert_series = performer_ranked_choice.concert_series\n" +
+          "        AND (performance.concert_series = performer_ranked_choice.concert_series\n" +
+          "              OR performance.concert_series = 'Waitlist')" +
           "WHERE performance.pafe_series = " + pafe_series + "\n" +
           "ORDER BY performance.concert_series, performer_lottery.lottery"
 
@@ -889,6 +890,56 @@ export async function retrievePerformanceByLottery(pafe_series: number) {
 
         connection.release();
         return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function updateProgramOrder(id: number, concertSeries:string, order:number) {
+    try {
+        const connection = await pool.connect();
+
+        const updateSQL ="UPDATE performance \n" +
+          "SET performance_order = "+order+", \n" +
+          "concert_series = '"+concertSeries+"' \n" +
+          "WHERE id = "+id+" \n"
+
+        const result = await connection.query(updateSQL);
+
+        connection.release();
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function movePerformanceByChair(id: number, performerId: number, pafeSeries: number, concertSeries:string, concertStart: string | null) {
+   // moving in and out of waitlist
+    try {
+        const connection = await pool.connect();
+
+        const updateSQL ="UPDATE performance \n" +
+          "SET concert_series = '"+concertSeries+"' \n" +
+          "WHERE id = "+id+" \n"
+
+        await connection.query(updateSQL);
+
+        // waitlist does not have concert start times
+        if (concertSeries.toLowerCase() !== "waitlist" && concertStart != null) {
+            const updateSQL ="UPDATE performer_ranked_choice \n" +
+              "SET first_choice_time = '"+concertStart+"', \n" +
+              "concert_chair_choice = "+true+" \n" +
+              "WHERE performer_id = "+performerId+" \n" +
+              "  AND pafe_series = "+pafeSeries+" \n" +
+              "  AND concert_series = '"+concertSeries+"' \n"
+
+            await connection.query(updateSQL);
+        }
+
+        connection.release();
+        return true;
     } catch (error) {
         console.error('Error executing query:', error);
         throw error;

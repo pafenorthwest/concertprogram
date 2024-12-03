@@ -2,11 +2,13 @@ import type { AccompanistInterface } from '$lib/server/common';
 import {insertTable} from "$lib/server/db";
 import {json} from "@sveltejs/kit";
 import { isAuthorized } from '$lib/server/apiAuth';
+import { auth_code } from '$env/static/private';
 
-export async function POST({request}) {
+export async function POST({request, cookies}) {
 
     // Get the Authorization header
-    if (!isAuthorized(request.headers.get('Authorization'))) {
+    const pafeAuth = cookies.get('pafe_auth')
+    if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
         return new Response('Unauthorized', { status: 401 });
     }
 

@@ -1,5 +1,4 @@
 import pg from 'pg';
-const { QueryArrayResult } = pg;
 import {queryTable, deleteById, insertTable} from "$lib/server/db";
 import { type MusicalPieceInterface, formatFieldNames } from '$lib/server/common.ts';
 
