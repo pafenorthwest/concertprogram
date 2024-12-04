@@ -77,21 +77,21 @@ export async function GET({ request, cookies }) {
 
 function flattenProgram(input: OrderedPerformanceInterface): ProgramCSVExportInterface {
 	return {
-		id: input.id,
-		performerId: input.performerId,
-		performerName: input.performerName,
-		instrument: input.instrument,
-		grade: input.grade,
-		accompanist: input.accompanist,
+		id: input.id ? input.id : 0,
+		performerId: input.performerId ? input.performerId : 0,
+		performerName: input.performerName ? input.performerName : '',
+		instrument: input.instrument ? input.instrument : '',
+		grade: input.grade ? input.grade : '',
+		accompanist: input.accompanist ? input.accompanist : '',
 
-		musicalPieceOneTitle: input.musicalTitles[0].title,
-		musicalPieceOneMovement: input.musicalTitles[0].movement,
+		musicalPieceOneTitle: safeStringTitle(input.musicalTitles[0]),
+		musicalPieceOneMovement: safeStringMovement(input.musicalTitles[0]),
 		musicalPieceOneComposer1: safeStringComposer(input.musicalTitles[0]? input.musicalTitles[0] : null,0),
 		musicalPieceOneComposer2: safeStringComposer(input.musicalTitles[0]? input.musicalTitles[0] : null,1),
 		musicalPieceOneComposer3: safeStringComposer(input.musicalTitles[0]? input.musicalTitles[0] : null,2),
 
-		musicalPieceTwoTitle: input.musicalTitles[1] ? input.musicalTitles[1].title : '',
-		musicalPieceTwoMovement:input.musicalTitles[1] ? input.musicalTitles[1].movement : '',
+		musicalPieceTwoTitle: safeStringTitle(input.musicalTitles[1]),
+		musicalPieceTwoMovement: safeStringMovement(input.musicalTitles[1]),
 		musicalPieceTwoComposer1: safeStringComposer(input.musicalTitles[1]? input.musicalTitles[1] : null,0),
 		musicalPieceTwoComposer2: safeStringComposer(input.musicalTitles[1]? input.musicalTitles[1] : null,1),
 		musicalPieceTwoComposer3: safeStringComposer(input.musicalTitles[1]? input.musicalTitles[1] : null,2)
@@ -103,4 +103,16 @@ function safeStringComposer(input: MusicalTitleInterface | null , referenceLoc: 
 	if (input.composers == null || input.composers.length <= referenceLoc) { return '' }
 	if (input.composers[referenceLoc] == null) { return '' }
 	return input.composers[referenceLoc].printedName + ' (' + input.composers[referenceLoc].yearsActive + ')';
+}
+
+function safeStringMovement(input: MusicalTitleInterface | null): string {
+	if (input == null) { return '' }
+	if (input.movement == null ) { return '' }
+	return input.movement
+}
+
+function safeStringTitle(input: MusicalTitleInterface | null): string {
+	if (input == null) { return '' }
+	if (input.title == null ) { return '' }
+	return input.title
 }
