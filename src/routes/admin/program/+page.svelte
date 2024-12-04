@@ -127,6 +127,7 @@
 
 <h2>Programs</h2>
 {#if data.isAuthenticated}
+	<div class="program-top-bar">
 	<select name="concert-selector" id="concert-selector" on:change={filterByConcert}>
 		{#each data.concert_times as concert}
 			<option value="{concert.concert_series+'-'+concert.concert_number_in_series}">{concert.concert_series}
@@ -135,6 +136,8 @@
 		<option value="Waitlist">Waitlist NoTime</option>
 		<option value="All">All</option>
 	</select>
+		<a href="/api/program/">Export to csv</a>
+	</div>
 	<table class="table" id="sortable-table">
 		<thead>
 		<tr>

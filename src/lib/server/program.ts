@@ -36,6 +36,19 @@ export interface ConcertDetailInterface {
 	[key: string]: number;
 }
 
+export interface ProgramCSVExportInterface extends PerformanceDetailsInterface {
+	musicalPieceOneTitle: string;
+	musicalPieceOneMovement:string;
+	musicalPieceOneComposer1: string;
+	musicalPieceOneComposer2: string;
+	musicalPieceOneComposer3: string;
+	musicalPieceTwoTitle: string;
+	musicalPieceTwoMovement:string;
+	musicalPieceTwoComposer1: string;
+	musicalPieceTwoComposer2: string;
+	musicalPieceTwoComposer3: string;
+}
+
 class ConcertCount {
 	orderMap: ConcertDetailInterface = {}
 
