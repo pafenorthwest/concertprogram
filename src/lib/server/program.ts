@@ -1,4 +1,8 @@
-import { retrievePerformanceByLottery } from '$lib/server/db';
+import {
+	queryMusicalPieceByPerformanceId,
+	queryPerformanceDetailsById,
+	retrievePerformanceByLottery
+} from '$lib/server/db';
 import {getCachedTimeStamps} from '$lib/cache'
 import { compareReformatISODate } from '$lib/server/common';
 
@@ -11,21 +15,21 @@ export interface MusicalTitleInterface {
 	movement: string;
 	composers: ComposerInterface[];
 }
-export interface PerformanceInterface {
+export interface PerformanceDetailsInterface {
 	id: number;
 	performerId: number;
 	performerName: string;
 	instrument: string;
 	grade: string;
 	accompanist: string;
-	musicalTitles: MusicalTitleInterface[];
 }
 
-export interface OrderedPerformanceInterface extends PerformanceInterface {
+export interface OrderedPerformanceInterface extends PerformanceDetailsInterface {
 	lottery: string;
 	concertSeries: string;
 	concertNumberInSeries: number;
 	order: number;
+	musicalTitles: MusicalTitleInterface[];
 }
 
 export interface ConcertDetailInterface {
@@ -107,25 +111,25 @@ export class Program {
 						// Last Concert Was Full Move to Next
 					}
 
-					// build musical title
-					const composers: ComposerInterface = {printedName: "Back", yearsActive: "0-1"}
-					const musicalTitles: MusicalTitleInterface =
-						{title:"All Is Good", movement: "I. Fast", composers: [composers]};
+					// build array of musical title
+					const musicalTitles = await this.queryMusicalPiece(performance.id)
+					// get performance details
+					const performanceDetails = await this.queryPerformanceDetails(performance.id)
 
 					// add performance
 					this.orderedPerformance.push({
 						id: performance.id,
 						performerId: performance.performer_id,
-						performerName: "full name",
-						instrument: "Cello",
-						grade: "3-5",
-						accompanist: "any body",
+						performerName: performanceDetails.performerName,
+						instrument: performanceDetails.instrument,
+						grade: performanceDetails.grade,
+						accompanist: performanceDetails.accompanist,
 						lottery: performance.lottery,
 						// put Remaining performers, whose desired schedule can not be met  into "Waitlist" concert series
 						concertSeries: hasPlacement ? performance.concert_series: "Waitlist",
 						concertNumberInSeries: numberInSeries,
 						order: performance.performance_order,
-						musicalTitles: [musicalTitles]
+						musicalTitles: musicalTitles
 					});
 
 				}
@@ -182,5 +186,59 @@ export class Program {
 		if (chairOverride) { return false }
 		return concertSeries.toLowerCase() === "eastside" &&
 			this.count.get(concertSeries, concertNum) >= this.eastSideSeats;
+	}
+
+	async queryMusicalPiece(performanceId:number): Promise<MusicalTitleInterface[]> {
+		const data = await queryMusicalPieceByPerformanceId(performanceId);
+		const musicalTitles: MusicalTitleInterface[] = []
+		if (data.rowCount != null && data.rowCount !== 0) {
+			for (const piece of data.rows) {
+				const composers: ComposerInterface[] = []
+				if (piece.composer_one_name != null) {
+					composers.push({
+						printedName: piece.composer_one_name,
+						yearsActive: piece.composer_one_years
+					});
+				}
+				if (piece.composer_two_name != null) {
+					composers.push({
+						printedName: piece.composer_two_name,
+						yearsActive: piece.composer_two_years
+					});
+				}
+				if (piece.composer_three_name != null) {
+					composers.push({
+						printedName: piece.composer_three_name,
+						yearsActive: piece.composer_two_years
+					});
+				}
+				if (piece.printed_name != null) {
+					musicalTitles.push({
+						title: piece.printed_name,
+						movement: piece.movement ? piece.movement : '',
+						composers: composers
+					})
+				}
+			}
+			return musicalTitles;
+		} else {
+			throw new Error('Unable to query musical piece for program');
+		}
+	}
+
+	async queryPerformanceDetails(performanceId:number): Promise<PerformanceDetailsInterface> {
+		const data = await queryPerformanceDetailsById(performanceId)
+		if (data.rowCount != null && data.rowCount !== 0) {
+			return {
+				id: performanceId,
+				performerId: data.rows[0].performer_id,
+				performerName: data.rows[0].performer_full_name,
+				instrument: data.rows[0].instrument,
+				grade: data.rows[0].grade,
+				accompanist: data.rows[0].accompanist_name ? data.rows[0].accompanist_name : ''
+			}
+		} else {
+			throw new Error(`Unable to query performance details with id ${performanceId} for program`);
+		}
 	}
 }

@@ -657,6 +657,48 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
     }
 }
 
+export async function queryMusicalPieceByPerformanceId(id: number) {
+    try {
+        const connection = await pool.connect();
+        const querySQL = "SELECT performance.id, musical_piece.printed_name, performance_pieces.movement, \n" +
+          "one.printed_name as composer_one_name, one.years_active as composer_one_years, \n" +
+          "two.printed_name as composer_two_name, two.years_active as composer_two_years, \n" +
+          "three.printed_name as composer_three_name, three.years_active as composer_three_years \n" +
+          "FROM musical_piece\n" +
+          "JOIN performance_pieces ON musical_piece.id = performance_pieces.musical_piece_id\n" +
+          "JOIN composer one ON one.id = musical_piece.first_composer_id\n" +
+          "LEFT JOIN composer two ON two.id = musical_piece. second_composer_id\n" +
+          "LEFT JOIN composer three ON three.id = musical_piece. third_composer_id\n" +
+          "JOIN performance ON performance_pieces.performance_id = performance.id\n" +
+          "AND performance.id = " +id
+
+        const result = connection.query(querySQL)
+        connection.release();
+        return result;
+    } catch (error) {
+        console.error('Error executing queryMusicalPieceByPerformanceId', error);
+        throw error;
+    }
+}
+
+export async function queryPerformanceDetailsById(id: number) {
+    try {
+        const connection = await pool.connect();
+        const querySQL = "SELECT performance.performer_id, performer.full_name as performer_full_name, \n" +
+          "performance.instrument, performer.grade, accompanist.full_name as accompanist_name\n" +
+          "FROM performance \n" +
+          "JOIN performer ON performance.performer_id = performer.id \n" +
+          "LEFT JOIN accompanist ON performance.accompanist_id = accompanist.id \n" +
+          "WHERE performance.id = "+id
+        const result = connection.query(querySQL)
+        connection.release();
+        return result;
+    } catch (error) {
+        console.error('Error executing queryPerformanceDetailsById', error);
+        throw error;
+    }
+}
+
 export async function searchComposer(composer_name: string) {
     try {
         const connection = await pool.connect();
