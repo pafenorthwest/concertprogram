@@ -6,14 +6,14 @@ import {
 import {getCachedTimeStamps} from '$lib/cache'
 import { compareReformatISODate } from '$lib/server/common';
 
-export interface ComposerInterface {
+export interface ProgramComposerInterface {
 	printedName: string;
 	yearsActive: string
 }
 export interface MusicalTitleInterface {
 	title: string;
 	movement: string;
-	composers: ComposerInterface[];
+	composers: ProgramComposerInterface[];
 }
 export interface PerformanceDetailsInterface {
 	id: number;
@@ -206,7 +206,7 @@ export class Program {
 		const musicalTitles: MusicalTitleInterface[] = []
 		if (data.rowCount != null && data.rowCount !== 0) {
 			for (const piece of data.rows) {
-				const composers: ComposerInterface[] = []
+				const composers: ProgramComposerInterface[] = []
 				if (piece.composer_one_name != null) {
 					composers.push({
 						printedName: piece.composer_one_name,

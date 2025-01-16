@@ -826,6 +826,7 @@ export async function selectPerformerLottery(pafe_series: number) {
             "FROM performer_lottery \n" +
             "JOIN performer ON performer.id = performer_lottery.performer_id \n" +
             "JOIN performance ON performer.id = performance.performer_id \n" +
+            "  AND performer_lottery.pafe_series =  performance.pafe_series \n" +
             "JOIN performance_pieces ON performance.id = performance_pieces.performance_id \n" +
             "JOIN musical_piece ON musical_piece.id = performance_pieces.musical_piece_id \n" +
             "JOIN composer ON musical_piece.first_composer_id = composer.id \n" +
@@ -924,7 +925,7 @@ export async function retrievePerformanceByLottery(pafe_series: number) {
           "JOIN performer_ranked_choice ON performance.performer_id = performer_ranked_choice.performer_id\n" +
           "        AND performance.pafe_series = performer_ranked_choice.pafe_series\n" +
           "        AND (performance.concert_series = performer_ranked_choice.concert_series\n" +
-          "              OR performance.concert_series = 'Waitlist')" +
+          "              OR performance.concert_series = 'Waitlist') \n" +
           "WHERE performance.pafe_series = " + pafe_series + "\n" +
           "ORDER BY performance.concert_series, performer_lottery.lottery"
 

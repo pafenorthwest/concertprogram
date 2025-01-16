@@ -249,6 +249,7 @@ export class Performance {
 				throw new PerformanceError('Unable to import new performer');
 			}
 		}
+		// TODO: Create new lottery if none for current PAFE series
 		const normalized_grade: Grade | null = selectGrade(res.rows[0].grade);
 		if (normalized_grade == null) {
 			throw new GradeError('Grade can not be null for performer');
