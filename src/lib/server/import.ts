@@ -86,7 +86,6 @@ export class Performance {
       if (data.concert_series == null) {
           data.concert_series = 'Undefined'
       }
-
 			this.performance = await this.processPerformance(
 				this.performer,
 				this.musical_piece_1,
@@ -316,7 +315,6 @@ export class Performance {
 		if (musical_piece.id == null) {
 			throw new MusicalPieceError("Can't process Performance with null musical piece");
 		}
-
 		const res = await searchPerformanceByPerformer(performer.id, concert_series, pafe_series());
 		if (res.rowCount == null || res.rowCount < 1) {
 			const thisPerformance: PerformanceInterface = {

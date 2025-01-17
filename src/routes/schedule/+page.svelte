@@ -133,8 +133,8 @@
                     <div class="form-group">
                         <input type="hidden" name="performerId" value={data.performer_id} />
                         <input type="hidden" name="concertSeries" value={data.concert_series} />
-                        <input type="checkbox" name="concert-confirm" id="concert-confirm">
-                        <p>Confirm Attendance</p>
+                        <input type="checkbox" name="concert-confirm" class="concerto-confirm" id="concert-confirm">
+                        <p class="concerto-confirm">Confirm Attendance</p>
                     </div>
                     <div class="form-group">
                         <button type="submit">Submit</button>

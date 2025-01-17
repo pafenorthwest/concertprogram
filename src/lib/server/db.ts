@@ -260,7 +260,7 @@ export async function insertPerformance(data: PerformanceInterface,
                                         performer_id: number,
                                         musical_piece_id: number,
                                         order: number | null,
-                                        concert_time: Date | null,
+                                        comment: string | null,
                                         warm_up_room_name: string | null,
                                         warm_up_room_start: Date | null,
                                         warm_up_room_end: Date | null) {
@@ -282,9 +282,9 @@ export async function insertPerformance(data: PerformanceInterface,
             cols = cols +", accompanist_id"
             vals = vals +", "+data.accompanist_id
         }
-        if (concert_time != null) {
-            cols = cols +", concert_time"
-            vals = vals +", '"+concert_time.toTimeString()+"'"
+        if (comment != null && comment != "") {
+            cols = cols +", comment"
+            vals = vals +", '"+comment+"'"
         }
         if (warm_up_room_name != null) {
             cols = cols +", warm_up_room_name"
@@ -318,7 +318,7 @@ export async function updatePerformance(data: PerformanceInterface,
                                         performer_id: number,
                                         musical_piece_id: number,
                                         order: number | null,
-                                        concert_time: Date | null,
+                                        comment: string | null,
                                         warm_up_room_name: string | null,
                                         warm_up_room_start: Date | null,
                                         warm_up_room_end: Date | null) {
@@ -339,8 +339,8 @@ export async function updatePerformance(data: PerformanceInterface,
         if (data.accompanist_id != null) {
             setCols = setCols + ", accompanist_id = "+data.accompanist_id
         }
-        if (concert_time != null) {
-            setCols = setCols + ", concert_time = '"+concert_time.toTimeString()+"'"
+        if (comment != null && comment != "") {
+            setCols = setCols  +", comment = '"+comment+"'"
         }
         if (warm_up_room_name != null) {
             setCols = setCols + ", warm_up_room_name = '"+warm_up_room_name+"'"
@@ -435,7 +435,6 @@ export async function updateById(table: string, data: ComposerInterface | Accomp
         }
 
         const updateSQL="UPDATE "+table+" SET "+setCols+" WHERE id="+data.id
-        console.log(`updateSQL: ${updateSQL}`)
         const result = await connection.query(updateSQL)
 
         // Release the connection back to the pool
@@ -605,7 +604,7 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
      *     composer3_years_active: string -s almost always empty
      *     accompanist: string;
      *     duration: number;
-     *     concert_time: datetime;
+     *     comment: string;
      *     instrument: string | null;
      *     performance_order: number default 100;
      *     concert_series: string (Eastside | Concerto Playoff);
@@ -622,7 +621,7 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
             "            Second.printed_name AS composer2, Second.years_active AS composer2_years_active,\n" +
             "            Third.printed_name AS composer3, Third.years_active AS composer3_years_active,\n" +
             "            accompanist.full_name AS accompanist,\n" +
-            "            performance.duration, performance.concert_time, performance.instrument,\n" +
+            "            performance.duration, performance.comment, performance.instrument,\n" +
             "            performance.performance_order, performance.concert_series, performance.pafe_series\n"
         const joins = " JOIN performance_pieces ON performance.id = performance_pieces.performance_id\n" +
             "        JOIN musical_piece ON performance_pieces.musical_piece_id = musical_piece.id\n" +
@@ -790,8 +789,8 @@ export async function searchPerformanceByPerformer(performer_id: number, concert
         const searchSQL = "SELECT performance.id, performer.full_name as performer_name, \n"+
             "musical_piece.printed_name as musical_piece_printed_name, \n"+
             "performance.performer_id, performance.performance_order, \n"+
-            "performance.concert_series, performance.pafe_series, performance.duration, performance.accompanist_id \n" +
-            "concert_time, performance.instrument, warm_up_room_name, warm_up_room_start, warm_up_room_end \n" +
+            "performance.concert_series, performance.pafe_series, performance.duration, performance.accompanist_id, \n" +
+            "performance.comment, performance.instrument, warm_up_room_name, warm_up_room_start, warm_up_room_end \n" +
             "FROM performance \n" +
             "JOIN performance_pieces ON performance.id = performance_pieces.performance_id \n" +
             "JOIN musical_piece ON performance_pieces.musical_piece_id = musical_piece.id \n" +

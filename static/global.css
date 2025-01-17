@@ -211,6 +211,13 @@ li p {
     border: 1px solid #ccc;
     border-radius: var(--border-radius);
 }
+
+ .form-group input[type="checkbox"].concerto-confirm {
+     font-size: calc(var(--text-size) * 2);
+     transform:scale(2.2, 2.2);
+     padding-bottom: var(--padding);
+ }
+
 .form-group button {
     width: 100%;
     padding: 10px;
@@ -234,6 +241,10 @@ li p {
     font-size: .75em;
     color: var(--low-em-color);
 }
+.form-group p.concerto-confirm {
+    font-size: calc(var(--text-size)*2.2);
+}
+
 .inline-form input {
     display: inline;
 }

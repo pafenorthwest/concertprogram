@@ -26,7 +26,7 @@
                 <td>{performance.composer3_years_active}</td>
                 <td>{performance.accompanist}</td>
                 <td>{performance.duration}</td>
-                <td>{performance.concert_time}</td>
+                <td>{performance.comment}</td>
                 <td>{performance.instrument}</td>
                 <td>{performance.performance_order}</td>
                 <td>{performance.concert_series}</td>

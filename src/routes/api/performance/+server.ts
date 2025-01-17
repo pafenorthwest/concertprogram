@@ -19,7 +19,7 @@ export async function POST({ request , cookies}) {
 
     try {
         // the following fields are often not included
-        // order, concert_time, warm_up_room_name, warm_up_room_start, warm_up_room_name
+        // order, warm_up_room_name, warm_up_room_start, warm_up_room_name
         const {
             performer_name,
             musical_piece,
@@ -30,7 +30,7 @@ export async function POST({ request , cookies}) {
             pafe_series,
             instrument,
             order,
-            concert_time,
+            comment,
             warm_up_room_name,
             warm_up_room_start,
             warm_up_room_end
@@ -64,8 +64,7 @@ export async function POST({ request , cookies}) {
             // get musical_peice id
             const musical_piece_id = 0
             const result = await insertPerformance(performance, performer_id, musical_piece_id,
-                order, concert_time,
-                warm_up_room_name, warm_up_room_start, warm_up_room_end)
+                order, comment, warm_up_room_name, warm_up_room_start, warm_up_room_end)
             if (result.rowCount != null && result.rowCount > 0) {
                 return json( {status: 200, body: {message: 'Update successful'}, headers: access_control_headers});
             } else {

@@ -40,6 +40,7 @@ CREATE TABLE performer (
     id SERIAL PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
     grade grade_list,
+    archive BOOLEAN NOT NULL DEFAULT FALSE,
     email VARCHAR(255) NULL,
     phone VARCHAR(18) NULL,
     instrument instrument_list
@@ -103,8 +104,8 @@ CREATE TABLE performance (
     pafe_series INTEGER NOT NULL,
     duration INTEGER DEFAULT 0 NOT NULL,
     accompanist_id INTEGER NULL,
-    concert_time TIMESTAMP NULL,
     instrument instrument_list,
+    comment VARCHAR(500) NULL,
     warm_up_room_name VARCHAR(255) NULL,
     warm_up_room_start TIMESTAMP NULL,
     warm_up_room_end TIMESTAMP NULL
@@ -118,15 +119,15 @@ CREATE TABLE concert_times (
 );
 
 INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
-VALUES ('Concerto',36,0,'04/27/2025T15:00:00');
+VALUES ('Concerto',37,0,'04/27/2025T15:00:00');
 INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
-VALUES ('EastSide',36,1,'05/03/2025T16:00:00');
+VALUES ('EastSide',37,1,'05/03/2025T16:00:00');
 INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
-VALUES ('EastSide',36,2,'05/03/2025T19:00:00');
+VALUES ('EastSide',37,2,'05/03/2025T19:00:00');
 INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
-VALUES ('EastSide',36,3,'05/04/2025T14:00:00');
+VALUES ('EastSide',37,3,'05/04/2025T14:00:00');
 INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
-VALUES ('EastSide',36,4,'05/04/2025T17:00:00');
+VALUES ('EastSide',37,4,'05/04/2025T17:00:00');
 
 
 INSERT INTO composer (printed_name, full_name, years_active) VALUES ('Adele Adkins','Adele Adkins','1988 - current');
