@@ -1,4 +1,7 @@
 
+# APIs
+[APIs documented here](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/ericpassmore/concertprogram/refs/heads/main/docs/schedule-api.yaml) follow the link for the Redocly rendering of OpenAPI docs.
+
 # Download 
 - Clone repository from git `git clone https://github.com/ericpassmore/concertprogram`
 - Update `.env` file
