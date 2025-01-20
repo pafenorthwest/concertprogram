@@ -51,7 +51,7 @@ describe('Test Composer HTTP APIs', () => {
 			},
 			body: JSON.stringify({"printed_name": "John John", "full_name": "John John", "years_active": "1980 - 2000"})
 		});
-		expect(getResponse.status).toBe(200);
+		expect(getResponse.status).toBe(201);
 		// parse stream to get body
 		if (getResponse.body != null) {
 			const bodyFromRequest = await unpackBody(getResponse.body);
