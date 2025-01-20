@@ -36,7 +36,7 @@ export async function POST({request, cookies}) {
             return json({status: 'error', reason: 'Failed to process the request'}, {status: 500});
         }
         if (result.rowCount != null && result.rowCount > 0) {
-            return json( {status: 200, body: {message: 'Update successful'}});
+            return json( {status: 200, body: {message: "success"}, id: result.rows[0].id});
         } else {
             return json( {status: 500, body: {message: 'Update failed'}});
         }

@@ -42,6 +42,26 @@ describe('Test Composer HTTP APIs', () => {
 		});
 		expect(getResponse.status).toBe(403);
 	});
+	it('It should return insert with POST', async () => {
+		const getResponse = await fetch('http://localhost:5173/api/composer', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${auth_code}`
+			},
+			body: JSON.stringify({"printed_name": "John John", "full_name": "John John", "years_active": "1980 - 2000"})
+		});
+		expect(getResponse.status).toBe(200);
+		// parse stream to get body
+		if (getResponse.body != null) {
+			const bodyFromRequest = await unpackBody(getResponse.body);
+			// create object from parsed stream to get id of newly created accompanist
+			const resultObject = JSON.parse(bodyFromRequest)
+			expect(resultObject.id).greaterThan(0)
+		} else {
+			assert(false,"unable to parse body of composer request")
+		}
+	});
 	it('It should return not-authorized for DELETE', async () => {
 		const getResponse = await fetch('http://localhost:5173/api/composer/999999', {
 			method: 'DELETE',
@@ -97,7 +117,6 @@ describe('Test Composer HTTP APIs', () => {
 			const bodyFromRequest = await unpackBody(delResponse.body);
 			// create object from parsed stream to get id of newly created accompanist
 			const resultObject = JSON.parse(bodyFromRequest)
-			console.log(`Results Error ${JSON.stringify(resultObject)}`)
 			expect(resultObject.result).toBe('error')
 			expect(resultObject.reason).toBe('Not Found')
 		} else {
