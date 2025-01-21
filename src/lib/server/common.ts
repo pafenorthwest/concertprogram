@@ -156,6 +156,7 @@ export interface PerformerInterface {
     instrument: Instrument;
     email: string | null;
     phone: string | null;
+    created?: boolean;
 }
 
 export interface PerformanceFilterInterface {
@@ -177,6 +178,7 @@ export interface PerformanceInterface {
     concert_series: string;
     pafe_series: number;
     instrument: Instrument;
+    created?: boolean;
 }
 
 export interface PerformancePieceInterface {

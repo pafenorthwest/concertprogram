@@ -4,53 +4,49 @@ import {createPerformer} from "$lib/server/performer";
 import { isAuthorized } from '$lib/server/apiAuth';
 import { auth_code } from '$env/static/private';
 
-export async function POST({params, request, cookies}) {
+export async function POST({request, cookies}) {
+    // Check Authorization
+    const pafeAuth = cookies.get('pafe_auth');
 
-    // Get the Authorization header
-    const pafeAuth = cookies.get('pafe_auth')
+    if (!request.headers.has('Authorization')) {
+        return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
+    }
+
     if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-        return new Response('Unauthorized', { status: 401 });
+        return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
     }
 
-    const access_control_headers =  {
-        'Access-Control-Allow-Origin': '*', // Allow all hosts
-        'Access-Control-Allow-Methods': 'POST', // Specify allowed methods
+    let { full_name, grade, instrument, email, phone } = await request.json();
+
+    if (instrument == null || grade == null) {
+        return json({ result: 'error', reason: 'Bad Instrument or Grade Value' }, { status: 400 });
+    }
+    instrument = selectInstrument(instrument)
+    grade = selectGrade(grade)
+
+
+    const performer: PerformerInterface = {
+        id: null,
+        full_name: full_name,
+        grade: grade,
+        instrument: instrument,
+        email: email,
+        phone: phone
     }
 
-    try {
-        let { full_name,
-            grade,
-            instrument,
-            email,
-            phone
-        } = await request.json();
-
-        instrument = selectInstrument(instrument)
-        grade = selectGrade(grade)
-        if (instrument == null || grade == null) {
-            return {status: 400, body: {message: 'Bad Instrument or Grade Value'}}
+    if ( !performer.full_name || !performer.instrument || !performer.grade ) {
+        return json({ result: 'error', reason: 'Missing Field' }, { status: 400 });
+    } else {
+        let newId: number | null = 0
+        try {
+            newId = await createPerformer(performer)
+        } catch (err) {
+            return json({ status: 'error', message: `${(err as Error).message}` }, { status: 500 });
         }
-
-        const performer: PerformerInterface = {
-            id: null,
-            full_name: full_name,
-            grade: grade,
-            instrument: instrument,
-            email: email,
-            phone: phone
-        }
-
-        if ( !performer.full_name || !performer.instrument || !performer.grade ) {
-            return {status: 400, body: {message: 'Missing Field, Try Again'}}
+        if (newId != null && newId > 0) {
+            return json({ id: newId }, { status: 201 });
         } else {
-            const new_id = await createPerformer(performer)
-            if (new_id != null) {
-                return json( {status: 200, body: {message: 'Update successful', id: `${new_id}`}, headers: access_control_headers});
-            } else {
-                return json({status: 500, body: {message: 'Update failed'}});
-            }
+            return json({ result: 'error', reason: 'Update Failed' }, { status: 500 });
         }
-    } catch  {
-        return json({status: 'error', message: 'Failed to process the request'}, {status: 500});
     }
 }

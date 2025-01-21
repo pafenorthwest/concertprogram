@@ -17,9 +17,8 @@ export async function GET({params}) {
 
     if (res == null || res.rowCount != 1) {
         return json({result: "error", reason: "Not Found"}, {status: 404})
-    } else {
-        return json(res.rows);
     }
+    return json(res.rows);
 }
 
 export async function PUT({params, request, cookies}) {
@@ -45,7 +44,7 @@ export async function PUT({params, request, cookies}) {
     }
 
     if (!composer.printed_name || !composer.full_name || !composer.years_active) {
-        return json({result: "error", reason: "Missing fields"}, {status: 400})
+        return json({result: "error", reason: "Missing Fields"}, {status: 400})
     } else {
         let rowCount: number | null = 0
         try {

@@ -130,6 +130,12 @@ export class Performance {
 				data.concert_series
 			);
 		}
+		return {
+			performerId: this.performer.id,
+			performerNew: this.performer.created ? this.performer.created : false,
+			performanceId: this.performance.id,
+			performanceName: this.performance.created ? this.performance.created : false
+		}
 	}
 	// searches for matching composer by name returning their id
 	// otherwise creates new composer entry
@@ -243,6 +249,7 @@ export class Performance {
 			const new_id = await createPerformer(importPerformer);
 			if (new_id != null) {
 				importPerformer.id = new_id;
+				importPerformer.created = true;
 				return importPerformer;
 			} else {
 				throw new PerformanceError('Unable to import new performer');
@@ -263,7 +270,8 @@ export class Performance {
 			grade: normalized_grade,
 			instrument: normalized_instrument,
 			email: res.rows[0].email,
-			phone: res.rows[0].phone
+			phone: res.rows[0].phone,
+			created: false
 		};
 	}
 
@@ -340,6 +348,7 @@ export class Performance {
 			);
 			thisPerformance.id = performanceResult.rows[0].id;
 			thisPerformance.duration = performanceResult.rows[0].duration;
+			thisPerformance.created = true
 			const performancePieceMap: PerformancePieceInterface = {
 				performance_id: performanceResult.rows[0].id,
 				musical_piece_id: musical_piece.id,
@@ -358,7 +367,8 @@ export class Performance {
 			accompanist_id: res.rows[0].accompanist_id,
 			concert_series: res.rows[0].concert_series,
 			pafe_series: res.rows[0].pafe_series,
-			instrument: res.rows[0].instrument
+			instrument: res.rows[0].instrument,
+			created: false
 		};
 	}
 
