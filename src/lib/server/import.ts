@@ -1,18 +1,18 @@
 import {
-    type AccompanistInterface,
-    type ComposerInterface,
-    Grade,
-    type ImportPerformanceInterface,
-    Instrument,
-    type MusicalPieceInterface,
-    pafe_series,
-    parseMusicalPiece,
-    type PerformanceInterface,
-    type PerformancePieceInterface,
-    type PerformerInterface,
-    selectGrade,
-    selectInstrument
-} from "$lib/server/common";
+	type AccompanistInterface,
+	type ComposerInterface,
+	Grade, type ImportMusicalTitleInterface,
+	type ImportPerformanceInterface,
+	Instrument,
+	type MusicalPieceInterface,
+	pafe_series,
+	parseMusicalPiece,
+	type PerformanceInterface,
+	type PerformancePieceInterface,
+	type PerformerInterface,
+	selectGrade,
+	selectInstrument
+} from '$lib/server/common';
 import {
 	PerformanceError,
 	PerformerError,
@@ -32,14 +32,21 @@ import {
 } from '$lib/server/db';
 import {createPerformer} from "$lib/server/performer";
 
+interface PerformerInterfaceTagCreate extends PerformerInterface {
+	created: boolean;
+}
+interface PerformanceInterfaceTagCreate extends PerformanceInterface {
+	created: boolean;
+}
+
 export class Performance {
 	public accompanist: AccompanistInterface | null | undefined;
-	public performer: PerformerInterface | undefined;
+	public performer: PerformerInterfaceTagCreate | undefined;
 	public composer_1: ComposerInterface | undefined;
 	public composer_2: ComposerInterface | null | undefined;
 	public musical_piece_1: MusicalPieceInterface | undefined;
 	public musical_piece_2: MusicalPieceInterface | null | undefined;
-	public performance: PerformanceInterface | undefined;
+	public performance: PerformanceInterfaceTagCreate | undefined;
 
 	async initialize(data: ImportPerformanceInterface) {
 		// process accompanist
@@ -54,12 +61,19 @@ export class Performance {
 		);
 
 		// process musical pieces
-		if (data.piece_1 != null) {
+		if (data.musical_piece.length > 0 && data.musical_piece[0].title != null) {
 			// process music piece one first
-			const parsedMusic = parseMusicalPiece(data.piece_1);
+			const parsedMusic = parseMusicalPiece(data.musical_piece[0].title);
 			// process composers: music piece one
-			if (parsedMusic.composers != null && parsedMusic.composers.length > 0) {
-				this.composer_1 = await this.processComposer(parsedMusic.composers[0]);
+			if (data.musical_piece[0].composers.length > 0 && data.musical_piece[0].composers[0].name != null) {
+				this.composer_1 = await this.processComposer(
+					{
+						id: null,
+						full_name: data.musical_piece[0].composers[0].name,
+						years_active: data.musical_piece[0].composers[0].yearsActive,
+						notes: 'imported'
+					}
+				);
 			} else {
 				throw new ComposerError('Unable to process composer for first musical piece');
 			}
@@ -98,12 +112,23 @@ export class Performance {
 		}
 
 		// cont process musical pieces
-		if (data.piece_2 != null && data.piece_2.trim().length > 0) {
-			const parsedMusic = parseMusicalPiece(data.piece_2);
-			// process composers: music piece two
-			if (parsedMusic.composers != null && parsedMusic.composers.length > 0) {
-				this.composer_2 = await this.processComposer(parsedMusic.composers[0]);
+		if (data.musical_piece[1] != null && data.musical_piece[1].title.trim().length > 0) {
+			const parsedMusic = parseMusicalPiece(data.musical_piece[1].title);
+
+			// process composers: music piece one
+			if (data.musical_piece[1].composers.length > 0 && data.musical_piece[1].composers[0].name != null) {
+				this.composer_2 = await this.processComposer(
+					{
+						id: null,
+						full_name: data.musical_piece[1].composers[0].name,
+						years_active: data.musical_piece[1].composers[0].yearsActive,
+						notes: 'imported'
+					}
+				);
+			} else {
+				throw new ComposerError('Unable to process composer for first musical piece');
 			}
+
 			if (this.composer_2?.id != null && parsedMusic.titleWithoutMovement != null) {
 				this.musical_piece_2 = await this.processMusicalPiece(
 					parsedMusic.titleWithoutMovement,
@@ -139,18 +164,15 @@ export class Performance {
 	}
 	// searches for matching composer by name returning their id
 	// otherwise creates new composer entry
-	private async processComposer(composer_name: string): Promise<ComposerInterface> {
+	private async processComposer(composer_1: ComposerInterface): Promise<ComposerInterface> {
 		// normalize the string first remove all the Diacritic vowels
-		composer_name = composer_name.normalize('NFD').replace(/\p{Diacritic}/gu, '')
-		composer_name.replace(/Composer: /i, '')
-		const res = await searchComposer(composer_name)
+		const res = await searchComposer(composer_1.full_name)
 		if (res.rowCount == null || res.rowCount < 1) {
 			const composer: ComposerInterface = {
 				id: null,
-				printed_name: composer_name,
-				full_name: composer_name,
-				years_active: '0-0',
-				alias: 'added via interface'
+				full_name: composer_1.full_name,
+				years_active: composer_1.years_active,
+				notes: 'added via interface'
 			};
 			const result = await insertTable('composer', composer);
 			// set the new id
@@ -162,10 +184,9 @@ export class Performance {
 
 		return {
 			id: res.rows[0].id,
-			printed_name: res.rows[0].printed_name,
 			full_name: res.rows[0].full_name,
 			years_active: res.rows[0].years_active,
-			alias: res.rows[0].alias
+			notes: res.rows[0].notes
 		};
 	}
 
@@ -226,7 +247,7 @@ export class Performance {
 		instrument: string,
 		email: string | null,
 		phone: string | null
-	): Promise<PerformerInterface> {
+	): Promise<PerformerInterfaceTagCreate> {
 		const grade: Grade | undefined = this.processGradeLevel(class_name);
 		if ( grade === undefined ) {
 			throw new GradeError(`Can't not parse class ${class_name} for ${full_name}`);
@@ -238,13 +259,14 @@ export class Performance {
 
 		const res = await searchPerformer(full_name, email, normalized_instrument);
 		if (res.rowCount == null || res.rowCount < 1) {
-			const importPerformer: PerformerInterface = {
+			const importPerformer: PerformerInterfaceTagCreate = {
 				id: null,
 				full_name: full_name,
 				grade: grade,
 				instrument: normalized_instrument,
 				email: email,
-				phone: phone
+				phone: phone,
+				created: true
 			};
 			const new_id = await createPerformer(importPerformer);
 			if (new_id != null) {
@@ -255,7 +277,7 @@ export class Performance {
 				throw new PerformanceError('Unable to import new performer');
 			}
 		}
-		// TODO: Create new lottery if none for current PAFE series
+
 		const normalized_grade: Grade | null = selectGrade(res.rows[0].grade);
 		if (normalized_grade == null) {
 			throw new GradeError('Grade can not be null for performer');
@@ -311,12 +333,12 @@ export class Performance {
 	}
 
 	private async processPerformance(
-		performer: PerformerInterface,
+		performer: PerformerInterfaceTagCreate,
 		musical_piece: MusicalPieceInterface,
 		accompanist_id: number | null,
 		movements: string | null,
 		concert_series: string
-	): Promise<PerformanceInterface> {
+	): Promise<PerformanceInterfaceTagCreate> {
 		if (performer?.id == null) {
 			throw new PerformerError("Can't process Performance with null performer");
 		}
@@ -325,8 +347,9 @@ export class Performance {
 		}
 		const res = await searchPerformanceByPerformer(performer.id, concert_series, pafe_series());
 		if (res.rowCount == null || res.rowCount < 1) {
-			const thisPerformance: PerformanceInterface = {
+			const thisPerformance: PerformanceInterfaceTagCreate = {
 				id: null,
+				class: performer.grade,
 				performer_name: performer.full_name,
 				musical_piece: musical_piece.printed_name,
 				movements: movements,
@@ -334,7 +357,8 @@ export class Performance {
 				accompanist_id: accompanist_id,
 				concert_series: concert_series,
 				pafe_series: pafe_series(),
-				instrument: performer.instrument
+				instrument: performer.instrument,
+				created: true
 			};
 			const performanceResult = await insertPerformance(
 				thisPerformance,
@@ -361,6 +385,7 @@ export class Performance {
 		return {
 			id: res.rows[0].id,
 			performer_name: res.rows[0].performer_name,
+			class: res.rows[0].grade,
 			musical_piece: res.rows[0].musical_piece_printed_name,
 			movements: res.rows[0].movements,
 			duration: res.rows[0].duration,
@@ -420,15 +445,22 @@ export class DataParser {
 
 		for (const record of parsedData) {
 			const imported: ImportPerformanceInterface = {
-				class_name: record.class,
+				class_name: record.class_name,
 				performer: record.performer,
-				email: record.email,
-				phone: record.phone,
-				accompanist: record.accompanist,
+				age: String(record.age),
+				lottery: record.lottery,
 				instrument: record.instrument,
-				piece_1: record.piece_1,
-				piece_2: record.piece_2,
 				concert_series: record.concert_series? record.concert_series : concert_series,
+				musical_piece: record.musical_piece as ImportMusicalTitleInterface[],
+				...(record.accompanist != null && record.accompanist !== ''
+					? { accompanist: String(record.accompanist) }
+					: { accompanist: null}),
+				...(record.email != null && record.email !== ''
+					? { email: String(record.email) }
+					: { email: null } ),
+				...(record.phone != null && record.phone !== ''
+					? { phone: String(record.phone) }
+					: { phone: null})
 			}
 			const singlePerformance = new Performance()
 			try {
@@ -466,15 +498,22 @@ export class DataParser {
             }
 
             return parsedData.map((item: ImportPerformanceInterface) => ({
-                class_name: String(item.class_name),
-                performer: String(item.performer),
-                email: String(item.email),
-                phone: String(item.phone),
-                accompanist: String(item.accompanist),
-                instrument: String(item.instrument),
-                piece_1: String(item.piece_1),
-                piece_2: String(item.piece_2),
-                concert_series: null
+							class_name: String(item.class_name),
+							performer: String(item.performer),
+							lottery: String(item.lottery),
+							age: String(item.age),
+							concert_series: String(item.concert_series),
+							musical_piece: item.musical_piece as ImportMusicalTitleInterface[],
+							instrument: String(item.instrument),
+							...(item.accompanist != null && item.accompanist !== ''
+								? { accompanist: String(item.accompanist) }
+								: { accompanist: null}),
+							...(item.email != null && item.email !== ''
+								? { email: String(item.email) }
+								: { email: null } ),
+							...(item.phone != null && item.phone !== ''
+								? { phone: String(item.phone) }
+								: { phone: null})
             }));
         } catch {
             throw new Error("Invalid JSON format.");

@@ -28,13 +28,12 @@ export const actions = {
         const formData = await request.formData();
         const composer: ComposerInterface = {
             id: null,
-            printed_name: formData.get('printedName'),
             full_name: formData.get('fullName'),
             years_active: formData.get('yearsActive'),
-            alias: formData.get('alias')
+            notes: formData.get('notes')
         }
 
-        if ( !composer.printed_name || !composer.full_name || !composer.years_active) {
+        if ( !composer.full_name || !composer.years_active) {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
             const result = await insertTable('composer', composer)

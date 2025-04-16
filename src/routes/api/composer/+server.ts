@@ -17,16 +17,15 @@ export async function POST({ request, cookies }) {
 		return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
 	}
 
-	const { printed_name, full_name, years_active, alias } = await request.json();
+	const { full_name, years_active, alias } = await request.json();
 	const composer: ComposerInterface = {
 		id: null,
-		printed_name: printed_name,
 		full_name: full_name,
 		years_active: years_active,
-		alias: alias
+		notes: alias
 	};
 
-	if (!composer.printed_name || !composer.full_name || !composer.years_active) {
+	if (!composer.full_name || !composer.years_active) {
 		return json({ result: 'error', reason: 'Missing Field' }, { status: 400 });
 	} else {
 		let result: QueryResult;

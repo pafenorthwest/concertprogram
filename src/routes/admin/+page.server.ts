@@ -1,5 +1,5 @@
 import {DataParser, Performance} from "$lib/server/import";
-import type { ImportPerformanceInterface } from '$lib/server/common';
+import type { ComposerInterface, ImportPerformanceInterface } from '$lib/server/common';
 import { fail } from '@sveltejs/kit';
 
 export async function load({ cookies }) {
@@ -23,15 +23,34 @@ export const actions = {
                 }
             }
         } else {
+            const composerPieceOne: ComposerInterface = {
+                printed_name: formData.get('composer-name-piece-1'),
+                years_active: formData.get('composer-years-piece-1')
+            }
+
+            let composerPieceTwo: ComposerInterface
+            if ( formData.has('musical-piece-2')
+              && formData.has('composer-name-piece-2')
+              && formData.has('composer-years-piece-2')
+            ) {
+                composerPieceTwo = {
+                    printed_name: formData.get('composer-name-piece-2'),
+                    years_active: formData.get('composer-years-piece-2')
+                }
+            }
+
             const imported: ImportPerformanceInterface = {
                 class_name: formData.get('class'),
                 performer: formData.get('performer-name'),
+                lottery: formData.get('lottery'),
                 email: formData.get('performer-email'),
                 phone: formData.get('performer-phone'),
                 accompanist: formData.get('accompanist'),
                 instrument: formData.get('instrument'),
                 piece_1: formData.get('musical-piece-1'),
+                composer_1: composerPieceOne,
                 piece_2: formData.get('musical-piece-2'),
+                composer_2: composerPieceTwo,
                 concert_series: formData.get('concert-series')
             }
             const singlePerformance: Performance = new Performance()

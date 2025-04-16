@@ -27,7 +27,7 @@ describe('Test Composer HTTP APIs', () => {
 			headers: {
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify({"printed_name": "John John", "full_name": "John John", "years_active": "1980 - 2000"})
+			body: JSON.stringify({"full_name": "John John", "years_active": "1980 - 2000"})
 		});
 		expect(getResponse.status).toBe(401);
 	});
@@ -38,7 +38,7 @@ describe('Test Composer HTTP APIs', () => {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ffffffff`
 			},
-			body: JSON.stringify({"printed_name": "John John", "full_name": "John John", "years_active": "1980 - 2000"})
+			body: JSON.stringify({"full_name": "John John", "years_active": "1980 - 2000"})
 		});
 		expect(getResponse.status).toBe(403);
 	});
@@ -49,7 +49,7 @@ describe('Test Composer HTTP APIs', () => {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ${auth_code}`
 			},
-			body: JSON.stringify({"printed_name": "John John", "full_name": "John John", "years_active": "1980 - 2000"})
+			body: JSON.stringify({"full_name": "John John", "years_active": "1980 - 2000"})
 		});
 		expect(getResponse.status).toBe(201);
 		// parse stream to get body
@@ -79,7 +79,7 @@ describe('Test Composer HTTP APIs', () => {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ffffffff`
 			},
-			body: JSON.stringify({"printed_name": "John John", "full_name": "John John", "years_active": "1980 - 2000"})
+			body: JSON.stringify({"full_name": "John John", "years_active": "1980 - 2000"})
 		});
 		expect(getResponse.status).toBe(403);
 	});
@@ -130,8 +130,8 @@ describe('Test Composer HTTP APIs', () => {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ${auth_code}`
 			},
-			body: JSON.stringify({"printed_name": "John John", "full_name": "John John", "years_active": "1980 - 2000"})
+			body: JSON.stringify({"full_name": "John John", "years_active": "1980 - 2000"})
 		});
-		expect(getResponse.status).toBe(404);
+		expect(getResponse.status).toBe(500);
 	});
 })

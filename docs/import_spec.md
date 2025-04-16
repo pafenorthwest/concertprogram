@@ -82,6 +82,8 @@ When sending a request is expected to contain json.
   "phone": "phone_number"
 }
 ```
+
+
 #### `RESPONSE`
 **Success**
 Along with a result field includes the ids of the performer and performance
