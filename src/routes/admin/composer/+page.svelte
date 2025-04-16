@@ -42,8 +42,6 @@
         <h3>Add</h3>
         <form id="composer" class="inline-add" method="POST" action="?/add" use:enhance>
             <div class="form-group">
-                <label for="printedName">Printed Name:</label>
-                <input type="text" id="printedName" name="printedName" maxlength="256" required>
                 <label for="fullName">Full Name:</label>
                 <input type="text" id="fullName" name="fullName" maxlength="256" required>
                 <label for="yearsActive">Years Active:</label>

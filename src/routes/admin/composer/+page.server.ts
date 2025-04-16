@@ -15,7 +15,7 @@ export async function load({ cookies }) {
 export const actions = {
     delete: async ({ request }) => {
         const formData = await request.formData();
-        const id = formData.get('composerId');
+        const id = formData.get('composerId') ? parseInt(formData.get('composerId') as string, 10) : -1;
         const rowCount = await deleteById('composer', id);
 
         if (rowCount != null && rowCount > 0) {
@@ -28,9 +28,9 @@ export const actions = {
         const formData = await request.formData();
         const composer: ComposerInterface = {
             id: null,
-            full_name: formData.get('fullName'),
-            years_active: formData.get('yearsActive'),
-            notes: formData.get('notes')
+            full_name: formData.get('fullName') as string,
+            years_active: formData.get('yearsActive') as string,
+            notes: formData.get('notes') as string
         }
 
         if ( !composer.full_name || !composer.years_active) {

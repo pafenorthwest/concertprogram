@@ -1,5 +1,10 @@
 import {DataParser, Performance} from "$lib/server/import";
-import type { ComposerInterface, ImportPerformanceInterface } from '$lib/server/common';
+import type {
+    ComposerInterface,
+    ImportComposerInterface,
+    ImportMusicalTitleInterface,
+    ImportPerformanceInterface
+} from '$lib/server/common';
 import { fail } from '@sveltejs/kit';
 
 export async function load({ cookies }) {
@@ -23,36 +28,56 @@ export const actions = {
                 }
             }
         } else {
-            const composerPieceOne: ComposerInterface = {
-                printed_name: formData.get('composer-name-piece-1'),
-                years_active: formData.get('composer-years-piece-1')
+            const composerPieceOne: ImportComposerInterface = {
+                name: formData.get('composer-name-piece-1'),
+                years_active: formData.get('composer-years-piece-1'),
+                notes: 'API-import'
             }
 
-            let composerPieceTwo: ComposerInterface
+            let importMusicalTitle: ImportMusicalTitleInterface[] = [];
+            if (formData.has('musical-piece-1')) {
+                importMusicalTitle.push({
+                    title: formData.get('musical-piece-1'),
+                    composers: [composerPieceOne]
+                })
+            }
+
+            let composerPieceTwo: ImportComposerInterface
             if ( formData.has('musical-piece-2')
               && formData.has('composer-name-piece-2')
               && formData.has('composer-years-piece-2')
             ) {
                 composerPieceTwo = {
-                    printed_name: formData.get('composer-name-piece-2'),
-                    years_active: formData.get('composer-years-piece-2')
+                    name: formData.get('composer-name-piece-2'),
+                    years_active: formData.get('composer-years-piece-2'),
+                    notes: 'API-import'
                 }
+                importMusicalTitle.push({
+                    title: formData.get('musical-piece-2'),
+                    composers: [composerPieceTwo]
+                })
             }
+
 
             const imported: ImportPerformanceInterface = {
                 class_name: formData.get('class'),
                 performer: formData.get('performer-name'),
+                age: formData.get('age'),
                 lottery: formData.get('lottery'),
-                email: formData.get('performer-email'),
-                phone: formData.get('performer-phone'),
-                accompanist: formData.get('accompanist'),
                 instrument: formData.get('instrument'),
-                piece_1: formData.get('musical-piece-1'),
-                composer_1: composerPieceOne,
-                piece_2: formData.get('musical-piece-2'),
-                composer_2: composerPieceTwo,
-                concert_series: formData.get('concert-series')
+                concert_series: formData.get('concert-series'),
+                musical_piece: importMusicalTitle,
+                ...(formData.get('accompanist') != null && formData.get('accompanist') !== ''
+                  ? { accompanist: formData.get('accompanist') }
+                  : { accompanist: null}),
+                ...(formData.get('performer-email') != null && formData.get('performer-email') !== ''
+                  ? { email: formData.get('performer-email') }
+                  : { email: null } ),
+                ...(formData.get('performer-phone') != null && formData.get('performer-phone') !== ''
+                  ? { phone: formData.get('performer-phone') }
+                  : { phone: null})
             }
+
             const singlePerformance: Performance = new Performance()
             try {
                 await singlePerformance.initialize(imported)
