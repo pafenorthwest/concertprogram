@@ -15,11 +15,21 @@ export async function GET({params, request}) {
         return json({status: 'error', message: 'Failed to process the request'}, {status: 500});
     }
 }
-export async function PUT({params, request, cookies}) {
-    // Get the Authorization header
+export async function PUT({url, params, request, cookies}) {
+    // Check Authorization
     const pafeAuth = cookies.get('pafe_auth')
-    if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-        return new Response('Unauthorized', { status: 401 });
+    const origin = request.headers.get('origin'); // The origin of the request (protocol + host + port)
+    const appOrigin = `${url.protocol}//${url.host}`;
+
+    // from local app no checks needed
+    if (origin !== appOrigin ) {
+        if (!request.headers.has('Authorization')) {
+            return json({ result: "error", reason: "Unauthorized" }, { status: 401 })
+        }
+
+        if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
+            return json({ result: "error", reason: "Unauthorized" }, { status: 403 })
+        }
     }
 
     try {
@@ -44,7 +54,6 @@ export async function PUT({params, request, cookies}) {
             if (rowCount != null && rowCount > 0) {
                 return json( {id: params.id}, {status: 200, body: {message: 'Update successful'}});
             } else {
-                console.log("bad row count from musical piece updatedb")
                 return json({id: params.id}, {status: 500, body: {message: 'Update failed'}});
             }
         }

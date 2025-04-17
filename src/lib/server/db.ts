@@ -377,7 +377,7 @@ export async function updateById(table: string, data: ComposerInterface | Accomp
                 ) {
                     return null
                 }
-                setCols = setCols + ", full_name = '"+data.full_name+"'"
+                setCols = setCols + " full_name = '"+data.full_name+"'"
                 setCols = setCols + ", years_active = '"+data.years_active+"'"
                 if (isNonEmptyString(data.notes)) {
                     setCols = setCols + ", notes = '" + data.notes + "' "

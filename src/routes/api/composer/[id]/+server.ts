@@ -21,16 +21,21 @@ export async function GET({params}) {
     return json(res.rows);
 }
 
-export async function PUT({params, request, cookies}) {
+export async function PUT({url, params, request, cookies}) {
     // Check Authorization
     const pafeAuth = cookies.get('pafe_auth')
+    const origin = request.headers.get('origin'); // The origin of the request (protocol + host + port)
+    const appOrigin = `${url.protocol}//${url.host}`;
 
-    if (!request.headers.has('Authorization')){
-        return json({result: "error", reason: "Unauthorized"}, {status: 401})
-    }
+    // from local app no checks needed
+    if (origin !== appOrigin ) {
+        if (!request.headers.has('Authorization')) {
+            return json({ result: "error", reason: "Unauthorized" }, { status: 401 })
+        }
 
-    if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-        return json({result: "error", reason: "Unauthorized"}, {status: 403})
+        if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
+            return json({ result: "error", reason: "Unauthorized" }, { status: 403 })
+        }
     }
 
     const {full_name, years_active, notes} = await request.json();

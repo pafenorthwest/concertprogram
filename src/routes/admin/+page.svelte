@@ -37,7 +37,6 @@
         }
         return async ({ result, update }) => {
             await update();
-            console.log(result)
 
             if (result.type === 'success') {
                 const success_icon = document.getElementById('success-icon');

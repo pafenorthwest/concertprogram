@@ -20,16 +20,21 @@ export async function GET({params, request}) {
     return json(res.rows);
 
 }
-export async function PUT({params, request, cookies}) {
+export async function PUT({url, params, request, cookies}) {
     // Check Authorization
     const pafeAuth = cookies.get('pafe_auth')
+    const origin = request.headers.get('origin'); // The origin of the request (protocol + host + port)
+    const appOrigin = `${url.protocol}//${url.host}`;
 
-    if (!request.headers.has('Authorization')){
-        return json({result: "error", reason: "Unauthorized"}, {status: 401})
-    }
+    // from local app no checks needed
+    if (origin !== appOrigin ) {
+        if (!request.headers.has('Authorization')) {
+            return json({ result: "error", reason: "Unauthorized" }, { status: 401 })
+        }
 
-    if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-        return json({result: "error", reason: "Unauthorized"}, {status: 403})
+        if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
+            return json({ result: "error", reason: "Unauthorized" }, { status: 403 })
+        }
     }
 
     const { full_name } = await request.json();
@@ -44,6 +49,7 @@ export async function PUT({params, request, cookies}) {
     } else {
         let rowCount: number | null = 0
         try {
+            console.log("trying to update accompanist")
             rowCount = await updateById('accompanist', accompanist)
         } catch (err) {
             return json({result: "error", reason: `${(err as Error).message}`}, {status: 500})
@@ -51,6 +57,7 @@ export async function PUT({params, request, cookies}) {
         if (rowCount != null && rowCount > 0) {
             return new Response('OK',{status: 200});
         } else {
+            console.log("not found accompanist")
             return json({result: "error", reason: "Not Found"}, {status: 404})
         }
     }

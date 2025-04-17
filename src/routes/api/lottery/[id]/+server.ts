@@ -6,6 +6,8 @@ import {
 import {json} from "@sveltejs/kit";
 import { type LotteryInterface, pafe_series } from '$lib/server/common';
 import {createLottery} from "$lib/server/lottery";
+import { auth_code } from '$env/static/private';
+import { isAuthorized } from '$lib/server/apiAuth';
 
 export async function GET({params, request}) {
     try {
@@ -18,11 +20,23 @@ export async function GET({params, request}) {
         return json({status: 'error', message: 'Failed to process the request'}, {status: 500});
     }
 }
-export async function PUT({params, request}) {
-    const access_control_headers =  {
-        'Access-Control-Allow-Origin': '*', // Allow all hosts
-        'Access-Control-Allow-Methods': 'POST', // Specify allowed methods
+export async function PUT({url, cookies, params, request}) {
+    // Check Authorization
+    const pafeAuth = cookies.get('pafe_auth')
+    const origin = request.headers.get('origin'); // The origin of the request (protocol + host + port)
+    const appOrigin = `${url.protocol}//${url.host}`;
+
+    // from local app no checks needed
+    if (origin !== appOrigin ) {
+        if (!request.headers.has('Authorization')) {
+            return json({ result: "error", reason: "Unauthorized" }, { status: 401 })
+        }
+
+        if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
+            return json({ result: "error", reason: "Unauthorized" }, { status: 403 })
+        }
     }
+
     try {
         const {lottery, base34Lottery} = await request.json();
         const ticket: LotteryInterface = {
