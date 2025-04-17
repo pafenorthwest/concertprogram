@@ -1,0 +1,279 @@
+import { assert, beforeAll, describe, expect, it } from 'vitest';
+import { auth_code } from '$env/static/private';
+import { unpackBody } from '$lib/server/common';
+
+function generateRandomString(length: number = 20): string {
+	const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz0123456789';
+	let result = '';
+	for (let i = 0; i < length; i++) {
+		result += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
+	return result;
+}
+
+function generateSixDigitNumber(): number {
+	return Math.floor(100000 + Math.random() * 900000);
+}
+
+let randomNameOne: string
+let randomEmailOne: string
+let randomLotteryOne: number
+let randomNameTwo: string
+let randomEmailTwo: string
+let randomLotteryTwo: number
+
+beforeAll(() => {
+ randomNameOne = generateRandomString()
+ randomEmailOne = generateRandomString()
+ randomLotteryOne = generateSixDigitNumber()
+ randomNameTwo = generateRandomString()
+ randomEmailTwo = generateRandomString()
+ randomLotteryTwo = generateSixDigitNumber()
+})
+
+describe('Test Import HTTP APIs', () => {
+
+	it('It should return no auth header', async () => {
+		const getResponse = await fetch('http://localhost:5173/api/import', {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+
+			body: '{"class_name": "CC.P-4.A", ' +
+				'"performer": "'+randomNameOne+'", ' +
+				'"age": 6, '+
+				'"lottery": '+randomLotteryOne+', ' +
+				'"email": "'+randomEmailOne+'", ' +
+				'"phone": "999-555-4444",' +
+				'"accompanist": "Zhi, Zhou",' +
+				'"instrument": "Cello",' +
+				'"musical_piece": [ {' +
+				'"title": "Concerto in C minor 3rd movement", ' +
+				'"composers": [ '+
+				'{ "name": "Johann Christian Bach", "yearsActive": "None"} ' +
+				' ] ' +
+				' } ], ' +
+				'"concert_series": "Eastside"' +
+				'}'
+		});
+		expect(getResponse.status).toBe(401);
+		// parse stream to get body
+		if (getResponse.body != null) {
+			const bodyFromRequest = await unpackBody(getResponse.body);
+			const resultObject = JSON.parse(bodyFromRequest)
+			expect(resultObject.result).toBe("error")
+		} else {
+			assert(false,"unable to parse body of import request")
+		}
+	});
+
+	it('It should return not-authorized for PUT', async () => {
+		const getResponse = await fetch('http://localhost:5173/api/import', {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ffffffff`
+			},
+
+			body: '{"class_name": "CC.P-4.A", ' +
+				'"performer": "'+randomNameOne+'", ' +
+				'"age": 6, '+
+				'"lottery": '+randomLotteryOne+', ' +
+				'"email": "'+randomEmailOne+'", ' +
+				'"phone": "999-555-4444",' +
+				'"accompanist": "Zhi, Zhou",' +
+				'"instrument": "Cello",' +
+				'"musical_piece": [ {' +
+				'"title": "Concerto in C minor 3rd movement", ' +
+				'"composers": [ '+
+				'{ "name": "Johann Christian Bach", "yearsActive": "None"} ' +
+				' ] ' +
+				' } ], ' +
+				'"concert_series": "Eastside"' +
+				'}'
+		});
+		expect(getResponse.status).toBe(403);
+		// parse stream to get body
+		if (getResponse.body != null) {
+			const bodyFromRequest = await unpackBody(getResponse.body);
+			const resultObject = JSON.parse(bodyFromRequest)
+			expect(resultObject.result).toBe("error")
+		} else {
+			assert(false,"unable to parse body of import request")
+		}
+	});
+
+	it('It should return insert with PUT', async () => {
+		const getResponse = await fetch('http://localhost:5173/api/import', {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${auth_code}`
+			},
+			body: '{"class_name": "CC.P-4.A", ' +
+				'"performer": "'+randomNameOne+'", ' +
+				'"age": 6, '+
+				'"lottery": '+randomLotteryOne+', ' +
+				'"email": "'+randomEmailOne+'", ' +
+				'"phone": "999-555-4444",' +
+				'"accompanist": "Zhi, Zhou",' +
+				'"instrument": "Cello",' +
+				'"musical_piece": [ {' +
+				'"title": "Concerto in C minor 3rd movement", ' +
+				'"composers": [ '+
+				'{ "name": "Johann Christian Bach", "yearsActive": "None"} ' +
+				' ] ' +
+				' } ], ' +
+				'"concert_series": "Eastside"' +
+				'}'
+		});
+		expect(getResponse.status).toBe(201);
+		// parse stream to get body
+		if (getResponse.body != null) {
+			const bodyFromRequest = await unpackBody(getResponse.body);
+			const resultObject = JSON.parse(bodyFromRequest)
+			expect(resultObject.result).toBe("success")
+			expect(resultObject.performanceId).greaterThan(0)
+			expect(resultObject.performerId).greaterThan(0)
+		} else {
+			assert(false,"unable to parse body of import request")
+		}
+	});
+
+	it('It should DELETE existing', async () => {
+		const getResponse = await fetch('http://localhost:5173/api/import', {
+			method: 'DELETE',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${auth_code}`
+			},
+			body: '{"class_name": "CC.P-4.A", ' +
+				'"performer_name": "'+randomNameOne+'", ' +
+				'"age": 6, '+
+				'"instrument": "Cello",' +
+				'"concert_series": "Eastside"' +
+				'}'
+		});
+		expect(getResponse.status).toBe(200);
+		// parse stream to get body
+		if (getResponse.body != null) {
+			const bodyFromRequest = await unpackBody(getResponse.body);
+			const resultObject = JSON.parse(bodyFromRequest)
+			expect(resultObject.result).toBe("success")
+			expect(resultObject.performanceId).greaterThan(0)
+			expect(resultObject.performerId).greaterThan(0)
+		} else {
+			assert(false,"unable to parse body of import request")
+		}
+	});
+
+	it('It should return Not Found when Delete non-existing', async () => {
+		const getResponse = await fetch('http://localhost:5173/api/import', {
+			method: 'DELETE',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${auth_code}`
+			},
+			body: '{"class_name": "CC.P-4.A", ' +
+				'"performer_name": "Does Not Exist", ' +
+				'"age": 99, '+
+				'"instrument": "Cello",' +
+				'"concert_series": "Eastside"' +
+				'}'
+		});
+		expect(getResponse.status).toBe(404);
+		// parse stream to get body
+		if (getResponse.body != null) {
+			const bodyFromRequest = await unpackBody(getResponse.body);
+			const resultObject = JSON.parse(bodyFromRequest)
+			expect(resultObject.result).toBe("error")
+		} else {
+			assert(false,"unable to parse body of import request")
+		}
+	});
+
+	it('It should insert multiple pieces with PUT', async () => {
+		const getResponse = await fetch('http://localhost:5173/api/import', {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${auth_code}`
+			},
+			body: '{ "class_name": "CC.P-4.A", ' +
+				'"performer": "'+randomNameTwo+'", ' +
+				'"age": 6, '+
+				'"lottery": '+randomLotteryTwo+', ' +
+				'"email": "'+randomEmailTwo+'", ' +
+				'"phone": "999-555-4444",' +
+				'"accompanist": "Zhi, Zhou",' +
+				'"instrument": "Cello",' +
+				'"musical_piece": [ {' +
+				'"title": "Concerto in C minor 3rd movement", ' +
+				'"composers": [ '+
+				'{ "name": "Johann Christian Bach", "yearsActive": "None" } ' +
+				' ] ' +
+				' },{ ' +
+				'"title": "Scherzo no.2 in B Flat Minor, op.31", ' +
+				'"composers": [ '+
+				' { "name": "Frédéric Chopin", "yearsActive": "None" } ' +
+				' ] ' +
+				'} ], ' +
+				'"concert_series": "Eastside"' +
+				'}'
+		});
+		expect(getResponse.status).toBe(201);
+		// parse stream to get body
+		if (getResponse.body != null) {
+			const bodyFromRequest = await unpackBody(getResponse.body);
+			const resultObject = JSON.parse(bodyFromRequest)
+			expect(resultObject.result).toBe("success")
+			expect(resultObject.performanceId).greaterThan(0)
+			expect(resultObject.performerId).greaterThan(0)
+		} else {
+			assert(false,"unable to parse body of import request")
+		}
+	});
+
+	it('It should update multiple pieces with PUT', async () => {
+		const getResponse = await fetch('http://localhost:5173/api/import', {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${auth_code}`
+			},
+			body: '{ "class_name": "CC.P-4.A", ' +
+				'"performer": "'+randomNameTwo+'", ' +
+				'"age": 6, '+
+				'"lottery": '+randomLotteryTwo+', ' +
+				'"email": "'+randomEmailTwo+'", ' +
+				'"phone": "999-555-4444",' +
+				'"accompanist": "Zhi, Zhou",' +
+				'"instrument": "Cello",' +
+				'"musical_piece": [ {' +
+				'"title": "Arabeske in C major, Op. 18", ' +
+				'"composers": [ '+
+				'{ "name": "Robert Schumann", "yearsActive": "1810 - 1856" } ' +
+				' ] ' +
+				' },{ ' +
+				'"title": "Prelude Op 34 No.2", ' +
+				'"composers": [ '+
+				' { "name": "Dmitri Shostakovich", "yearsActive": "None" } ' +
+				' ] ' +
+				'} ], ' +
+				'"concert_series": "Eastside"' +
+				'}'
+		});
+		expect(getResponse.status).toBe(200);
+		// parse stream to get body
+		if (getResponse.body != null) {
+			const bodyFromRequest = await unpackBody(getResponse.body);
+			const resultObject = JSON.parse(bodyFromRequest)
+			expect(resultObject.result).toBe("success")
+			expect(resultObject.performanceId).greaterThan(0)
+			expect(resultObject.performerId).greaterThan(0)
+		} else {
+			assert(false,"unable to parse body of import request")
+		}
+	});
+})

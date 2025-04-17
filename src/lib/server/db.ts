@@ -33,7 +33,7 @@ export async function queryTable(table: string, id?: number) {
 
         switch (table) {
 					case 'composer':
-						fields = 'id, printed_name, full_name, years_active, alias';
+						fields = 'id, full_name, years_active, notes';
 						break;
 					case 'accompanist':
 						fields = 'id, full_name';
@@ -94,7 +94,7 @@ export async function lookupByDetails(performerLastName: string, grade: string, 
             "JOIN musical_piece ON musical_piece.id = performance_pieces.musical_piece_id \n" +
             "JOIN composer ON musical_piece.first_composer_id = composer.id \n" +
             "WHERE performer.full_name like '%"+performerLastName+"' \n" +
-            "  AND (LOWER(composer.full_name) LIKE '%"+composer.toLowerCase()+"' OR LOWER(composer.alias) = '"+composer.toLowerCase()+"') \n" +
+            "  AND (LOWER(composer.full_name) LIKE '%"+composer.toLowerCase()+"' OR LOWER(composer.notes) = '"+composer.toLowerCase()+"') \n" +
             "  AND performer.grade = '"+gradeSearch+"' \n" +
             "  AND performance.pafe_series =" + pafe_series() + " \n" +
             "  ORDER BY performance.concert_series ASC";
@@ -183,13 +183,12 @@ export async function insertTable(table: string, data: ComposerInterface | Accom
 
         switch (table) {
             case 'composer':
-                inputCols = "(printed_name, full_name, years_active)"
-                inputVals = "('"+data.printed_name.replaceAll("'","''").trim()+"', '"+
-                    data.full_name.replaceAll("'","''").trim()+"', '"+data.years_active+"')"
-                // add alias
-                if (isNonEmptyString(data.alias)) {
-                    inputCols = inputCols.slice(0, -1) + ", alias)"
-                    inputVals = inputVals.slice(0, -1) +", '"+data.alias.replaceAll("'","''").trim()+"')"
+                inputCols = "(full_name, years_active)"
+                inputVals = "('"+data.full_name.replaceAll("'","''").trim()+"', '"+data.years_active+"')"
+                // add notes
+                if (isNonEmptyString(data.notes)) {
+                    inputCols = inputCols.slice(0, -1) + ", notes)"
+                    inputVals = inputVals.slice(0, -1) +", '"+data.notes.replaceAll("'","''").trim()+"')"
                 }
                 // return id
                 break;
@@ -258,7 +257,6 @@ export async function insertTable(table: string, data: ComposerInterface | Accom
 
 export async function insertPerformance(data: PerformanceInterface,
                                         performer_id: number,
-                                        musical_piece_id: number,
                                         order: number | null,
                                         comment: string | null,
                                         warm_up_room_name: string | null,
@@ -316,7 +314,6 @@ export async function insertPerformance(data: PerformanceInterface,
 
 export async function updatePerformance(data: PerformanceInterface,
                                         performer_id: number,
-                                        musical_piece_id: number,
                                         order: number | null,
                                         comment: string | null,
                                         warm_up_room_name: string | null,
@@ -375,17 +372,15 @@ export async function updateById(table: string, data: ComposerInterface | Accomp
         switch (table) {
             case 'composer':
                 // don't wipe out data
-                if (! (isNonEmptyString(data.printed_name) &&
-                    isNonEmptyString(data.full_name) &&
+                if (! (isNonEmptyString(data.full_name) &&
                     isNonEmptyString(data.years_active))
                 ) {
                     return null
                 }
-                setCols = "printed_name= '"+data.printed_name+"'"
-                setCols = setCols + ", full_name = '"+data.full_name+"'"
+                setCols = setCols + " full_name = '"+data.full_name+"'"
                 setCols = setCols + ", years_active = '"+data.years_active+"'"
-                if (isNonEmptyString(data.alias)) {
-                    setCols = setCols + ", alias = '" + data.alias + "' "
+                if (isNonEmptyString(data.notes)) {
+                    setCols = setCols + ", notes = '" + data.notes + "' "
                 }
                 break;
             case 'accompanist':
@@ -471,12 +466,33 @@ export async function insertPerformancePieceMap(performancePieceMap: Performance
     }
 }
 
-export async function deletePerformancePieceMap(performancePieceMap: PerformancePieceInterface) {
+export async function deletePerformancePieceMap(performancePieceMap: PerformancePieceInterface, deleteAll: boolean=false) {
     try {
         const connection = await pool.connect();
 
-        const deleteSQL = "DELETE FROM performance_pieces where performance_id = " + performancePieceMap.performance_id
-        + " AND musical_piece_id = " + performancePieceMap.musical_piece_id
+        let deleteSQL = "DELETE FROM performance_pieces where performance_id = " + performancePieceMap.performance_id
+
+        if (!deleteAll) {
+            deleteSQL = deleteSQL + " AND musical_piece_id = " + performancePieceMap.musical_piece_id
+        }
+
+        const result = connection.query(deleteSQL);
+
+        // Release the connection back to the pool
+        connection.release();
+
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
+export async function deletePerformancePieceByPerformanceId(performance_id: number) {
+    try {
+        const connection = await pool.connect();
+
+        const deleteSQL = "DELETE FROM performance_pieces where performance_id = " + performance_id
         const result = connection.query(deleteSQL);
 
         // Release the connection back to the pool
@@ -490,7 +506,8 @@ export async function deletePerformancePieceMap(performancePieceMap: Performance
 }
 
 export async function updatePerformancePieceMap(performancePieceMap: PerformancePieceInterface) {
-    await deletePerformancePieceMap(performancePieceMap)
+    const deleteAll: boolean = true;
+    await deletePerformancePieceMap(performancePieceMap, deleteAll)
     await insertPerformancePieceMap(performancePieceMap)
 }
 
@@ -617,9 +634,9 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
         const fields = "performance.id, " +
             "            musical_piece.printed_name AS musical_piece,\n" +
             "            performance_pieces.movement,\n" +
-            "            First.printed_name AS composer, First.years_active AS composer_years_active,\n" +
-            "            Second.printed_name AS composer2, Second.years_active AS composer2_years_active,\n" +
-            "            Third.printed_name AS composer3, Third.years_active AS composer3_years_active,\n" +
+            "            First.full_name AS composer, First.years_active AS composer_years_active,\n" +
+            "            Second.full_name AS composer2, Second.years_active AS composer2_years_active,\n" +
+            "            Third.full_name AS composer3, Third.years_active AS composer3_years_active,\n" +
             "            accompanist.full_name AS accompanist,\n" +
             "            performance.duration, performance.comment, performance.instrument,\n" +
             "            performance.performance_order, performance.concert_series, performance.pafe_series\n"
@@ -637,14 +654,15 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
             queryFilter = "WHERE "+Object.entries(filters)
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 .filter(([_, value]) => value !== null) // filter out null values
-                .map(([key, value]) => `${key} = ${value}`)
-                .join(', ');
+              .map(([key, value]) => `${key} = ${typeof value === 'string' ? `'${value}'` : value}`)
+                .join(' and ');
         }
         queryFilter = queryFilter + "\n";
 
         const result = connection.query(
             'SELECT '+fields+' FROM performance'+joins+queryFilter+order
         );
+
 
         // Release the connection back to the pool
         connection.release();
@@ -660,9 +678,9 @@ export async function queryMusicalPieceByPerformanceId(id: number) {
     try {
         const connection = await pool.connect();
         const querySQL = "SELECT performance.id, musical_piece.printed_name, performance_pieces.movement, \n" +
-          "one.printed_name as composer_one_name, one.years_active as composer_one_years, \n" +
-          "two.printed_name as composer_two_name, two.years_active as composer_two_years, \n" +
-          "three.printed_name as composer_three_name, three.years_active as composer_three_years \n" +
+          "one.full_name as composer_one_name, one.years_active as composer_one_years, \n" +
+          "two.full_name as composer_two_name, two.years_active as composer_two_years, \n" +
+          "three.full_name as composer_three_name, three.years_active as composer_three_years \n" +
           "FROM musical_piece\n" +
           "JOIN performance_pieces ON musical_piece.id = performance_pieces.musical_piece_id\n" +
           "JOIN composer one ON one.id = musical_piece.first_composer_id\n" +
@@ -702,9 +720,9 @@ export async function searchComposer(composer_name: string) {
     try {
         const connection = await pool.connect();
 
-        const searchSQL = "SELECT id, printed_name, full_name, years_active, alias " +
+        const searchSQL = "SELECT id, full_name, years_active, notes " +
             "FROM composer " +
-            "WHERE full_name = '" + composer_name + "' OR LOWER(alias) = '" + composer_name.toLowerCase() + "'"
+            "WHERE full_name = '" + composer_name + "' OR LOWER(notes) = '" + composer_name.toLowerCase() + "'"
 
         const result = connection.query(searchSQL);
 
@@ -819,7 +837,7 @@ export async function selectPerformerLottery(pafe_series: number) {
             "performer.full_name as fullName, \n" +
             "performer.grade,  \n" +
             "performer.instrument, \n" +
-            "composer.printed_name as composer, \n" +
+            "composer.full_name as composer, \n" +
             "performer_ranked_choice.first_choice_time as first_choice_time, \n" +
             "performer_ranked_choice.concert_chair_choice as concert_chair_choice \n" +
             "FROM performer_lottery \n" +

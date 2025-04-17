@@ -1,42 +1,43 @@
 import type { ComposerInterface } from '$lib/server/common';
-import {insertTable} from "$lib/server/db";
-import {json} from "@sveltejs/kit";
+import { insertTable } from '$lib/server/db';
+import { json } from '@sveltejs/kit';
 import { isAuthorized } from '$lib/server/apiAuth';
 import { auth_code } from '$env/static/private';
+import type { QueryResult } from 'pg';
 
-export async function POST({params, request, cookies}) {
-    // Get the Authorization header
-    const pafeAuth = cookies.get('pafe_auth')
-    if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-        return new Response('Unauthorized', { status: 401 });
-    }
+export async function POST({ request, cookies }) {
+	// Check Authorization
+	const pafeAuth = cookies.get('pafe_auth');
 
-    const access_control_headers =  {
-        'Access-Control-Allow-Origin': '*', // Allow all hosts
-        'Access-Control-Allow-Methods': 'POST', // Specify allowed methods
-    }
+	if (!request.headers.has('Authorization')) {
+		return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
+	}
 
-    try {
-        const {printed_name, full_name, years_active, alias} = await request.json();
-        const composer: ComposerInterface = {
-            id: null,
-            printed_name: printed_name,
-            full_name: full_name,
-            years_active: years_active,
-            alias: alias
-        }
+	if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
+		return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
+	}
 
-        if (!composer.printed_name || !composer.full_name || !composer.years_active) {
-            return json({status: 400, body: {message: 'Missing Field, Try Again'}})
-        } else {
-            const result = await insertTable('composer', composer)
-            if (result.rowCount != null && result.rowCount > 0) {
-                return json( {status: 200, body: {message: 'Update successful'}, headers: access_control_headers});
-            } else {
-                return json( {status: 500, body: {message: 'Update failed'}});
-            }
-        }
-    } catch  {
-        return json({status: 'error', message: 'Failed to process the request'}, {status: 500});
-    }
+	const { full_name, years_active, alias } = await request.json();
+	const composer: ComposerInterface = {
+		id: null,
+		full_name: full_name,
+		years_active: years_active,
+		notes: alias
+	};
+
+	if (!composer.full_name || !composer.years_active) {
+		return json({ result: 'error', reason: 'Missing Field' }, { status: 400 });
+	} else {
+		let result: QueryResult;
+		try {
+			result = await insertTable('composer', composer);
+		} catch {
+			return json({ result: 'error', reason: 'Failed to process the request' }, { status: 500 });
+		}
+		if (result.rowCount != null && result.rowCount > 0) {
+			return json({ id: result.rows[0].id }, { status: 201 });
+		} else {
+			return json({ result: 'error', reason: 'Update Failed' }, { status: 500 });
+		}
+	}
 }

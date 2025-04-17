@@ -42,14 +42,12 @@
         <h3>Add</h3>
         <form id="composer" class="inline-add" method="POST" action="?/add" use:enhance>
             <div class="form-group">
-                <label for="printedName">Printed Name:</label>
-                <input type="text" id="printedName" name="printedName" maxlength="256" required>
                 <label for="fullName">Full Name:</label>
                 <input type="text" id="fullName" name="fullName" maxlength="256" required>
                 <label for="yearsActive">Years Active:</label>
                 <input type="text" id="yearsActive" name="yearsActive" maxlength="25" required>
-                <label for="alias">Alias:</label>
-                <input type="text" id="alias" name="alias" maxlength="25">
+                <label for="notes">Notes:</label>
+                <input type="text" id="notes" name="notes" maxlength="25">
             </div>
             <div class="form-group">
                 <button type="submit" disabled="{disableStatus}">Submit</button>
@@ -73,14 +71,6 @@
                 <td>{composer.id}</td>
                 <td>
                     {#if editing.id === composer.id}
-                        <input type="text" value={editing.printed_name}
-                               on:input={(event) => handleInputChange(event, 'printed_name')}/>
-                    {:else}
-                        {composer.printed_name}
-                    {/if}
-                </td>
-                <td>
-                    {#if editing.id === composer.id}
                         <input type="text" value={editing.full_name}
                                on:input={(event) => handleInputChange(event, 'full_name')}/>
                     {:else}
@@ -97,10 +87,10 @@
                 </td>
                 <td>
                     {#if editing.id === composer.id}
-                        <input type="text" value={editing.alias}
-                               on:input={(event) => handleInputChange(event, 'alias')}/>
+                        <input type="text" value={editing.notes}
+                               on:input={(event) => handleInputChange(event, 'notes')}/>
                     {:else}
-                        {composer.alias}
+                        {composer.notes}
                     {/if}
                 </td>
                 <td>

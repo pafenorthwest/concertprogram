@@ -29,6 +29,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EntityCreated"
+        400:
+          description: "bad data, missing fields or incorrect format"
         401:
           description: "unauthorized, lacking authorization header"
         403:

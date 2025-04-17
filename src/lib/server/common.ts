@@ -1,59 +1,7 @@
 
-export enum Instrument {
-    Cello = 'Cello',
-    Flute = 'Flute',
-    Piano = 'Piano',
-    Violin = 'Violin',
-    Soprano = 'Soprano',
-    Viola = 'Viola',
-    Tenor = 'Tenor',
-    Clarinet = 'Clarinet',
-    Oboe = 'Oboe',
-    Bassoon = 'Bassoon',
-    Ensemble = 'Ensemble'
-}
-export function selectInstrument(input: string): Instrument | null {
-    input = input.toLowerCase()
-    let returnInstrument: Instrument | null = null
-    switch(input) {
-        case 'cello':
-            returnInstrument = Instrument.Cello
-            break
-        case 'flute':
-            returnInstrument = Instrument.Flute
-            break
-        case 'piano':
-            returnInstrument = Instrument.Piano
-            break
-        case 'violin':
-            returnInstrument = Instrument.Violin
-            break
-        case 'viola':
-            returnInstrument = Instrument.Viola
-            break
-        case 'soprano':
-            returnInstrument = Instrument.Soprano
-            break
-        case 'tenor':
-            returnInstrument = Instrument.Tenor
-            break
-        case 'oboe':
-            returnInstrument = Instrument.Oboe
-            break
-        case 'clarinet':
-            returnInstrument = Instrument.Clarinet
-            break
-        case 'bassoon':
-            returnInstrument = Instrument.Bassoon
-            break
-        case 'Ensemble':
-            returnInstrument = Instrument.Ensemble
-            break
-        default:
-            returnInstrument = null
-            break
-    }
-    return returnInstrument;
+
+export function selectInstrument(input: string): string {
+    return toTitleCase(input)
 }
 
 export enum Grade {
@@ -129,10 +77,9 @@ export function selectGrade(input: string): Grade | null {
 
 export interface ComposerInterface {
     id: number | null;
-    printed_name: string;
     full_name: string;
     years_active: string;
-    alias: string;
+    notes: string;
 }
 
 export interface AccompanistInterface {
@@ -153,9 +100,10 @@ export interface PerformerInterface {
     id: number | null;
     full_name: string;
     grade: Grade;
-    instrument: Instrument;
+    instrument: string;
     email: string | null;
     phone: string | null;
+    created?: boolean;
 }
 
 export interface PerformanceFilterInterface {
@@ -170,13 +118,12 @@ export interface PerformanceFilterInterface {
 export interface PerformanceInterface {
     id: number | null;
     performer_name: string;
-    musical_piece: string;
-    movements: string | null;
+    class: string;
     duration: number | null;
     accompanist_id: number | null;
     concert_series: string;
     pafe_series: number;
-    instrument: Instrument;
+    instrument: string;
 }
 
 export interface PerformancePieceInterface {
@@ -200,16 +147,27 @@ export interface PerformerRankedChoiceInterface {
     fourth_choice_time: Date | null;
 }
 
+export interface ImportComposerInterface {
+    name: string;
+    yearsActive: string; // e.g., "1900 - 1980" or "None"
+}
+
+export interface ImportMusicalTitleInterface {
+    title: string; // e.g., "Symphony No. 5 in C Minor"
+    composers: ImportComposerInterface[];
+}
+
 export interface ImportPerformanceInterface {
     class_name: string;
     performer: string;
-    email: string;
+    lottery: string;
+    age: string;
+    instrument: string;
+    concert_series: string | null;
+    musical_piece: ImportMusicalTitleInterface[];
+    email: string | null;
     phone: string | null;
     accompanist: string | null;
-    instrument: string;
-    piece_1: string;
-    piece_2: string | null;
-    concert_series: string | null;
 }
 
 export interface PerformerSearchResultsInterface {
@@ -328,37 +286,23 @@ export function base34ToDecimal(base34: string): number {
 export function parseMusicalPiece(piece_performed: string): {
     titleWithoutMovement: string;
     movements: string | null;
-    composers: string[] | null
 } {
-
-    // First split off the composer
-    let composers = null
-    const titleComposers: string[] = piece_performed.split(' by ').map(item => item.trim())
-    // failing here is likely an error
-    if (titleComposers.length <= 1) {
-        throw new Error('Invalid musical piece, no composer string')
-    } else {
-        // if composers split and trim
-        composers = titleComposers[1].split(/(,|\sand\s)/).map(item => item.trim());
-    }
 
     // Second extract the movement from the remaining string
     const movementPattern = /(.*?)(\b(?:\d+(?:st|nd|rd|th)?\s*[Mm]ovements*|I{1,3}\.\s*[^,]+))$/i;
 
-    const match = titleComposers[0].match(movementPattern);
+    const match = piece_performed.match(movementPattern);
     if (match) {
         // trim and remove leading and trailing spaces and commas
         return {
             titleWithoutMovement: match[1].replace(/^[ ,]+|[ ,]+$/g, ""),
-            movements: match[2] ? match[2].replace(/^[ ,]+|[ ,]+$/g, "") : null,
-            composers: composers
+            movements: match[2] ? match[2].replace(/^[ ,]+|[ ,]+$/g, "") : null
         }
     }
     // If no match is found, return the title without modifications
     return {
-        titleWithoutMovement: titleComposers[0],
-        movements: null,
-        composers: composers
+        titleWithoutMovement: piece_performed,
+        movements: null
     };
 }
 
@@ -373,5 +317,13 @@ export async function unpackBody(stream: ReadableStream<Uint8Array>): Promise<st
         result += decoder.decode(value, { stream: true }); // Decode and append the chunk
     }
     return result
+}
+
+export function toTitleCase(str: string): string {
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
 }
 

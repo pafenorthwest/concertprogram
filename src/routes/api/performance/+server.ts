@@ -22,8 +22,7 @@ export async function POST({ request , cookies}) {
         // order, warm_up_room_name, warm_up_room_start, warm_up_room_name
         const {
             performer_name,
-            musical_piece,
-            movements,
+            class_name,
             duration,
             accompanist_id,
             concert_series,
@@ -46,9 +45,8 @@ export async function POST({ request , cookies}) {
 
         const performance: PerformanceInterface = {
             id: null,
+            class: class_name,
             performer_name: performer_name,
-            musical_piece: musical_piece,
-            movements: movements,
             duration: duration,
             accompanist_id: accompanist_id,
             concert_series: concert_series,
@@ -56,14 +54,12 @@ export async function POST({ request , cookies}) {
             instrument: instrumentEnum
         }
 
-        if (!performance.performer_name || !performance.musical_piece || !performance.concert_series) {
+        if (!performance.performer_name || !performance.concert_series) {
             return json({status: 400, body: {message: 'Missing Field, Try Again'}})
         } else {
             // get performer id
             const performer_id = 1
-            // get musical_peice id
-            const musical_piece_id = 0
-            const result = await insertPerformance(performance, performer_id, musical_piece_id,
+            const result = await insertPerformance(performance, performer_id,
                 order, comment, warm_up_room_name, warm_up_room_start, warm_up_room_end)
             if (result.rowCount != null && result.rowCount > 0) {
                 return json( {status: 200, body: {message: 'Update successful'}, headers: access_control_headers});
