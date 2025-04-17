@@ -94,7 +94,7 @@ describe('Test Import Code', () => {
         }
         const singlePerformance: Performance = new Performance()
         await singlePerformance.initialize(imported)
-        await singlePerformance.delete()
+        await singlePerformance.deleteAll()
 
         assert.isDefined(singlePerformance.musical_piece_1,'Expected musical piece to be defined')
         assert.isNotNull(singlePerformance.musical_piece_1.id, 'Expected non null musical_piece id')
@@ -107,24 +107,25 @@ describe('Test Import Code', () => {
     });
     it("should fail parsing grade", async () => {
 
-
+        const musicalTitle: ImportMusicalTitleInterface = {
+            title: 'J.C.Bach Concerto in C minor 3rd movement',
+            composers: [
+                { name: 'Johann Christian Bach', yearsActive: 'none'}
+            ]
+        }
 
         const imported: ImportPerformanceInterface = {
             class_name: 'XXXX?????',
             performer: 'Nymphodoros Sýkorová',
+            age: "6",
             lottery: "12345",
             email: 'QFnl@example.com',
             phone: '999-555-4444',
             accompanist: 'Zhi, Zhou',
             instrument: 'Cello',
-            piece_1: 'J.C.Bach Concerto in C minor 3rd movement',
-            composer_1: 'Johann Christian Bach',
-            piece_2: null,
-            composer_2: null,
+            musical_piece: [musicalTitle],
             concert_series: 'Eastside'
         }
-
-        const composerFromDB = await searchComposer('Johann Christian Bach')
 
         const singlePerformance: Performance = new Performance()
         try {
@@ -132,6 +133,6 @@ describe('Test Import Code', () => {
         } catch (e) {
             expect(e).to.be.an.instanceof(GradeError)
         }
-        await singlePerformance.delete()
+        await singlePerformance.deleteAll()
     });
 });

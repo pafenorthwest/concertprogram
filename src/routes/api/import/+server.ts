@@ -16,7 +16,8 @@ export async function PUT({request, cookies}) {
 		return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
 	}
 
-	const imported: ImportPerformanceInterface = await request.json();
+	const text = await request.text()
+	const imported: ImportPerformanceInterface = JSON.parse(text);
 
 	if ( !imported.class_name ) {
 		return json({ result: 'error', reason: 'Missing Field' }, { status: 400 });
@@ -25,8 +26,12 @@ export async function PUT({request, cookies}) {
 			try {
 				const importResults = await singlePerformance.initialize(imported)
 
-				return json({ result: 'success', performerId: importResults.performerId, performanceId: importResults.performanceId }, { status: 201 });
+				return json(
+					{ result: 'success', performerId: importResults.performerId, performanceId: importResults.performanceId },
+					{ status: importResults.new ? 201 : 200 }
+				);
 			} catch (e) {
+				console.log((e as Error).message);
 				return json({ result: 'error', reason: `${(e as Error).message}` }, { status: 500 });
 			}
 	}
@@ -63,9 +68,14 @@ export async function DELETE({request, cookies}) {
 				imported.instrument
 			)
 
+			// Not Found Error
+			if ( results.result === 'error' ) {
+				return json({ result: 'error', reason: results.reason }, { status: 404 });
+			}
+
 			return json(
 				{ result: results.result, performerId: results.performerId, performanceId: results.performerId },
-				{ status: 201 }
+				{ status: 200 }
 			);
 		} catch (e) {
 			return json({ result: 'error', reason: `${(e as Error).message}` }, { status: 500 });

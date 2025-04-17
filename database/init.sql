@@ -70,10 +70,11 @@ CREATE TABLE musical_piece (
 CREATE INDEX musical_piece_name_idx ON musical_piece(printed_name);
 
 CREATE TABLE performance_pieces (
-    performance_id SERIAL PRIMARY KEY,
+    performance_id INTEGER NOT NULL,
     musical_piece_id INTEGER NOT NULL,
     movement VARCHAR(255) NULL
 );
+CREATE UNIQUE INDEX performance_pieces_idx ON performance_pieces(performance_id,musical_piece_id);
 
 CREATE TABLE performer_lottery (
     performer_id INTEGER NOT NULL,

@@ -257,7 +257,6 @@ export async function insertTable(table: string, data: ComposerInterface | Accom
 
 export async function insertPerformance(data: PerformanceInterface,
                                         performer_id: number,
-                                        musical_piece_id: number,
                                         order: number | null,
                                         comment: string | null,
                                         warm_up_room_name: string | null,
@@ -468,12 +467,16 @@ export async function insertPerformancePieceMap(performancePieceMap: Performance
     }
 }
 
-export async function deletePerformancePieceMap(performancePieceMap: PerformancePieceInterface) {
+export async function deletePerformancePieceMap(performancePieceMap: PerformancePieceInterface, deleteAll: boolean=false) {
     try {
         const connection = await pool.connect();
 
-        const deleteSQL = "DELETE FROM performance_pieces where performance_id = " + performancePieceMap.performance_id
-        + " AND musical_piece_id = " + performancePieceMap.musical_piece_id
+        let deleteSQL = "DELETE FROM performance_pieces where performance_id = " + performancePieceMap.performance_id
+
+        if (!deleteAll) {
+            deleteSQL = deleteSQL + " AND musical_piece_id = " + performancePieceMap.musical_piece_id
+        }
+
         const result = connection.query(deleteSQL);
 
         // Release the connection back to the pool
@@ -504,7 +507,8 @@ export async function deletePerformancePieceByPerformanceId(performance_id: numb
 }
 
 export async function updatePerformancePieceMap(performancePieceMap: PerformancePieceInterface) {
-    await deletePerformancePieceMap(performancePieceMap)
+    const deleteAll: boolean = true;
+    await deletePerformancePieceMap(performancePieceMap, deleteAll)
     await insertPerformancePieceMap(performancePieceMap)
 }
 
@@ -762,7 +766,6 @@ export async function searchPerformer(full_name: string, email: string | null, i
         if (email != null) {
             searchSQL = searchSQL + " OR (LOWER(email) = '" + email.toLowerCase() + "')"
         }
-        console.log(searchSQL)
 
         const result = connection.query(searchSQL);
 

@@ -118,9 +118,7 @@ export interface PerformanceFilterInterface {
 export interface PerformanceInterface {
     id: number | null;
     performer_name: string;
-    musical_piece: string;
     class: string;
-    movements: string | null;
     duration: number | null;
     accompanist_id: number | null;
     concert_series: string;

@@ -63,6 +63,41 @@ export class Performance {
 			data.phone
 		);
 
+		// Now we need to get the performance info and determin if this is an update or creation
+		if (this.performer.id == null) {
+			throw new PerformerError("Can't process Performance with null performer");
+		}
+		// set a default for concert series if not defined
+		if (data.concert_series == null) {
+			data.concert_series = 'Undefined'
+		}
+		// check accompanist
+		let accompanist_id = null;
+		if (this.accompanist?.id != null) {
+			accompanist_id = this.accompanist?.id;
+		}
+		// Now create performance if needed
+		// does a DB search and returns and exising performance if found
+		this.performance = await this.processPerformance(
+			this.performer,
+			accompanist_id,
+			data.concert_series
+		);
+		// check performance id
+		if (this.performance.id == null) {
+			throw new PerformanceError("Can't process Performance with null performance id");
+		}
+		// clean out previous musical pieces if this is an update
+		const isUpdate = !(this.performer?.created && this.performance?.created)
+		if (isUpdate) {
+			const delete_music: PerformancePieceInterface = {
+				performance_id: this.performance.id,
+				musical_piece_id: -1,
+				movement: null
+			}
+			await deletePerformancePieceMap(delete_music,true);
+		}
+
 		// process musical pieces
 		if (data.musical_piece.length > 0 && data.musical_piece[0].title != null) {
 			// process music piece one first
@@ -89,27 +124,17 @@ export class Performance {
 			} else {
 				throw new MusicalPieceError('Returned null when parsing musical title');
 			}
-			// last part add the performance
-			// added performance pieces and the performance
-			let accompanist_id = null;
-			if (this.accompanist?.id != null) {
-				accompanist_id = this.accompanist?.id;
-			}
+
 			if (this.musical_piece_1.id == null) {
 				throw new MusicalPieceError('Invalid musical piece id, id can not be null');
 			}
+			const musical_piece: PerformancePieceInterface = {
+				performance_id: this.performance.id,
+				musical_piece_id: this.musical_piece_1.id,
+				movement: parsedMusic.movements
+			}
+			await insertPerformancePieceMap(musical_piece)
 
-      // set a default for concert series if not defined
-      if (data.concert_series == null) {
-          data.concert_series = 'Undefined'
-      }
-			this.performance = await this.processPerformance(
-				this.performer,
-				this.musical_piece_1,
-				accompanist_id,
-				parsedMusic.movements,
-				data.concert_series
-			);
 		} else {
 			throw new MusicalPieceError('Unable to process value for musical piece 1');
 		}
@@ -141,28 +166,21 @@ export class Performance {
 			} else {
 				this.musical_piece_2 = null;
 			}
-			// last part add the performance
-			// added performance pieces and the performance
-			let accompanist_id = null;
-			if (this.accompanist?.id != null) {
-				accompanist_id = this.accompanist?.id;
-			}
 			if (this.musical_piece_2 == null || this.musical_piece_2?.id == null) {
 				throw new MusicalPieceError('Invalid musical piece id, id can not be null');
 			}
-			this.performance = await this.processPerformance(
-				this.performer,
-				this.musical_piece_2,
-				accompanist_id,
-				parsedMusic.movements,
-				data.concert_series
-			);
+			const musical_piece: PerformancePieceInterface = {
+				performance_id: this.performance.id,
+				musical_piece_id: this.musical_piece_2.id,
+				movement: parsedMusic.movements
+			}
+			await insertPerformancePieceMap(musical_piece)
 		}
+
 		return {
 			performerId: this.performer.id,
-			performerNew: this.performer.created ? this.performer.created : false,
 			performanceId: this.performance.id,
-			performanceName: this.performance.created ? this.performance.created : false
+			new: !!(this.performer?.created && this.performance?.created)
 		}
 	}
 	// searches for matching composer by name returning their id
@@ -337,16 +355,11 @@ export class Performance {
 
 	private async processPerformance(
 		performer: PerformerInterfaceTagCreate,
-		musical_piece: MusicalPieceInterface,
 		accompanist_id: number | null,
-		movements: string | null,
 		concert_series: string
 	): Promise<PerformanceInterfaceTagCreate> {
 		if (performer?.id == null) {
 			throw new PerformerError("Can't process Performance with null performer");
-		}
-		if (musical_piece.id == null) {
-			throw new MusicalPieceError("Can't process Performance with null musical piece");
 		}
 		const res = await searchPerformanceByPerformer(performer.id, concert_series, pafe_series());
 		if (res.rowCount == null || res.rowCount < 1) {
@@ -354,8 +367,6 @@ export class Performance {
 				id: null,
 				class: performer.grade,
 				performer_name: performer.full_name,
-				musical_piece: musical_piece.printed_name,
-				movements: movements,
 				duration: null,
 				accompanist_id: accompanist_id,
 				concert_series: concert_series,
@@ -366,7 +377,6 @@ export class Performance {
 			const performanceResult = await insertPerformance(
 				thisPerformance,
 				performer.id,
-				musical_piece.id,
 				null,
 				null,
 				null,
@@ -376,21 +386,14 @@ export class Performance {
 			thisPerformance.id = performanceResult.rows[0].id;
 			thisPerformance.duration = performanceResult.rows[0].duration;
 			thisPerformance.created = true
-			const performancePieceMap: PerformancePieceInterface = {
-				performance_id: performanceResult.rows[0].id,
-				musical_piece_id: musical_piece.id,
-				movement: movements
-			};
-			await insertPerformancePieceMap(performancePieceMap);
 
 			return thisPerformance
 		}
+
 		return {
 			id: res.rows[0].id,
 			performer_name: res.rows[0].performer_name,
 			class: res.rows[0].grade,
-			musical_piece: res.rows[0].musical_piece_printed_name,
-			movements: res.rows[0].movements,
 			duration: res.rows[0].duration,
 			accompanist_id: res.rows[0].accompanist_id,
 			concert_series: res.rows[0].concert_series,
@@ -414,20 +417,18 @@ export class Performance {
 			concertSeries: string,
 			instrument: string
 	) {
-		console.log("starting delete by lookup")
 
 		const performerRes = await searchPerformer(
 			performerName,
 			null,
 			selectInstrument(instrument)
 		)
-		console.log("completed performer lookup ", performerName)
+
 		let performerId: number
 		if (performerRes.rowCount != null && performerRes.rowCount > 0 && performerRes.rows[0].id != null) {
 			performerId = performerRes.rows[0].id;
-			console.log("performerId: ", performerId);
 		} else {
-			throw new PerformerError('Unable to Find Performer');
+			return { "result": "error", "reason": "Not Found" };
 		}
 
 		const performanceRes = await searchPerformanceByPerformer(
@@ -438,16 +439,10 @@ export class Performance {
 		let performanceId: number
 		if (performanceRes.rowCount != null && performanceRes.rowCount > 0 && performanceRes.rows[0].id != null) {
 			performanceId = performanceRes.rows[0].id;
-			console.log("performanceId: ",performanceId);
 		} else {
 			throw new PerformanceError('Unable to Find Performance');
 		}
 
-		if (performerId != undefined && performerId > 0) {
-			await deleteById('performer', performerId);
-			await deletePerformerLottery(performerId);
-			console.log("completed delete of performer ")
-		}
 		if (performanceId != undefined && performanceId > 0) {
 			await deleteById('performance',performanceId);
 			await deletePerformancePieceByPerformanceId(performanceId);

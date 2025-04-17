@@ -18,9 +18,9 @@ Returned in the response, the body may contain json with additional information.
 
 ## Response Codes 
 All HTTP Code
-- 200: Successful DELETE or HEAD
+- 200: Successful DELETE or HEAD, 
+- 200: Successful PUT update previous entry updated with new values
 - 201: Created no matching entry found imported for the first time
-- 204: Updated previous entry updated with new values 
 - 400: Bad request
 - 401: No Authorization header  
 - 403: Bearer token not authorized or not correctly formated
