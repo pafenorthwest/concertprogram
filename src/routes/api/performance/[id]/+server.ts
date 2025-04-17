@@ -21,8 +21,7 @@ export async function PUT({params, request}) {
         // order, warm_up_room_name, warm_up_room_start, warm_up_room_name
         const {
             performer_name,
-            musical_piece,
-            movements,
+            class_name,
             duration,
             accompanist_id,
             concert_series,
@@ -46,8 +45,7 @@ export async function PUT({params, request}) {
         const performance: PerformanceInterface = {
             id: params.id,
             performer_name: performer_name,
-            musical_piece: musical_piece,
-            movements: movements,
+            class: class_name,
             duration: duration,
             accompanist_id: accompanist_id,
             concert_series: concert_series,
@@ -55,16 +53,14 @@ export async function PUT({params, request}) {
             instrument: instrumentEnum
         }
 
-        if (!performance.performer_name || !performance.musical_piece || !performance.concert_series) {
+        if (!performance.performer_name || !performance.concert_series) {
             return {status: 400, body: {message: 'Missing Field, Try Again'}}
         } else {
             // get performer id
             const performer_id = 1
-            // get musical_peice id
-            const musical_piece_id = 0
-            const rowCount = await updatePerformance(performance, performer_id, musical_piece_id,
+            const res = await updatePerformance(performance, performer_id,
                 order, comment, warm_up_room_name, warm_up_room_start, warm_up_room_end)
-            if (rowCount != null && rowCount > 0) {
+            if (res.rowCount != null && res.rowCount > 0) {
                 return json( {id: params.id}, {status: 200, body: {message: 'Update successful'}});
             } else {
                 return json({id: params.id}, {status: 500, body: {message: 'Update failed'}});

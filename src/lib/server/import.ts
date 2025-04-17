@@ -45,8 +45,8 @@ interface PerformanceInterfaceTagCreate extends PerformanceInterface {
 export class Performance {
 	public accompanist: AccompanistInterface | null | undefined;
 	public performer: PerformerInterfaceTagCreate | undefined;
-	public composer_1: ComposerInterface | undefined;
-	public composer_2: ComposerInterface | null | undefined;
+	public composer_1: ComposerInterface[] = [] ;
+	public composer_2: ComposerInterface[] | null = null;
 	public musical_piece_1: MusicalPieceInterface | undefined;
 	public musical_piece_2: MusicalPieceInterface | null | undefined;
 	public performance: PerformanceInterfaceTagCreate | undefined;
@@ -103,23 +103,22 @@ export class Performance {
 			// process music piece one first
 			const parsedMusic = parseMusicalPiece(data.musical_piece[0].title);
 			// process composers: music piece one
-			if (data.musical_piece[0].composers.length > 0 && data.musical_piece[0].composers[0].name != null) {
-				this.composer_1 = await this.processComposer(
-					{
+			for (const composer of data.musical_piece[0].composers) {
+				if (composer?.name != null) {
+					const processed = await this.processComposer({
 						id: null,
-						full_name: data.musical_piece[0].composers[0].name,
-						years_active: data.musical_piece[0].composers[0].yearsActive,
+						full_name: composer.name,
+						years_active: composer.yearsActive,
 						notes: 'imported'
-					}
-				);
-			} else {
-				throw new ComposerError('Unable to process composer for first musical piece');
+					});
+					this.composer_1.push(processed);
+				}
 			}
-			if (this.composer_1?.id != null && parsedMusic.titleWithoutMovement != null) {
+			if (this.composer_1[0]?.id != null && parsedMusic.titleWithoutMovement != null) {
 				this.musical_piece_1 = await this.processMusicalPiece(
 					parsedMusic.titleWithoutMovement,
 					parsedMusic.movements,
-					this.composer_1.id
+					this.composer_1
 				);
 			} else {
 				throw new MusicalPieceError('Returned null when parsing musical title');
@@ -142,29 +141,27 @@ export class Performance {
 		// cont process musical pieces
 		if (data.musical_piece[1] != null && data.musical_piece[1].title.trim().length > 0) {
 			const parsedMusic = parseMusicalPiece(data.musical_piece[1].title);
-
+			this.composer_2 = []
 			// process composers: music piece one
-			if (data.musical_piece[1].composers.length > 0 && data.musical_piece[1].composers[0].name != null) {
-				this.composer_2 = await this.processComposer(
-					{
+			for (const composer of data.musical_piece[1].composers) {
+				if (composer?.name != null) {
+					const processed = await this.processComposer({
 						id: null,
-						full_name: data.musical_piece[1].composers[0].name,
-						years_active: data.musical_piece[1].composers[0].yearsActive,
+						full_name: composer.name,
+						years_active: composer.yearsActive,
 						notes: 'imported'
-					}
-				);
-			} else {
-				throw new ComposerError('Unable to process composer for first musical piece');
+					});
+					this.composer_2?.push(processed);
+				}
 			}
-
-			if (this.composer_2?.id != null && parsedMusic.titleWithoutMovement != null) {
+			if (this.composer_2?.[0]?.id != null && parsedMusic.titleWithoutMovement != null) {
 				this.musical_piece_2 = await this.processMusicalPiece(
 					parsedMusic.titleWithoutMovement,
 					parsedMusic.movements,
-					this.composer_2.id
+					this.composer_2
 				);
 			} else {
-				this.musical_piece_2 = null;
+				throw new MusicalPieceError('Invalid musical piece id, id can not be null');
 			}
 			if (this.musical_piece_2 == null || this.musical_piece_2?.id == null) {
 				throw new MusicalPieceError('Invalid musical piece id, id can not be null');
@@ -321,18 +318,24 @@ export class Performance {
 	private async processMusicalPiece(
 		printed_title: string,
 		movements: string | null,
-		composer_id: number
+		composers: ComposerInterface[]
 	): Promise<MusicalPieceInterface> {
-		const res = await searchMusicalPiece(printed_title, composer_id);
+		if (composers[0].id === null || composers[0].id === null ) {
+			throw new ComposerError('Primary Composer Can not be null when creating musical pieces')
+		}
+		const second_composer_id: number | null = composers?.[1]?.id ?? null;
+		const third_composer_id: number | null = composers?.[2]?.id ?? null;
+
+		const res = await searchMusicalPiece(printed_title, composers[0].id);
 		if (res.rowCount == null || res.rowCount < 1) {
 			// create new
 			const musical_piece: MusicalPieceInterface = {
 				id: null,
 				printed_name: printed_title,
-				first_composer_id: composer_id,
+				first_composer_id: composers[0].id,
 				all_movements: movements,
-				second_composer_id: null,
-				third_composer_id: null
+				second_composer_id: second_composer_id,
+				third_composer_id: third_composer_id
 			};
 			const result = await insertTable('musical_piece', musical_piece);
 			if (result.rowCount != null && result.rowCount > 0 && result.rows[0].id != null) {

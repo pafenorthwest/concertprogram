@@ -314,7 +314,6 @@ export async function insertPerformance(data: PerformanceInterface,
 
 export async function updatePerformance(data: PerformanceInterface,
                                         performer_id: number,
-                                        musical_piece_id: number,
                                         order: number | null,
                                         comment: string | null,
                                         warm_up_room_name: string | null,
@@ -655,14 +654,15 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
             queryFilter = "WHERE "+Object.entries(filters)
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 .filter(([_, value]) => value !== null) // filter out null values
-                .map(([key, value]) => `${key} = ${value}`)
-                .join(', ');
+              .map(([key, value]) => `${key} = ${typeof value === 'string' ? `'${value}'` : value}`)
+                .join(' and ');
         }
         queryFilter = queryFilter + "\n";
 
         const result = connection.query(
             'SELECT '+fields+' FROM performance'+joins+queryFilter+order
         );
+
 
         // Release the connection back to the pool
         connection.release();
