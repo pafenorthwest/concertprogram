@@ -43,7 +43,7 @@ CREATE TABLE performer (
     archive BOOLEAN NOT NULL DEFAULT FALSE,
     email VARCHAR(255) NULL,
     phone VARCHAR(18) NULL,
-    instrument VARCHAR(255) NULL,
+    instrument VARCHAR(255) NULL
 );
 
 CREATE TABLE accompanist (
