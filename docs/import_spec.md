@@ -123,7 +123,7 @@ Along with a result field includes the ids of the performer and performance
 ```json
 {
   "className": "name_of_class",
-  "performerName": "name_of_performer",
+  "performer_name": "name_of_performer",
   "age": 0,
   "concert_series": "eastside_or_concerto",
   "instrument": "name_of_instrument"

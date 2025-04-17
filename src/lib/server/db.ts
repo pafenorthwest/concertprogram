@@ -486,6 +486,23 @@ export async function deletePerformancePieceMap(performancePieceMap: Performance
     }
 }
 
+export async function deletePerformancePieceByPerformanceId(performance_id: number) {
+    try {
+        const connection = await pool.connect();
+
+        const deleteSQL = "DELETE FROM performance_pieces where performance_id = " + performance_id
+        const result = connection.query(deleteSQL);
+
+        // Release the connection back to the pool
+        connection.release();
+
+        return result;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    }
+}
+
 export async function updatePerformancePieceMap(performancePieceMap: PerformancePieceInterface) {
     await deletePerformancePieceMap(performancePieceMap)
     await insertPerformancePieceMap(performancePieceMap)
@@ -745,6 +762,7 @@ export async function searchPerformer(full_name: string, email: string | null, i
         if (email != null) {
             searchSQL = searchSQL + " OR (LOWER(email) = '" + email.toLowerCase() + "')"
         }
+        console.log(searchSQL)
 
         const result = connection.query(searchSQL);
 

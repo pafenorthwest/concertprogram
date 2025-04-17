@@ -1,59 +1,7 @@
 
-export enum Instrument {
-    Cello = 'Cello',
-    Flute = 'Flute',
-    Piano = 'Piano',
-    Violin = 'Violin',
-    Soprano = 'Soprano',
-    Viola = 'Viola',
-    Tenor = 'Tenor',
-    Clarinet = 'Clarinet',
-    Oboe = 'Oboe',
-    Bassoon = 'Bassoon',
-    Ensemble = 'Ensemble'
-}
-export function selectInstrument(input: string): Instrument | null {
-    input = input.toLowerCase()
-    let returnInstrument: Instrument | null = null
-    switch(input) {
-        case 'cello':
-            returnInstrument = Instrument.Cello
-            break
-        case 'flute':
-            returnInstrument = Instrument.Flute
-            break
-        case 'piano':
-            returnInstrument = Instrument.Piano
-            break
-        case 'violin':
-            returnInstrument = Instrument.Violin
-            break
-        case 'viola':
-            returnInstrument = Instrument.Viola
-            break
-        case 'soprano':
-            returnInstrument = Instrument.Soprano
-            break
-        case 'tenor':
-            returnInstrument = Instrument.Tenor
-            break
-        case 'oboe':
-            returnInstrument = Instrument.Oboe
-            break
-        case 'clarinet':
-            returnInstrument = Instrument.Clarinet
-            break
-        case 'bassoon':
-            returnInstrument = Instrument.Bassoon
-            break
-        case 'Ensemble':
-            returnInstrument = Instrument.Ensemble
-            break
-        default:
-            returnInstrument = null
-            break
-    }
-    return returnInstrument;
+
+export function selectInstrument(input: string): string {
+    return toTitleCase(input)
 }
 
 export enum Grade {
@@ -152,7 +100,7 @@ export interface PerformerInterface {
     id: number | null;
     full_name: string;
     grade: Grade;
-    instrument: Instrument;
+    instrument: string;
     email: string | null;
     phone: string | null;
     created?: boolean;
@@ -177,7 +125,7 @@ export interface PerformanceInterface {
     accompanist_id: number | null;
     concert_series: string;
     pafe_series: number;
-    instrument: Instrument;
+    instrument: string;
 }
 
 export interface PerformancePieceInterface {
@@ -371,5 +319,13 @@ export async function unpackBody(stream: ReadableStream<Uint8Array>): Promise<st
         result += decoder.decode(value, { stream: true }); // Decode and append the chunk
     }
     return result
+}
+
+export function toTitleCase(str: string): string {
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
 }
 

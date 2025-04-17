@@ -3,7 +3,6 @@ import {
 	type ComposerInterface,
 	Grade, type ImportMusicalTitleInterface,
 	type ImportPerformanceInterface,
-	Instrument,
 	type MusicalPieceInterface,
 	pafe_series,
 	parseMusicalPiece,
@@ -28,7 +27,11 @@ import {
 	searchPerformer,
 	searchPerformanceByPerformer,
 	insertPerformance,
-	insertPerformancePieceMap, deleteById, deletePerformerLottery, deletePerformancePieceMap
+	insertPerformancePieceMap,
+	deleteById,
+	deletePerformerLottery,
+	deletePerformancePieceMap,
+	deletePerformancePieceByPerformanceId
 } from '$lib/server/db';
 import {createPerformer} from "$lib/server/performer";
 
@@ -252,7 +255,7 @@ export class Performance {
 		if ( grade === undefined ) {
 			throw new GradeError(`Can't not parse class ${class_name} for ${full_name}`);
 		}
-		let normalized_instrument: Instrument | null = selectInstrument(instrument);
+		let normalized_instrument: string = selectInstrument(instrument);
 		if (normalized_instrument == null) {
 			throw new PerformerError(`Can not parse instrument ${instrument} from performer ${full_name}`);
 		}
@@ -397,12 +400,64 @@ export class Performance {
 		};
 	}
 
-	public async delete() {
+	/*
+	 * delete performer, performance, and associated lottery
+	 * Lookup the performer and get the id
+	 * Lookup the performance and get the id
+	 * Delete DB Performance and PerformancePieces
+	 * Delete DB Performer and Performer Lottery
+	 */
+	public async deleteByLookup(
+			className: string,
+			performerName: string,
+			age: number,
+			concertSeries: string,
+			instrument: string
+	) {
+		console.log("starting delete by lookup")
+
+		const performerRes = await searchPerformer(
+			performerName,
+			null,
+			selectInstrument(instrument)
+		)
+		console.log("completed performer lookup ", performerName)
+		let performerId: number
+		if (performerRes.rowCount != null && performerRes.rowCount > 0 && performerRes.rows[0].id != null) {
+			performerId = performerRes.rows[0].id;
+			console.log("performerId: ", performerId);
+		} else {
+			throw new PerformerError('Unable to Find Performer');
+		}
+
+		const performanceRes = await searchPerformanceByPerformer(
+			performerId,
+			concertSeries,
+			pafe_series()
+		)
+		let performanceId: number
+		if (performanceRes.rowCount != null && performanceRes.rowCount > 0 && performanceRes.rows[0].id != null) {
+			performanceId = performanceRes.rows[0].id;
+			console.log("performanceId: ",performanceId);
+		} else {
+			throw new PerformanceError('Unable to Find Performance');
+		}
+
+		if (performerId != undefined && performerId > 0) {
+			await deleteById('performer', performerId);
+			await deletePerformerLottery(performerId);
+			console.log("completed delete of performer ")
+		}
+		if (performanceId != undefined && performanceId > 0) {
+			await deleteById('performance',performanceId);
+			await deletePerformancePieceByPerformanceId(performanceId);
+		}
+		return { "result": "success", "performerId": performerId , "performanceId": performanceId };
+	}
+
+	public async deleteAll() {
 		if (this.performance != undefined && this.performance.id != null && this.performance.id > 0) {
 			await deleteById('performance', this.performance.id);
-		}
-		if (this.accompanist != undefined && this.accompanist?.id != null && this.accompanist?.id > 0) {
-			await deleteById('accompanist', this.accompanist.id);
 		}
 		if (this.musical_piece_1 != undefined && this.musical_piece_1.id != null && this.musical_piece_1.id > 0) {
 			await deleteById('musical_piece', this.musical_piece_1.id);
