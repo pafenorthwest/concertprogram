@@ -56,7 +56,7 @@ export async function PUT({url, params, request, cookies}) {
         phone: phone
     }
 
-    if (!performer.full_name || !performer.instrument || !performer.birthYear) {
+    if (!performer.full_name || !performer.instrument || !performer.epoch) {
         return json({result: "error", reason: "Missing Fields"}, {status: 400})
     } else {
         let rowCount: number | null = 0

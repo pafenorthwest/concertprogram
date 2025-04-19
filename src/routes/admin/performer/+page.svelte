@@ -26,11 +26,20 @@
         }
     }
 
+    function convertToEpochAge(value) {
+        const currentYear = new Date().getFullYear();
+        return currentYear - value;
+    }
+
     function handleEdit(performer) {
+        performer.age = convertToEpochAge(performer.epoch)
         editing = {...performer};
     }
 
     function handleInputChange(event, field) {
+        if (field === 'age') {
+            editing['epoch'] = convertToEpochAge(event.target.value)
+        }
         editing[field] = event.target.value;
     }
 </script>
@@ -98,10 +107,10 @@
                 </td>
                 <td>
                     {#if editing.id === performer.id}
-                        <input type="text" value={editing.epoch}
-                               on:input={(event) => handleInputChange(event, 'epoch')}/>
+                        <input type="text" value={convertToEpochAge(editing.epoch)}
+                               on:input={(event) => handleInputChange(event, 'age')}/>
                     {:else}
-                        {performer.epoch}
+                        {convertToEpochAge(performer.epoch)}
                     {/if}
                 </td>
                 <td>

@@ -15,7 +15,7 @@ export async function load({ cookies }) {
     const isAuthenticated =  !!pafeAuth;
 
     const res= await queryTable('performer');
-    const columnNames: string[] =  res.fields.map(record => formatFieldNames(record.name));
+    const columnNames: string[] = res.fields.map(record => record.name === "epoch" ? "Age" : formatFieldNames(record.name));
     return {performers: res.rows, performer_fields: columnNames, isAuthenticated: isAuthenticated};
 }
 

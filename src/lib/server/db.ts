@@ -396,7 +396,7 @@ export async function updateById(table: string, data: ComposerInterface | Accomp
                 // don't wipe out data
                 if (! (isNonEmptyString((data as PerformerInterface).full_name) &&
                     isNonEmptyString((data as PerformerInterface).instrument) &&
-                    isNonEmptyString((data as PerformerInterface).epoch))
+                   (data as PerformerInterface).epoch != null )
                 ) {
                     return null
                 }
