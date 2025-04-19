@@ -16,7 +16,7 @@
             <tr class:lowemphasis={!!performer_lottery.first_choice_time}>
                 <td class:with-star={!!performer_lottery.concert_chair_choice}>{performer_lottery.lookupcode}</td>
                 <td>{performer_lottery.fullname}</td>
-                <td>{performer_lottery.grade}</td>
+                <td>{performer_lottery.age}</td>
                 <td>{performer_lottery.instrument}</td>
                 <td>{performer_lottery.composer}</td>
                 <td class="concerttime">{performer_lottery.first_choice_time}</td>

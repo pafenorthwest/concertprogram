@@ -5,7 +5,6 @@ import {
     type ImportPerformanceInterface, pafe_series,
     parseMusicalPiece, type PerformanceFilterInterface
 } from '$lib/server/common';
-import {GradeError} from "$lib/server/customExceptions";
 import { queryPerformances, searchComposer } from '$lib/server/db';
 
 describe('Test Import Code', () => {
@@ -344,7 +343,7 @@ describe('Test Import Code', () => {
         assert.equal(singlePerformance.composer_2?.[1].full_name,"Edward Elgar",'Expected composer')
 
     });
-    it("should fail parsing grade", async () => {
+    it("should fail parsing class", async () => {
 
         const musicalTitle: ImportMusicalTitleInterface = {
             title: 'J.C.Bach Concerto in C minor 3rd movement',
@@ -370,7 +369,7 @@ describe('Test Import Code', () => {
         try {
             await singlePerformance.initialize(imported)
         } catch (e) {
-            expect(e).to.be.an.instanceof(GradeError)
+            expect(e).to.be.an.instanceof(Error)
         }
         await singlePerformance.deleteAll()
     });

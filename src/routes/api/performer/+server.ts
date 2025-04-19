@@ -1,4 +1,4 @@
-import { type PerformerInterface, selectGrade, selectInstrument } from '$lib/server/common';
+import { type PerformerInterface, calcEpoch, selectInstrument } from '$lib/server/common';
 import {json} from "@sveltejs/kit";
 import {createPerformer} from "$lib/server/performer";
 import { isAuthorized } from '$lib/server/apiAuth';
@@ -16,25 +16,26 @@ export async function POST({request, cookies}) {
         return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
     }
 
-    let { full_name, grade, instrument, email, phone } = await request.json();
+    // eslint-disable-next-line prefer-const
+    let { full_name, age, instrument, email, phone } = await request.json();
 
-    if (instrument == null || grade == null) {
-        return json({ result: 'error', reason: 'Bad Instrument or Grade Value' }, { status: 400 });
+    if (instrument == null || age == null) {
+        return json({ result: 'error', reason: 'Bad Instrument or Age Value' }, { status: 400 });
     }
     instrument = selectInstrument(instrument)
-    grade = selectGrade(grade)
+    const birthYear = calcEpoch(parseInt(age),10)
 
 
     const performer: PerformerInterface = {
         id: null,
         full_name: full_name,
-        grade: grade,
+        epoch: birthYear,
         instrument: instrument,
         email: email,
         phone: phone
     }
 
-    if ( !performer.full_name || !performer.instrument || !performer.grade ) {
+    if ( !performer.full_name || !performer.instrument || !performer.epoch ) {
         return json({ result: 'error', reason: 'Missing Field' }, { status: 400 });
     } else {
         let newId: number | null = 0

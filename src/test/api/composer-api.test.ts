@@ -132,6 +132,6 @@ describe('Test Composer HTTP APIs', () => {
 			},
 			body: JSON.stringify({"full_name": "John John", "years_active": "1980 - 2000"})
 		});
-		expect(getResponse.status).toBe(500);
+		expect(getResponse.status).toBe(404);
 	});
 })

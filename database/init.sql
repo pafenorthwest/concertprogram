@@ -17,29 +17,10 @@ CREATE DATABASE pafe
                                 'Bassoon',
                                 'Ensemble');
 
-
-CREATE TYPE grade_list AS ENUM (
-    'Preschool - 2nd',
-    'Preschool - 4th',
-    'Preschool - 6th',
-    'Preschool - 8th',
-    '3rd - 4th',
-    '3rd - 5th',
-    '3rd - 8th',
-    '5th - 6th',
-    '5th - 8th',
-    '6th - 8th',
-    '7th - 8th',
-    '9th - 10th',
-    '9th - 12th',
-    '11th - 12th'
-);
-
-
 CREATE TABLE performer (
     id SERIAL PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
-    grade grade_list,
+    epoch INTEGER NOT NULL,
     archive BOOLEAN NOT NULL DEFAULT FALSE,
     email VARCHAR(255) NULL,
     phone VARCHAR(18) NULL,

@@ -39,13 +39,13 @@ async function retrievePerformerByCode(code: string): Promise<PerformerSearchRes
 
 async function retrievePerformerByDetails(
 	performerLastName: string,
-	grade: string,
+	age: number,
 	composerName: string
 ): Promise<PerformerSearchResultsInterface> {
 	try {
 		const result: PerformerSearchResultsInterface | null = await lookupByDetails(
 			performerLastName,
-			grade,
+			age,
 			composerName
 		);
 		if (result == null) {
@@ -78,7 +78,7 @@ async function retrievePerformerByDetails(
 	}
 }
 
-export async function GET({ params, url }) {
+export async function GET({ url }) {
 	// setup purify to clean out any injected JS
 	const window = new JSDOM('').window;
 	const purify = DOMPurify(window);
@@ -118,17 +118,17 @@ export async function GET({ params, url }) {
 			if (
 				url.searchParams.get('performerLastName') != null &&
 				isNonEmptyString(url.searchParams.get('performerLastName')) &&
-				url.searchParams.get('grade') != null &&
-				isNonEmptyString(url.searchParams.get('grade')) &&
+				url.searchParams.get('age') != null &&
+				isNonEmptyString(url.searchParams.get('age')) &&
 				url.searchParams.get('composerName') != null &&
 				isNonEmptyString(url.searchParams.get('composerName'))
 			) {
 				const performerLastName = purify.sanitize(url.searchParams.get('performerLastName')!);
-				const grade = purify.sanitize(url.searchParams.get('grade')!);
+				const age = purify.sanitize(url.searchParams.get('age')!);
 				const composerName = purify.sanitize(url.searchParams.get('composerName')!);
 				performerSearchResults = await retrievePerformerByDetails(
 					performerLastName,
-					grade,
+					age,
 					composerName
 				);
 				if (performerSearchResults.status != 'OK') {

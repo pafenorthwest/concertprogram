@@ -3,7 +3,7 @@
 
   let lookupCode = ''
   let performerName = ''
-  let grade = '2'
+  let age = '6'
   let composerName = ''
 
   async function handleSubmitLookupByCode(event) {
@@ -20,7 +20,7 @@
       // params binding in form definition, cap size
       performerName = performerName.slice(0,30)
       composerName = composerName.slice(0,30)
-      goto(`/schedule?performerLastName=${performerName}&grade=${grade}&composerName=${composerName}`);
+      goto(`/schedule?performerLastName=${performerName}&age=${age}&composerName=${composerName}`);
   }
 </script>
 
@@ -46,22 +46,21 @@
             <label for="lastName">Performer's Last Name:</label>
             <input type="text" bind:value={performerName} id="performerName" name="performerName" maxlength="30">
 
-            <label for="grade">Performers Grade:</label>
-            <select bind:value={grade} id="grade" name="grade">
-                <option value="P-2">Preschool to 2nd</option>
-                <option value="P-4">Preschool to 4th</option>
-                <option value="P-6">Preschool to 6th</option>
-                <option value="P-8">Preschool to 8th</option>
-                <option value="3-4" selected>3rd - 4th</option>
-                <option value="3-5">3rd - 5th</option>
-                <option value="3-8">3rd - 8th</option>
-                <option value="5-6">5th - 6th</option>
-                <option value="5-8">5th - 8th</option>
-                <option value="6-8">6th - 8th</option>
-                <option value="7-8">7th - 8th</option>
-                <option value="9-10">9th - 10th</option>
-                <option value="9-12">9th - 12th</option>
-                <option value="11-12">11th - 12th</option>
+            <label for="age">Performers Age:</label>
+            <select bind:value={age} id="age" name="age">
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10" selected>10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
             </select>
             <label for="composer">Composer:</label>
             <input type="text" bind:value={composerName} id="composerName" name="composerName" maxlength="30">
