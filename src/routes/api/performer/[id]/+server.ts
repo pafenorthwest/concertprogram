@@ -1,4 +1,4 @@
-import { calcEpoch, type PerformerInterface, selectInstrument } from '$lib/server/common';
+import { calcEpochAge, type PerformerInterface, selectInstrument } from '$lib/server/common';
 import {deleteById, queryTable, updateById} from "$lib/server/db";
 import { json } from '@sveltejs/kit';
 import { isAuthorized } from '$lib/server/apiAuth';
@@ -39,7 +39,7 @@ export async function PUT({url, params, request, cookies}) {
 
     const { full_name, age, instrument, email, phone } = await request.json();
 
-    const birthYear = calcEpoch(parseInt(age,10))
+    const birthYear = calcEpochAge(parseInt(age,10))
     const instrumentEnum = selectInstrument(instrument)
 
     if (birthYear == null || instrumentEnum == null) {

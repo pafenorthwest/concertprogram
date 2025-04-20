@@ -5,7 +5,7 @@ import {
     type ImportPerformanceInterface, pafe_series,
     parseMusicalPiece, type PerformanceFilterInterface
 } from '$lib/server/common';
-import { queryPerformances, searchComposer } from '$lib/server/db';
+import { queryPerformances } from '$lib/server/db';
 
 describe('Test Import Code', () => {
     it("should parse music titles with movements", async () => {

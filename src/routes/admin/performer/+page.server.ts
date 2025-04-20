@@ -1,7 +1,7 @@
 //import pg from 'pg';
 import {deleteById, queryTable} from "$lib/server/db";
 import {
-    calcEpoch,
+    calcEpochAge,
     formatFieldNames,
     type PerformerInterface,
     selectInstrument
@@ -34,7 +34,7 @@ export const actions = {
     add: async ({request}) => {
         const formData = await request.formData();
         const instrument = selectInstrument(formData.get('instrument'))
-        const birthYear: number = calcEpoch(parseInt(formData.get('age'),10))
+        const birthYear: number = calcEpochAge(parseInt(formData.get('age'),10))
         if (instrument == null || birthYear == null) {
             return {status: 400, body: {message: 'Bad Instrument or Age Value'}}
         }

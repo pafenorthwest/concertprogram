@@ -10,7 +10,7 @@ import {
     type LotteryInterface,
     type PerformanceFilterInterface,
     type PerformancePieceInterface,
-    type PerformerSearchResultsInterface, pafe_series, calcEpoch
+    type PerformerSearchResultsInterface, pafe_series, calcEpochAge
 } from '$lib/server/common';
 import {isNonEmptyString} from "$lib/server/common";
 
@@ -78,7 +78,7 @@ export async function queryTable(table: string, id?: number) {
 
 export async function lookupByDetails(performerLastName: string, age: number, composer: string): Promise<PerformerSearchResultsInterface | null> {
 
-    const birthYear = calcEpoch(age)
+    const birthYear = calcEpochAge(age)
 
     try {
         const connection = await pool.connect();

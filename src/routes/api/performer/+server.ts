@@ -1,4 +1,4 @@
-import { type PerformerInterface, calcEpoch, selectInstrument } from '$lib/server/common';
+import { type PerformerInterface, calcEpochAge, selectInstrument } from '$lib/server/common';
 import {json} from "@sveltejs/kit";
 import {createPerformer} from "$lib/server/performer";
 import { isAuthorized } from '$lib/server/apiAuth';
@@ -23,7 +23,7 @@ export async function POST({request, cookies}) {
         return json({ result: 'error', reason: 'Bad Instrument or Age Value' }, { status: 400 });
     }
     instrument = selectInstrument(instrument)
-    const birthYear = calcEpoch(parseInt(age),10)
+    const birthYear = calcEpochAge(parseInt(age),10)
 
 
     const performer: PerformerInterface = {

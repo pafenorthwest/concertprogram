@@ -4,7 +4,7 @@ import {
 	retrievePerformanceByLottery
 } from '$lib/server/db';
 import {getCachedTimeStamps} from '$lib/cache'
-import { compareReformatISODate } from '$lib/server/common';
+import { calcEpochAge, compareReformatISODate } from '$lib/server/common';
 
 export interface ProgramComposerInterface {
 	printedName: string;
@@ -247,7 +247,7 @@ export class Program {
 				performerId: data.rows[0].performer_id,
 				performerName: data.rows[0].performer_full_name,
 				instrument: data.rows[0].instrument,
-				age: data.rows[0].age,
+				age: calcEpochAge(data.rows[0].epoch),
 				accompanist: data.rows[0].accompanist_name ? data.rows[0].accompanist_name : ''
 			}
 		} else {

@@ -9,7 +9,7 @@ import {
 	type PerformanceInterface,
 	type PerformancePieceInterface,
 	type PerformerInterface,
-	calcEpoch,
+	calcEpochAge,
 	selectInstrument
 } from '$lib/server/common';
 import {
@@ -248,7 +248,7 @@ export class Performance {
 			// take the first age
 			if (ages.length > 0) {
 				const age = parseInt(ages[0],10)
-				return calcEpoch(age) ? calcEpoch(age)! : calcEpoch(6);
+				return calcEpochAge(age) ? calcEpochAge(age)! : calcEpochAge(6);
 			}
 		}
 		return undefined;
@@ -274,7 +274,7 @@ export class Performance {
 		email: string | null,
 		phone: string | null
 	): Promise<PerformerInterfaceTagCreate> {
-		const birthYear: number = calcEpoch(age)
+		const birthYear: number = calcEpochAge(age)
 		let normalized_instrument: string = selectInstrument(instrument);
 		if (normalized_instrument == null) {
 			throw new PerformerError(`Can not parse instrument ${instrument} from performer ${full_name}`);
@@ -502,7 +502,7 @@ export class DataParser {
 			const imported: ImportPerformanceInterface = {
 				class_name: record.class_name,
 				performer: record.performer,
-				age: String(record.age),
+				age: record.age,
 				lottery: record.lottery,
 				instrument: record.instrument,
 				concert_series: record.concert_series? record.concert_series : concert_series,
@@ -532,18 +532,34 @@ export class DataParser {
     }
 
     private parseCSV(data: string): ImportPerformanceInterface[] {
-        const parsedData = Papa.parse<ImportPerformanceInterface>(data, {
+        const parsed = Papa.parse<ImportPerformanceInterface>(data, {
             header: true,
             skipEmptyLines: true,
             dynamicTyping: true, // Converts numbers to numbers, booleans, etc.
         });
 
-        if (parsedData.errors.length > 0) {
-            throw new Error("Error parsing Import CSV data.");
-        }
+        if (parsed.errors.length > 0) {
+					throw new Error('Error parsing Import CSV data.');
+				}
 
+				for (const record of parsed.data) {
+					const musicalPiecesFromCSV: ImportMusicalTitleInterface[] = [];
+					if (record.piece_1 != null && record.composers_1 != null) {
+						musicalPiecesFromCSV.push({
+							title: record.piece_1,
+							composers: [{ name: record.composers_1, yearsActive: 'None' }]
+						});
+					}
+					if (record.piece_2 != null && record.composers_2 != null) {
+						musicalPiecesFromCSV.push({
+							title: record.piece_2,
+							composers: [{ name: record.composers_2, yearsActive: 'None' }]
+						});
+					}
+					record.musical_piece = musicalPiecesFromCSV;
+				}
         // Type assertion to ensure data conforms to ImportPerformanceInterface[]
-        return parsedData.data as ImportPerformanceInterface[];
+        return parsed.data as ImportPerformanceInterface[];
     }
     private parseJSON(data: string): ImportPerformanceInterface[] {
         try {

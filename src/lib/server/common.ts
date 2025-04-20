@@ -4,7 +4,8 @@ export function selectInstrument(input: string): string {
     return toTitleCase(input)
 }
 
-export function calcEpoch(age: number): number {
+
+export function calcEpochAge(age: number): number {
     const currentYear = new Date().getFullYear();
     return currentYear - age;
 }

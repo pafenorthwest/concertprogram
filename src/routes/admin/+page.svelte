@@ -85,8 +85,10 @@
             <input type="text" id="class" name="class" maxlength="10" required>
             <label for="performer-name">Performer Name:</label>
             <input type="text" id="performer-name" name="performer-name" maxlength="40" required>
+            <label for="age">Age:</label>
+            <input type="number" id="age" name="age" maxlength="2" step="1" required>
             <label for="lottery">Lottery:</label>
-            <input type="number" id="lottery" name="lottery" maxlength="6" required>
+            <input type="number" id="lottery" name="lottery" maxlength="6" step="1" required>
             <label for="performer-email">Performer Email:</label>
             <input type="text" id="performer-email" name="performer-email" maxlength="25" required>
             <label for="performer-phone">Performer Phone <i>(optional)</i>:</label>

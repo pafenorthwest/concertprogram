@@ -1,5 +1,6 @@
 <script>
     import {enhance} from '$app/forms';
+    import { convertToEpochAge } from '$lib/clientUtils';
 
     let disableStatus = false;
     export let data;
@@ -24,11 +25,6 @@
         } catch (error) {
             console.error('Error saving performer:', error);
         }
-    }
-
-    function convertToEpochAge(value) {
-        const currentYear = new Date().getFullYear();
-        return currentYear - value;
     }
 
     function handleEdit(performer) {
