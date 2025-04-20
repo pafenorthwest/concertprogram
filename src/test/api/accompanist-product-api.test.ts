@@ -22,7 +22,7 @@ describe('Test Accompanist HTTP APIs', () => {
             body: JSON.stringify({
                 "full_name": "John John",
                 "instrument": "Cello",
-                "grade": "3-5",
+                "age": 8,
                 "email": "api-test@delete.me"
             })
         });
@@ -62,7 +62,7 @@ describe('Test Accompanist HTTP APIs', () => {
             body: JSON.stringify({
                 "full_name": "John John",
                 "instrument": "Cello",
-                "grade": "3-5",
+                "age": 8,
                 "email": "api-test@delete.me"
             })
         });
@@ -119,7 +119,7 @@ describe('Test Accompanist HTTP APIs', () => {
             const bodyFromRequest = await unpackBody(createResponseProduct.body);
             // create object from parsed stream to get id of newly created accompanist
             const resultObject = JSON.parse(bodyFromRequest)
-            expect(resultObject.reason).toBe("Bad Instrument or Grade Value");
+            expect(resultObject.reason).toBe("Bad Instrument or Age Value");
         }
     });
 
@@ -163,7 +163,7 @@ describe('Test Accompanist HTTP APIs', () => {
             body: JSON.stringify({
                 "full_name": "John John",
                 "instrument": "Cello",
-                "grade": "3-5",
+                "age": 8,
                 "email": "api-test@delete.me"
             })
         });

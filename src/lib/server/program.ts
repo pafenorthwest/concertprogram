@@ -4,7 +4,7 @@ import {
 	retrievePerformanceByLottery
 } from '$lib/server/db';
 import {getCachedTimeStamps} from '$lib/cache'
-import { compareReformatISODate } from '$lib/server/common';
+import { calcEpochAge, compareReformatISODate } from '$lib/server/common';
 
 export interface ProgramComposerInterface {
 	printedName: string;
@@ -20,7 +20,7 @@ export interface PerformanceDetailsInterface {
 	performerId: number;
 	performerName: string;
 	instrument: string;
-	grade: string;
+	age: number;
 	accompanist: string;
 }
 
@@ -135,7 +135,7 @@ export class Program {
 						performerId: performance.performer_id,
 						performerName: performanceDetails.performerName,
 						instrument: performanceDetails.instrument,
-						grade: performanceDetails.grade,
+						age: performanceDetails.age,
 						accompanist: performanceDetails.accompanist,
 						lottery: performance.lottery,
 						// put Remaining performers, whose desired schedule can not be met  into "Waitlist" concert series
@@ -247,7 +247,7 @@ export class Program {
 				performerId: data.rows[0].performer_id,
 				performerName: data.rows[0].performer_full_name,
 				instrument: data.rows[0].instrument,
-				grade: data.rows[0].grade,
+				age: calcEpochAge(data.rows[0].epoch),
 				accompanist: data.rows[0].accompanist_name ? data.rows[0].accompanist_name : ''
 			}
 		} else {

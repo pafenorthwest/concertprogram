@@ -1,7 +1,7 @@
 import {
 	type AccompanistInterface,
 	type ComposerInterface,
-	Grade, type ImportMusicalTitleInterface,
+	type ImportMusicalTitleInterface,
 	type ImportPerformanceInterface,
 	type MusicalPieceInterface,
 	pafe_series,
@@ -9,14 +9,14 @@ import {
 	type PerformanceInterface,
 	type PerformancePieceInterface,
 	type PerformerInterface,
-	selectGrade,
+	calcEpochAge,
 	selectInstrument
 } from '$lib/server/common';
 import {
 	PerformanceError,
 	PerformerError,
 	ComposerError,
-	MusicalPieceError, GradeError, InstrumentError
+	MusicalPieceError, InstrumentError
 } from "$lib/server/customExceptions";
 import Papa from 'papaparse';
 import {
@@ -57,7 +57,7 @@ export class Performance {
 		// process performer
 		this.performer = await this.processPerformer(
 			data.performer,
-			data.class_name,
+			parseInt(data.age, 10),
 			data.instrument,
 			data.email,
 			data.phone
@@ -80,6 +80,7 @@ export class Performance {
 		// does a DB search and returns and exising performance if found
 		this.performance = await this.processPerformance(
 			this.performer,
+			data.class_name,
 			accompanist_id,
 			data.concert_series
 		);
@@ -238,10 +239,17 @@ export class Performance {
 		};
 	}
 
-	private processGradeLevel(class_name: string): Grade | undefined {
-		const parts = class_name.split('.');
+	// should not be used, age should be submitted when performer is created
+	private processAge(class_name: string): number | undefined {
+		const parts = class_name.split('.')
+		// split out the age range
 		if (parts.length > 1) {
-			return selectGrade(parts[1]) ? selectGrade(parts[1])! : Grade.Grade6to8;
+			const ages: string[] = parts[1].split('-')
+			// take the first age
+			if (ages.length > 0) {
+				const age = parseInt(ages[0],10)
+				return calcEpochAge(age) ? calcEpochAge(age)! : calcEpochAge(6);
+			}
 		}
 		return undefined;
 	}
@@ -261,15 +269,12 @@ export class Performance {
 
 	private async processPerformer(
 		full_name: string,
-		class_name: string,
+		age: number,
 		instrument: string,
 		email: string | null,
 		phone: string | null
 	): Promise<PerformerInterfaceTagCreate> {
-		const grade: Grade | undefined = this.processGradeLevel(class_name);
-		if ( grade === undefined ) {
-			throw new GradeError(`Can't not parse class ${class_name} for ${full_name}`);
-		}
+		const birthYear: number = calcEpochAge(age)
 		let normalized_instrument: string = selectInstrument(instrument);
 		if (normalized_instrument == null) {
 			throw new PerformerError(`Can not parse instrument ${instrument} from performer ${full_name}`);
@@ -280,7 +285,7 @@ export class Performance {
 			const importPerformer: PerformerInterfaceTagCreate = {
 				id: null,
 				full_name: full_name,
-				grade: grade,
+				epoch: birthYear,
 				instrument: normalized_instrument,
 				email: email,
 				phone: phone,
@@ -296,10 +301,6 @@ export class Performance {
 			}
 		}
 
-		const normalized_grade: Grade | null = selectGrade(res.rows[0].grade);
-		if (normalized_grade == null) {
-			throw new GradeError('Grade can not be null for performer');
-		}
 		normalized_instrument = selectInstrument(res.rows[0].instrument);
 		if (normalized_instrument == null) {
 			throw new InstrumentError('Instrument can not be null for performer');
@@ -307,7 +308,7 @@ export class Performance {
 		return {
 			id: res.rows[0].id,
 			full_name: res.rows[0].full_name,
-			grade: normalized_grade,
+			epoch: res.rows[0].epoch,
 			instrument: normalized_instrument,
 			email: res.rows[0].email,
 			phone: res.rows[0].phone,
@@ -358,6 +359,7 @@ export class Performance {
 
 	private async processPerformance(
 		performer: PerformerInterfaceTagCreate,
+		class_name: string,
 		accompanist_id: number | null,
 		concert_series: string
 	): Promise<PerformanceInterfaceTagCreate> {
@@ -368,7 +370,7 @@ export class Performance {
 		if (res.rowCount == null || res.rowCount < 1) {
 			const thisPerformance: PerformanceInterfaceTagCreate = {
 				id: null,
-				class: performer.grade,
+				class: class_name,
 				performer_name: performer.full_name,
 				duration: null,
 				accompanist_id: accompanist_id,
@@ -396,7 +398,7 @@ export class Performance {
 		return {
 			id: res.rows[0].id,
 			performer_name: res.rows[0].performer_name,
-			class: res.rows[0].grade,
+			class: class_name,
 			duration: res.rows[0].duration,
 			accompanist_id: res.rows[0].accompanist_id,
 			concert_series: res.rows[0].concert_series,
@@ -500,7 +502,7 @@ export class DataParser {
 			const imported: ImportPerformanceInterface = {
 				class_name: record.class_name,
 				performer: record.performer,
-				age: String(record.age),
+				age: record.age,
 				lottery: record.lottery,
 				instrument: record.instrument,
 				concert_series: record.concert_series? record.concert_series : concert_series,
@@ -530,18 +532,34 @@ export class DataParser {
     }
 
     private parseCSV(data: string): ImportPerformanceInterface[] {
-        const parsedData = Papa.parse<ImportPerformanceInterface>(data, {
+        const parsed = Papa.parse<ImportPerformanceInterface>(data, {
             header: true,
             skipEmptyLines: true,
             dynamicTyping: true, // Converts numbers to numbers, booleans, etc.
         });
 
-        if (parsedData.errors.length > 0) {
-            throw new Error("Error parsing Import CSV data.");
-        }
+        if (parsed.errors.length > 0) {
+					throw new Error('Error parsing Import CSV data.');
+				}
 
+				for (const record of parsed.data) {
+					const musicalPiecesFromCSV: ImportMusicalTitleInterface[] = [];
+					if (record.piece_1 != null && record.composers_1 != null) {
+						musicalPiecesFromCSV.push({
+							title: record.piece_1,
+							composers: [{ name: record.composers_1, yearsActive: 'None' }]
+						});
+					}
+					if (record.piece_2 != null && record.composers_2 != null) {
+						musicalPiecesFromCSV.push({
+							title: record.piece_2,
+							composers: [{ name: record.composers_2, yearsActive: 'None' }]
+						});
+					}
+					record.musical_piece = musicalPiecesFromCSV;
+				}
         // Type assertion to ensure data conforms to ImportPerformanceInterface[]
-        return parsedData.data as ImportPerformanceInterface[];
+        return parsed.data as ImportPerformanceInterface[];
     }
     private parseJSON(data: string): ImportPerformanceInterface[] {
         try {

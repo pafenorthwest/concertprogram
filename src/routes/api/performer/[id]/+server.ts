@@ -1,11 +1,11 @@
-import { type PerformerInterface, selectGrade, selectInstrument} from "$lib/server/common";
+import { calcEpochAge, type PerformerInterface, selectInstrument } from '$lib/server/common';
 import {deleteById, queryTable, updateById} from "$lib/server/db";
-import { error, fail, json } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import { isAuthorized } from '$lib/server/apiAuth';
 import { auth_code } from '$env/static/private';
 import type { QueryResult } from 'pg';
 
-export async function GET({params, request}) {
+export async function GET({params}) {
     let res: QueryResult
     try {
         const identity: number = Number(params.id)
@@ -37,26 +37,26 @@ export async function PUT({url, params, request, cookies}) {
         }
     }
 
-    const { full_name, grade, instrument, email, phone } = await request.json();
+    const { full_name, age, instrument, email, phone } = await request.json();
 
-    const gradeEnum = selectGrade(grade)
+    const birthYear = calcEpochAge(parseInt(age,10))
     const instrumentEnum = selectInstrument(instrument)
 
-    if (gradeEnum == null || instrumentEnum == null) {
-        return json({ result: 'error', reason: 'Bad Instrument or Grade Value' }, { status: 400 });
+    if (birthYear == null || instrumentEnum == null) {
+        return json({ result: 'error', reason: 'Bad Instrument or Age Value' }, { status: 400 });
     }
 
     const identity: number = Number(params.id)
     const performer: PerformerInterface = {
         id: identity,
         full_name: full_name,
-        grade: gradeEnum!,
+        epoch: birthYear,
         instrument: instrumentEnum!,
         email: email,
         phone: phone
     }
 
-    if (!performer.full_name || !performer.instrument || !performer.grade) {
+    if (!performer.full_name || !performer.instrument || !performer.epoch) {
         return json({result: "error", reason: "Missing Fields"}, {status: 400})
     } else {
         let rowCount: number | null = 0

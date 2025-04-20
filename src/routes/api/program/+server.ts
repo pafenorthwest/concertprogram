@@ -1,7 +1,7 @@
 import { fail, json } from '@sveltejs/kit';
 import { isAuthorized } from '$lib/server/apiAuth';
 import {
-	type ComposerInterface, type MusicalTitleInterface,
+	type MusicalTitleInterface,
 	type OrderedPerformanceInterface,
 	Program,
 	type ProgramCSVExportInterface
@@ -81,7 +81,7 @@ function flattenProgram(input: OrderedPerformanceInterface): ProgramCSVExportInt
 		performerId: input.performerId ? input.performerId : 0,
 		performerName: input.performerName ? input.performerName : '',
 		instrument: input.instrument ? input.instrument : '',
-		grade: input.grade ? input.grade : '',
+		age: input.age ? input.age : '',
 		accompanist: input.accompanist ? input.accompanist : '',
 
 		musicalPieceOneTitle: safeStringTitle(input.musicalTitles[0]),

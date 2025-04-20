@@ -4,75 +4,10 @@ export function selectInstrument(input: string): string {
     return toTitleCase(input)
 }
 
-export enum Grade {
-    'GradePreto2'='Preschool - 2nd',
-    'GradePreto4'='Preschool - 4th',
-    'GradePreto6'='Preschool - 6th',
-    'GradePreto8'='Preschool - 8th',
-    'Grade3to4'='3rd - 4th',
-    'Grade3to5'='3rd - 5th',
-    'Grade3to8'='3rd - 8th',
-    'Grade5to6'='5th - 6th',
-    'Grade5to8'='5th - 8th',
-    'Grade6to8'='6th - 8th',
-    'Grade7to8'='7th - 8th',
-    'Grade9to10'='9th - 10th',
-    'Grade9to12'='9th - 12th',
-    'Grade11to12'='11th - 12th'
-}
 
-export function selectGrade(input: string): Grade | null {
-    input = input.toLowerCase()
-      .replace(/\s+/g, "")
-      .replace(/(nd|rd|th)/g,"");
-    let returnGrade: Grade | null = null
-
-    switch(input) {
-        case 'P-2':
-            returnGrade = Grade.GradePreto2
-            break
-        case 'P-4':
-            returnGrade = Grade.GradePreto4
-            break
-        case 'P-6':
-            returnGrade = Grade.GradePreto6
-            break
-        case 'P-8':
-            returnGrade = Grade.GradePreto8
-            break
-        case '3-4':
-            returnGrade = Grade.Grade3to4
-            break
-        case '3-5':
-            returnGrade = Grade.Grade3to5
-            break
-        case '3-8':
-            returnGrade = Grade.Grade3to8
-            break
-        case '5-6':
-            returnGrade = Grade.Grade5to6
-            break
-        case '5-8':
-            returnGrade = Grade.Grade5to8
-            break
-        case '6-8':
-            returnGrade = Grade.Grade6to8
-            break
-        case '7-8':
-            returnGrade = Grade.Grade7to8
-            break
-        case '9-10':
-            returnGrade = Grade.Grade9to10
-            break
-        case '9-12':
-            returnGrade = Grade.Grade9to12
-            break
-        case '11-12':
-            returnGrade = Grade.Grade11to12
-            break
-    }
-
-    return returnGrade
+export function calcEpochAge(age: number): number {
+    const currentYear = new Date().getFullYear();
+    return currentYear - age;
 }
 
 export interface ComposerInterface {
@@ -99,7 +34,7 @@ export interface MusicalPieceInterface {
 export interface PerformerInterface {
     id: number | null;
     full_name: string;
-    grade: Grade;
+    epoch: number;
     instrument: string;
     email: string | null;
     phone: string | null;
@@ -160,8 +95,8 @@ export interface ImportMusicalTitleInterface {
 export interface ImportPerformanceInterface {
     class_name: string;
     performer: string;
-    lottery: string;
-    age: string;
+    lottery: number;
+    age: number;
     instrument: string;
     concert_series: string | null;
     musical_piece: ImportMusicalTitleInterface[];

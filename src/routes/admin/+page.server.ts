@@ -1,6 +1,5 @@
 import {DataParser, Performance} from "$lib/server/import";
 import type {
-    ComposerInterface,
     ImportComposerInterface,
     ImportMusicalTitleInterface,
     ImportPerformanceInterface
@@ -34,7 +33,7 @@ export const actions = {
                 notes: 'API-import'
             }
 
-            let importMusicalTitle: ImportMusicalTitleInterface[] = [];
+            const importMusicalTitle: ImportMusicalTitleInterface[] = [];
             if (formData.has('musical-piece-1')) {
                 importMusicalTitle.push({
                     title: formData.get('musical-piece-1'),

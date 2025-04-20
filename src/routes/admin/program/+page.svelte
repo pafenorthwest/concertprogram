@@ -147,7 +147,7 @@
 			<th>Musical Piece</th>
 			<th>Composers</th>
 			<th>Performer</th>
-			<th>Grade/Age</th>
+			<th>Age</th>
 			<th>Accompanist</th>
 			<th>Move</th>
 		</tr>
@@ -180,7 +180,7 @@
 						{/each}
 					</td>
 					<td>Soloist on {entry.instrument}: {entry.performerName}</td>
-					<td>{entry.grade}</td>
+					<td>{entry.age}</td>
 					<td>
 						{#if (entry.accompanist !== '')}
 							Pianist: {entry.accompanist}

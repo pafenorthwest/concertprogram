@@ -4,7 +4,7 @@ import {json} from "@sveltejs/kit";
 import { isAuthorized } from '$lib/server/apiAuth';
 import { auth_code } from '$env/static/private';
 
-export async function POST({params, request, cookies}) {
+export async function POST({request, cookies}) {
     // Get the Authorization header
     const pafeAuth = cookies.get('pafe_auth')
     if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {

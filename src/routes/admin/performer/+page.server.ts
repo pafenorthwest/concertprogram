@@ -1,10 +1,10 @@
 //import pg from 'pg';
 import {deleteById, queryTable} from "$lib/server/db";
 import {
-	formatFieldNames,
-	type PerformerInterface,
-	selectGrade,
-	selectInstrument
+    calcEpochAge,
+    formatFieldNames,
+    type PerformerInterface,
+    selectInstrument
 } from '$lib/server/common';
 import {createPerformer} from "$lib/server/performer";
 
@@ -15,7 +15,7 @@ export async function load({ cookies }) {
     const isAuthenticated =  !!pafeAuth;
 
     const res= await queryTable('performer');
-    const columnNames: string[] =  res.fields.map(record => formatFieldNames(record.name));
+    const columnNames: string[] = res.fields.map(record => record.name === "epoch" ? "Age" : formatFieldNames(record.name));
     return {performers: res.rows, performer_fields: columnNames, isAuthenticated: isAuthenticated};
 }
 
@@ -34,15 +34,15 @@ export const actions = {
     add: async ({request}) => {
         const formData = await request.formData();
         const instrument = selectInstrument(formData.get('instrument'))
-        const grade = selectGrade(formData.get('grade'))
-        if (instrument == null || grade == null) {
-            return {status: 400, body: {message: 'Bad Instrument or Grade Value'}}
+        const birthYear: number = calcEpochAge(parseInt(formData.get('age'),10))
+        if (instrument == null || birthYear == null) {
+            return {status: 400, body: {message: 'Bad Instrument or Age Value'}}
         }
         const performer: PerformerInterface = {
             id: null,
             full_name: formData.get('fullName'),
+            epoch: birthYear,
             instrument: instrument!,
-            grade: grade!,
             email: formData.get('email'),
             phone: formData.get('phone')
         }

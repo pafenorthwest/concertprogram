@@ -153,9 +153,9 @@ async function retrievePerformerByCode(code: string): Promise<PerformerSearchRes
 		}
 	}
 }
-async function retrievePerformerByDetails(performerLastName:string, grade: string, composerName:string) : Promise<PerformerSearchResultsInterface> {
+async function retrievePerformerByDetails(performerLastName:string, age: number, composerName:string) : Promise<PerformerSearchResultsInterface> {
 	try {
-		const result: PerformerSearchResultsInterface | null = await lookupByDetails(performerLastName, grade, composerName);
+		const result: PerformerSearchResultsInterface | null = await lookupByDetails(performerLastName, age, composerName);
 		if (result == null) {
 			return {
 				status: 'NOTFOUND',
@@ -221,15 +221,16 @@ export async function load({url}) {
 		if (
 			url.searchParams.get('performerLastName') != null
 			&& isNonEmptyString(url.searchParams.get('performerLastName'))
-			&& url.searchParams.get('grade') != null
-			&& isNonEmptyString(url.searchParams.get('grade'))
+			&& url.searchParams.get('age') != null
+			&& isNonEmptyString(url.searchParams.get('age'))
 			&& url.searchParams.get('composerName') != null
 			&& isNonEmptyString(url.searchParams.get('composerName'))
 		) {
 			const performerLastName = purify.sanitize(url.searchParams.get('performerLastName')!)
-			const grade = purify.sanitize(url.searchParams.get('grade')!)
+			const ageString = purify.sanitize(url.searchParams.get('age')!)
+			const age = parseInt(ageString,10)
 			const composerName = purify.sanitize(url.searchParams.get('composerName')!)
-			performerSearchResults = await retrievePerformerByDetails(performerLastName, grade, composerName)
+			performerSearchResults = await retrievePerformerByDetails(performerLastName, age, composerName)
 			if (performerSearchResults.status != 'OK') {
 				return {
 					status: performerSearchResults.status,

@@ -4,14 +4,14 @@ import {json} from "@sveltejs/kit";
 import { isAuthorized } from '$lib/server/apiAuth';
 import { auth_code } from '$env/static/private';
 
-export async function GET({params, request}) {
+export async function GET({params}) {
     try {
         const res = await queryTable('performance',params.id)
         if (res.rowCount != 1) {
             return json({status: 'error', message: 'Not Found'}, {status: 404});
         }
         return json(res.rows);
-    } catch (error) {
+    } catch {
         return json({status: 'error', message: 'Failed to process the request'}, {status: 500});
     }
 }

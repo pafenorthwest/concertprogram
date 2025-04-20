@@ -1,6 +1,6 @@
 <script>
     import {enhance} from '$app/forms';
-    import {MapGradeValuesToKeys} from "./helpers.js";
+    import { convertToEpochAge } from '$lib/clientUtils';
 
     let disableStatus = false;
     export let data;
@@ -28,11 +28,14 @@
     }
 
     function handleEdit(performer) {
+        performer.age = convertToEpochAge(performer.epoch)
         editing = {...performer};
-        editing.grade = MapGradeValuesToKeys[editing.grade]
     }
 
     function handleInputChange(event, field) {
+        if (field === 'age') {
+            editing['epoch'] = convertToEpochAge(event.target.value)
+        }
         editing[field] = event.target.value;
     }
 </script>
@@ -45,8 +48,8 @@
             <div class="form-group">
                 <label for="fullName">Printed Name:</label>
                 <input type="text" id="fullName" name="fullName" maxlength="256" required>
-                <label for="grade">Grade:</label>
-                <input type="text" id="grade" name="grade" maxlength="256" required>
+                <label for="age">Age:</label>
+                <input type="number" id="age" name="age" maxlength="256" step="1" required>
                 <label for="instrument">Instrument:</label>
                 <input type="text" id="instrument" name="instrument" maxlength="256" required>
                 <label for="email">Email:</label>
@@ -100,10 +103,10 @@
                 </td>
                 <td>
                     {#if editing.id === performer.id}
-                        <input type="text" value={editing.grade}
-                               on:input={(event) => handleInputChange(event, 'grade')}/>
+                        <input type="text" value={convertToEpochAge(editing.epoch)}
+                               on:input={(event) => handleInputChange(event, 'age')}/>
                     {:else}
-                        {performer.grade}
+                        {convertToEpochAge(performer.epoch)}
                     {/if}
                 </td>
                 <td>

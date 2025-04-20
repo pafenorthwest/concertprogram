@@ -10,7 +10,7 @@ import {
     type LotteryInterface,
     type PerformanceFilterInterface,
     type PerformancePieceInterface,
-    type PerformerSearchResultsInterface, pafe_series, selectGrade
+    type PerformerSearchResultsInterface, pafe_series, calcEpochAge
 } from '$lib/server/common';
 import {isNonEmptyString} from "$lib/server/common";
 
@@ -39,7 +39,7 @@ export async function queryTable(table: string, id?: number) {
 						fields = 'id, full_name';
 						break;
 					case 'performer':
-						fields = 'id, full_name, email, phone, grade, instrument';
+						fields = 'id, full_name, email, phone, epoch, instrument';
 						break;
 					case 'musical_piece':
 						fields =
@@ -76,9 +76,9 @@ export async function queryTable(table: string, id?: number) {
     }
 }
 
-export async function lookupByDetails(performerLastName: string, grade: string, composer: string): Promise<PerformerSearchResultsInterface | null> {
+export async function lookupByDetails(performerLastName: string, age: number, composer: string): Promise<PerformerSearchResultsInterface | null> {
 
-    const gradeSearch = selectGrade(grade)
+    const birthYear = calcEpochAge(age)
 
     try {
         const connection = await pool.connect();
@@ -95,7 +95,7 @@ export async function lookupByDetails(performerLastName: string, grade: string, 
             "JOIN composer ON musical_piece.first_composer_id = composer.id \n" +
             "WHERE performer.full_name like '%"+performerLastName+"' \n" +
             "  AND (LOWER(composer.full_name) LIKE '%"+composer.toLowerCase()+"' OR LOWER(composer.notes) = '"+composer.toLowerCase()+"') \n" +
-            "  AND performer.grade = '"+gradeSearch+"' \n" +
+            "  AND performer.epoch = "+birthYear+" \n" +
             "  AND performance.pafe_series =" + pafe_series() + " \n" +
             "  ORDER BY performance.concert_series ASC";
 
@@ -104,6 +104,7 @@ export async function lookupByDetails(performerLastName: string, grade: string, 
 
         if (dbResult.rowCount != null && dbResult.rowCount > 0) {
             return  {
+                "status": "OK",
                 "performer_id": dbResult.rows[0].id,
                 "performer_name": dbResult.rows[0].performer_name,
                 "musical_piece": dbResult.rows[0].musical_piece,
@@ -142,6 +143,7 @@ export async function lookupByCode(code: string): Promise<PerformerSearchResults
 
         if (dbResult.rowCount != null && dbResult.rowCount > 0) {
             return  {
+                "status": "OK",
                 "performer_id": dbResult.rows[0].id,
                 "performer_name": dbResult.rows[0].performer_name,
                 "musical_piece": dbResult.rows[0].musical_piece,
@@ -179,60 +181,60 @@ export async function insertTable(table: string, data: ComposerInterface | Accom
 
         let inputCols = "";
         let inputVals = "";
-        let return_id = true;
+        const return_id = true;
 
         switch (table) {
             case 'composer':
                 inputCols = "(full_name, years_active)"
-                inputVals = "('"+data.full_name.replaceAll("'","''").trim()+"', '"+data.years_active+"')"
+                inputVals = "('"+(data as ComposerInterface).full_name.replaceAll("'","''").trim()+"', '"+(data as ComposerInterface).years_active+"')"
                 // add notes
-                if (isNonEmptyString(data.notes)) {
+                if (isNonEmptyString((data as ComposerInterface).notes)) {
                     inputCols = inputCols.slice(0, -1) + ", notes)"
-                    inputVals = inputVals.slice(0, -1) +", '"+data.notes.replaceAll("'","''").trim()+"')"
+                    inputVals = inputVals.slice(0, -1) +", '"+(data as ComposerInterface).notes.replaceAll("'","''").trim()+"')"
                 }
                 // return id
                 break;
             case 'accompanist':
                 inputCols = "(full_name)"
-                inputVals = "('"+data.full_name.replaceAll("'","''").trim()+"')"
+                inputVals = "('"+(data as AccompanistInterface).full_name.replaceAll("'","''").trim()+"')"
                 // return id
                 break;
             case 'performer':
-                inputCols = "(full_name, grade, instrument)"
+                inputCols = "(full_name, epoch, instrument)"
                 inputVals = "('"+
-                    data.full_name.replaceAll("'","''").trim()+"', '"+
-                    data.grade+"', '"+
-                    data.instrument+
+                  (data as PerformerInterface).full_name.replaceAll("'","''").trim()+"', "+
+                  (data as PerformerInterface).epoch+", '"+
+                  (data as PerformerInterface).instrument+
                     "')"
                 // add email
-                if (isNonEmptyString(data.email)) {
+                if ((data as PerformerInterface).email != null && isNonEmptyString((data as PerformerInterface).email)) {
                     inputCols = inputCols.slice(0, -1) + ", email)"
-                    inputVals = inputVals.slice(0, -1) +", '"+data.email.replaceAll("'","''").trim()+"')"
+                    inputVals = inputVals.slice(0, -1) +", '"+(data as PerformerInterface).email.replaceAll("'","''").trim()+"')"
                 }
                 // add phone
-                if (isNonEmptyString(data.phone)) {
+                if ((data as PerformerInterface).phone != null && isNonEmptyString((data as PerformerInterface).phone)) {
                     inputCols = inputCols.slice(0, -1) + ", phone)"
-                    inputVals = inputVals.slice(0, -1) +", '"+data.phone.replaceAll("'","''").trim()+"')"
+                    inputVals = inputVals.slice(0, -1) +", '"+(data as PerformerInterface).phone.replaceAll("'","''").trim()+"')"
                 }
                 // return id
                 break;
             case 'musical_piece':
                 inputCols = "(printed_name, first_composer_id)"
-                inputVals = "('"+data.printed_name.replaceAll("'","''").trim()+"', '"+
-                    data.first_composer_id+"')"
+                inputVals = "('"+(data as MusicalPieceInterface).printed_name.replaceAll("'","''").trim()+"', '"+
+                  (data as MusicalPieceInterface).first_composer_id+"')"
                 // add movements
-                if (isNonEmptyString(data.all_movements)) {
+                if ((data as MusicalPieceInterface).all_movements != null && ((data as MusicalPieceInterface).all_movements)) {
                     inputCols = inputCols.slice(0, -1) + ", all_movements)"
-                    inputVals = inputVals.slice(0, -1) +", '"+data.all_movements.replaceAll("'","''").trim()+"')"
+                    inputVals = inputVals.slice(0, -1) +", '"+(data as MusicalPieceInterface).all_movements.replaceAll("'","''").trim()+"')"
                 }
                 // add another composer
-                if (isNonEmptyString(data.second_composer_id)) {
+                if (isNonEmptyString((data as MusicalPieceInterface).second_composer_id)) {
                     inputCols = inputCols.slice(0, -1) + ", second_composer_id)"
-                    inputVals = inputVals.slice(0, -1) +", '"+data.second_composer_id+"')"
+                    inputVals = inputVals.slice(0, -1) +", '"+(data as MusicalPieceInterface).second_composer_id+"')"
                 }
-                if (isNonEmptyString(data.third_composer_id)) {
+                if (isNonEmptyString((data as MusicalPieceInterface).third_composer_id)) {
                     inputCols = inputCols.slice(0, -1) + ", third_composer_id)"
-                    inputVals = inputVals.slice(0, -1) +", '"+data.third_composer_id+"')"
+                    inputVals = inputVals.slice(0, -1) +", '"+(data as MusicalPieceInterface).third_composer_id+"')"
                 }
                 //return id
                 break;
@@ -372,59 +374,59 @@ export async function updateById(table: string, data: ComposerInterface | Accomp
         switch (table) {
             case 'composer':
                 // don't wipe out data
-                if (! (isNonEmptyString(data.full_name) &&
-                    isNonEmptyString(data.years_active))
+                if (! (isNonEmptyString((data as ComposerInterface).full_name) &&
+                    isNonEmptyString((data as ComposerInterface).years_active))
                 ) {
                     return null
                 }
-                setCols = setCols + " full_name = '"+data.full_name+"'"
-                setCols = setCols + ", years_active = '"+data.years_active+"'"
-                if (isNonEmptyString(data.notes)) {
-                    setCols = setCols + ", notes = '" + data.notes + "' "
+                setCols = setCols + " full_name = '"+(data as ComposerInterface).full_name+"'"
+                setCols = setCols + ", years_active = '"+(data as ComposerInterface).years_active+"'"
+                if (isNonEmptyString((data as ComposerInterface).notes)) {
+                    setCols = setCols + ", notes = '" + (data as ComposerInterface).notes + "' "
                 }
                 break;
             case 'accompanist':
                 // don't wipe out data
-                if (!isNonEmptyString(data.full_name)) {
+                if (!isNonEmptyString((data as AccompanistInterface).full_name)) {
                     return null
                 }
-                setCols = "full_name = '"+data.full_name+"'"
+                setCols = "full_name = '"+(data as AccompanistInterface).full_name+"'"
                 break;
             case 'performer':
                 // don't wipe out data
-                if (! (isNonEmptyString(data.full_name) &&
-                    isNonEmptyString(data.instrument) &&
-                    isNonEmptyString(data.grade))
+                if (! (isNonEmptyString((data as PerformerInterface).full_name) &&
+                    isNonEmptyString((data as PerformerInterface).instrument) &&
+                   (data as PerformerInterface).epoch != null )
                 ) {
                     return null
                 }
-                setCols = "full_name = '"+data.full_name+"'"
-                setCols = setCols + ", instrument = '"+data.instrument+"'"
-                setCols = setCols + ", grade = '"+data.grade+"'"
-                if (isNonEmptyString(data.email)) {
-                    setCols = setCols + ", email = '" + data.email + "' "
+                setCols = "full_name = '"+(data as PerformerInterface).full_name+"'"
+                setCols = setCols + ", instrument = '"+(data as PerformerInterface).instrument+"'"
+                setCols = setCols + ", epoch = "+(data as PerformerInterface).epoch + " "
+                if (isNonEmptyString((data as PerformerInterface).email)) {
+                    setCols = setCols + ", email = '" + (data as PerformerInterface).email + "' "
                 }
-                if (isNonEmptyString(data.phone)) {
-                    setCols = setCols + ", phone = '" + data.phone + "' "
+                if (isNonEmptyString((data as PerformerInterface).phone)) {
+                    setCols = setCols + ", phone = '" + (data as PerformerInterface).phone + "' "
                 }
                 break;
             case 'musical_piece':
                 // don't wipe out data
-                if (!isNonEmptyString(data.printed_name) &&
-                    !isNonEmptyString(data.first_composer_id)
+                if (!isNonEmptyString((data as MusicalPieceInterface).printed_name) &&
+                    !isNonEmptyString((data as MusicalPieceInterface).first_composer_id)
                 ) {
                     return null
                 }
-                setCols = "printed_name = '"+data.printed_name.replaceAll("'","''").trim()+"'"
-                setCols = setCols + ", first_composer_id = '"+data.first_composer_id+"'"
-                if (isNonEmptyString(data.all_movements)) {
-                    setCols = setCols + ", all_movements = '" + data.all_movements.replaceAll("'","''").trim() + "' "
+                setCols = "printed_name = '"+(data as MusicalPieceInterface).printed_name.replaceAll("'","''").trim()+"'"
+                setCols = setCols + ", first_composer_id = '"+(data as MusicalPieceInterface).first_composer_id+"'"
+                if (isNonEmptyString((data as MusicalPieceInterface).all_movements)) {
+                    setCols = setCols + ", all_movements = '" + (data as MusicalPieceInterface).all_movements.replaceAll("'","''").trim() + "' "
                 }
-                if (isNonEmptyString(data.second_composer_id)) {
-                    setCols = setCols + ", email = '" + data.second_composer_id + "' "
+                if (isNonEmptyString((data as MusicalPieceInterface).second_composer_id)) {
+                    setCols = setCols + ", email = '" + (data as MusicalPieceInterface).second_composer_id + "' "
                 }
-                if (isNonEmptyString(data.third_composer_id)) {
-                    setCols = setCols + ", email = '" + data.third_composer_id + "' "
+                if (isNonEmptyString((data as MusicalPieceInterface).third_composer_id)) {
+                    setCols = setCols + ", email = '" + (data as MusicalPieceInterface).third_composer_id + "' "
                 }
                 break;
         }
@@ -702,7 +704,7 @@ export async function queryPerformanceDetailsById(id: number) {
     try {
         const connection = await pool.connect();
         const querySQL = "SELECT performance.performer_id, performer.full_name as performer_full_name, \n" +
-          "performance.instrument, performer.grade, accompanist.full_name as accompanist_name\n" +
+          "performance.instrument, performer.epoch, accompanist.full_name as accompanist_name\n" +
           "FROM performance \n" +
           "JOIN performer ON performance.performer_id = performer.id \n" +
           "LEFT JOIN accompanist ON performance.accompanist_id = accompanist.id \n" +
@@ -760,7 +762,7 @@ export async function searchPerformer(full_name: string, email: string | null, i
     try {
         const connection = await pool.connect();
 
-        let searchSQL = "SELECT id, full_name, grade, email, phone, instrument " +
+        let searchSQL = "SELECT id, full_name, epoch, email, phone, instrument " +
             "FROM performer " +
             "WHERE (LOWER(full_name) = '" + full_name.toLowerCase() + "' AND instrument = '" + instrument + "') "
         if (email != null) {
@@ -835,7 +837,7 @@ export async function selectPerformerLottery(pafe_series: number) {
 
         const searchSQL = "SELECT performer_lottery.lookup_code as lookupCode, \n" +
             "performer.full_name as fullName, \n" +
-            "performer.grade,  \n" +
+            "performer.epoch,  \n" +
             "performer.instrument, \n" +
             "composer.full_name as composer, \n" +
             "performer_ranked_choice.first_choice_time as first_choice_time, \n" +
