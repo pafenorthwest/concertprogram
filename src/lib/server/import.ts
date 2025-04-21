@@ -29,9 +29,8 @@ import {
 	insertPerformance,
 	insertPerformancePieceMap,
 	deleteById,
-	deletePerformerLottery,
 	deletePerformancePieceMap,
-	deletePerformancePieceByPerformanceId
+	deletePerformancePieceByPerformanceId, deleteClassLottery, getClassLottery, insertClassLottery
 } from '$lib/server/db';
 import {createPerformer} from "$lib/server/performer";
 
@@ -57,11 +56,16 @@ export class Performance {
 		// process performer
 		this.performer = await this.processPerformer(
 			data.performer,
-			parseInt(data.age, 10),
+			data.age,
 			data.instrument,
 			data.email,
 			data.phone
 		);
+
+		// create class lottery
+		if (!await this.processLottery(data.class_name, data.lottery)) {
+			throw new PerformerError("Unable to create Class Lottery")
+		}
 
 		// Now we need to get the performance info and determin if this is an update or creation
 		if (this.performer.id == null) {
@@ -357,6 +361,21 @@ export class Performance {
 		};
 	}
 
+	private async processLottery(class_name: string, lottery: number): Promise<boolean> {
+		const res = await getClassLottery(class_name);
+		if (res.rowCount == null || res.rowCount < 1) {
+			if (!await insertClassLottery(class_name, lottery)) {
+				throw new PerformanceError('Unable to create Class Lottery');
+			}
+		} else {
+			if (res.rows[0].lottery != lottery) {
+				throw new PerformanceError(`Tried to update Class Lottery: ${class_name} with new lottery number`);
+			}
+		}
+		// success
+		return true
+	}
+
 	private async processPerformance(
 		performer: PerformerInterfaceTagCreate,
 		class_name: string,
@@ -458,6 +477,7 @@ export class Performance {
 	public async deleteAll() {
 		if (this.performance != undefined && this.performance.id != null && this.performance.id > 0) {
 			await deleteById('performance', this.performance.id);
+			await deleteClassLottery(this.performance.class)
 		}
 		if (this.musical_piece_1 != undefined && this.musical_piece_1.id != null && this.musical_piece_1.id > 0) {
 			await deleteById('musical_piece', this.musical_piece_1.id);
@@ -474,7 +494,6 @@ export class Performance {
 		}
 		if (this.performer != undefined && this.performer.id != null && this.performer.id > 0) {
 			await deleteById('performer', this.performer.id);
-			await deletePerformerLottery(this.performer.id);
 		}
 	}
 }
@@ -571,8 +590,8 @@ export class DataParser {
             return parsedData.map((item: ImportPerformanceInterface) => ({
 							class_name: String(item.class_name),
 							performer: String(item.performer),
-							lottery: String(item.lottery),
-							age: String(item.age),
+							lottery: parseInt(String(item.lottery),10),
+							age: parseInt(String(item.age),10),
 							concert_series: String(item.concert_series),
 							musical_piece: item.musical_piece as ImportMusicalTitleInterface[],
 							instrument: String(item.instrument),

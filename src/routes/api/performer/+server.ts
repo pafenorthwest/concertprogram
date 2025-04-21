@@ -23,7 +23,7 @@ export async function POST({request, cookies}) {
         return json({ result: 'error', reason: 'Bad Instrument or Age Value' }, { status: 400 });
     }
     instrument = selectInstrument(instrument)
-    const birthYear = calcEpochAge(parseInt(age),10)
+    const birthYear = calcEpochAge(parseInt(age,10))
 
 
     const performer: PerformerInterface = {

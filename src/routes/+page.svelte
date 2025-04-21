@@ -33,8 +33,8 @@
     <h3>Lookup By Code</h3>
     <form id="codeLookup" on:submit={handleSubmitLookupByCode}>
         <div class="form-group">
-            <label for="code">Enter 4-Char Code:</label>
-            <input type="text" id="code" bind:value={lookupCode} name="code" maxlength="4" required pattern="[A-Za-z0-9]+">
+            <label for="code">Enter Code:</label>
+            <input type="text" id="code" bind:value={lookupCode} name="code" maxlength="10">
         </div>
         <div class="form-group">
             <button type="submit">Lookup</button>
