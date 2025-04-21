@@ -1,9 +1,7 @@
 import { describe, it, assert } from 'vitest';
 import {
 	decimalToBase34,
-	base34ToDecimal,
-	type LotteryInterface,
-	generateLottery
+	base34ToDecimal
 } from '$lib/server/common';
 
 describe('Base 34 Conversion Tests', () => {
@@ -29,22 +27,4 @@ describe('Base 34 Conversion Tests', () => {
         assert.equal(base34ToDecimal('OYA9'),37306)
         assert.equal(decimalToBase34(37306),'OYA9')
     })
-
-    it('should handle round-trip conversion', () => {
-        const tickets: LotteryInterface[] = [
-            generateLottery(),
-            generateLottery(),
-            generateLottery(),
-            generateLottery(),
-            generateLottery(),
-            generateLottery(),
-            generateLottery(),
-        ]
-        tickets.forEach(tick => {
-            const base34 = decimalToBase34(tick.lottery);
-            const decimal = base34ToDecimal(tick.base34Lottery);
-            assert.equal(decimal,tick.lottery);
-            assert.equal(base34,tick.base34Lottery)
-        });
-    });
 });

@@ -67,9 +67,9 @@ export interface PerformancePieceInterface {
     movement: string | null ;
 }
 
-export interface LotteryInterface {
+export interface ClassLotteryInterface {
+    class_name: string;
     lottery: number;
-    base34Lottery: string;
 }
 
 export interface PerformerRankedChoiceInterface {
@@ -110,7 +110,7 @@ export interface PerformerSearchResultsInterface {
     performer_id: number;
     performer_name: string;
     musical_piece: string;
-    lottery_code: string;
+    lottery_code: number;
     concert_series: string;
 }
 
@@ -134,19 +134,6 @@ export function formatFieldNames(input: string): string {
 
 export function isNonEmptyString(value: any): boolean {
     return typeof value === 'string' && value.trim().length > 0;
-}
-
-export function generateLottery(): LotteryInterface {
-    // Lottery Number at most 4 digit base 34
-    const min = 1;
-    const max = 1337334;
-
-    // 0.3% chance of collision for 100 random numbers
-    const lottery = Math.floor(Math.random() * (max - min + 1)) + min;
-    // convert to base 36 string
-    const base34Lottery = decimalToBase34(lottery);
-
-    return {lottery, base34Lottery};
 }
 
 export function pafe_series(): number {

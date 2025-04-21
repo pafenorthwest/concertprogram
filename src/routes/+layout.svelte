@@ -89,6 +89,13 @@
                     <p class="subtext">Concert Program</p>
                 </a>
             </div>
+            <div class="navbutton">
+                <a href="/admin/class">
+                    <p class="navicon"><span class="material-symbols-outlined">photo_auto_merge</span></p>
+                    <br/>
+                    <p class="subtext">Classes</p>
+                </a>
+            </div>
         {/if}
     </div>
 </div>

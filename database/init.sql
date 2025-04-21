@@ -26,6 +26,7 @@ CREATE TABLE performer (
     phone VARCHAR(18) NULL,
     instrument VARCHAR(255) NULL
 );
+CREATE INDEX performer_search_idx ON performer(epoch, instrument, full_name);
 
 CREATE TABLE accompanist (
     id SERIAL PRIMARY KEY,
@@ -57,13 +58,10 @@ CREATE TABLE performance_pieces (
 );
 CREATE UNIQUE INDEX performance_pieces_idx ON performance_pieces(performance_id,musical_piece_id);
 
-CREATE TABLE performer_lottery (
-    performer_id INTEGER NOT NULL,
-    lottery INTEGER NOT NULL,
-    lookup_code CHAR(4) NOT NULL,
-    pafe_series INTEGER NOT NULL
-);
-CREATE UNIQUE INDEX lookup_performer_idx ON performer_lottery(lookup_code);
+CREATE TABLE class_lottery (
+                               class_name VARCHAR(25) NOT NULL,
+                               lottery INTEGER NOT NULL);
+CREATE UNIQUE INDEX lookup_class_lottery_idx ON class_lottery(class_name);
 
 CREATE TABLE performer_ranked_choice (
     performer_id INTEGER NOT NULL,
@@ -81,6 +79,7 @@ CREATE TABLE performance (
     id SERIAL PRIMARY KEY,
     performer_id INTEGER NOT NULL,
     performance_order INTEGER DEFAULT 100 NOT NULL,
+    class_name VARCHAR(255) NOT NULL,
     concert_series VARCHAR(255) NOT NULL,
     pafe_series INTEGER NOT NULL,
     duration INTEGER DEFAULT 0 NOT NULL,

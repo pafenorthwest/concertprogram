@@ -148,7 +148,7 @@ async function retrievePerformerByCode(code: string): Promise<PerformerSearchRes
 			performer_id: 0,
 			performer_name: '',
 			musical_piece: '',
-			lottery_code: '',
+			lottery_code: 0,
 			concert_series: ''
 		}
 	}
@@ -162,7 +162,7 @@ async function retrievePerformerByDetails(performerLastName:string, age: number,
 				performer_id: 0,
 				performer_name: performerLastName,
 				musical_piece: '',
-				lottery_code: '',
+				lottery_code: 0,
 				concert_series: ''
 			}
 		}
@@ -180,7 +180,7 @@ async function retrievePerformerByDetails(performerLastName:string, age: number,
 			performer_id: 0,
 			performer_name: '',
 			musical_piece: '',
-			lottery_code: '',
+			lottery_code: 0,
 			concert_series: ''
 		}
 	}
@@ -195,7 +195,7 @@ export async function load({url}) {
 		performer_id: 0,
 		performer_name: '',
 		musical_piece: '',
-		lottery_code: '',
+		lottery_code: 0,
 		concert_series: ''
 	}
 	let formValues = null
