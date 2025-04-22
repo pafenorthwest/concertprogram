@@ -89,7 +89,8 @@ export async function lookupByDetails(performerLastName: string, age: number, co
         // if you are in the concerto playoff can't also perform in EastSide artists concert
         const searchQuery = "SELECT performer.id, performer.full_name as performer_name, \n" +
             "class_lottery.lottery as lottery_code, \n"+
-            "musical_piece.printed_name as musical_piece,  performance.concert_series \n" +
+            "musical_piece.printed_name as musical_piece,  performance.concert_series, \n" +
+            "performance.id \n"+
             "FROM performer \n"+
             "JOIN performance ON performance.performer_id = performer.id \n" +
             "JOIN class_lottery ON performance.class_name = class_lottery.class_name \n" +
@@ -131,7 +132,8 @@ export async function lookupByCode(code: string): Promise<PerformerSearchResults
         // if you are in the concerto playoff can't also perform in EastSide artists concert
         const searchQuery = "SELECT performer.id, performer.full_name as performer_name, \n" +
             "class_lottery.lottery as lottery_code, \n"+
-            "musical_piece.printed_name as musical_piece,  performance.concert_series \n" +
+            "musical_piece.printed_name as musical_piece, performance.concert_series, \n" +
+            "performance.id \n"+
             "FROM performer \n"+
             "JOIN performance ON performance.performer_id = performer.id \n" +
             "JOIN class_lottery on performance.class_name = class_lottery.class_name \n" +
@@ -311,6 +313,27 @@ export async function insertPerformance(data: PerformanceInterface,
         // Release the connection back to the pool
         connection.release();
         return result
+    } catch (error) {
+        console.error('Error executing insertPerformance:', error);
+        throw error;
+    }
+}
+
+export async function updateConcertPerformance(performanceId:number,duration:number, comments: string | null): Promise<bool> {
+    try {
+        const connection = await pool.connect()
+        let setSQL = "SET duration = "+duration
+        if (comments != null) {
+            setSQL = setSQL + ", comments = '" + comments + "'"
+        }
+        const updateSQL = 'UPDATE performance '+setSQL+' WHERE performance.id = '+performanceId
+        const result = await connection.query(updateSQL)
+
+        // Release the connection back to the pool
+        connection.release();
+
+        return true
+
     } catch (error) {
         console.error('Error executing insertPerformance:', error);
         throw error;

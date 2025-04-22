@@ -112,6 +112,7 @@ export interface PerformerSearchResultsInterface {
     musical_piece: string;
     lottery_code: number;
     concert_series: string;
+    performance_id: number;
 }
 
 export interface EastSideFormInterface {
