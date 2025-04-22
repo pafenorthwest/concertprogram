@@ -82,7 +82,7 @@
     <form id="full" class="inline-add" method="POST" action="?/add" use:enhance={handleFormResponse}>
         <div class="form-group">
             <label for="class">Class:</label>
-            <input type="text" id="class" name="class" maxlength="10" required>
+            <input type="text" id="class" name="class" maxlength="14" required>
             <label for="performer-name">Performer Name:</label>
             <input type="text" id="performer-name" name="performer-name" maxlength="40" required>
             <label for="age">Age:</label>
