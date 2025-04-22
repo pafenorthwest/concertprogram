@@ -369,7 +369,7 @@ export class Performance {
 			}
 		} else {
 			if (res.rows[0].lottery != lottery) {
-				throw new PerformanceError(`Tried to update Class Lottery: ${class_name} with new lottery number`);
+				throw new PerformanceError(`Class ${class_name} already exists with a different lottery number. Aborting update.`);
 			}
 		}
 		// success
