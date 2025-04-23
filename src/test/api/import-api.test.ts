@@ -18,17 +18,21 @@ function generateSixDigitNumber(): number {
 let randomNameOne: string
 let randomEmailOne: string
 let randomLotteryOne: number
+let randomClassOne: string
 let randomNameTwo: string
 let randomEmailTwo: string
 let randomLotteryTwo: number
+let randomClassTwo: string
 
 beforeAll(() => {
  randomNameOne = generateRandomString()
  randomEmailOne = generateRandomString()
  randomLotteryOne = generateSixDigitNumber()
+	randomClassOne = generateRandomString(6)
  randomNameTwo = generateRandomString()
  randomEmailTwo = generateRandomString()
  randomLotteryTwo = generateSixDigitNumber()
+	randomClassTwo = generateRandomString(6)
 })
 
 describe('Test Import HTTP APIs', () => {
@@ -40,7 +44,7 @@ describe('Test Import HTTP APIs', () => {
 				'Content-Type': 'application/json'
 			},
 
-			body: '{"class_name": "CC.P-4.A", ' +
+			body: '{"class_name": "'+randomClassOne+'", ' +
 				'"performer": "'+randomNameOne+'", ' +
 				'"age": 6, '+
 				'"lottery": '+randomLotteryOne+', ' +
@@ -76,7 +80,7 @@ describe('Test Import HTTP APIs', () => {
 				'Authorization': `Bearer ffffffff`
 			},
 
-			body: '{"class_name": "CC.P-4.A", ' +
+			body: '{"class_name": "'+randomClassOne+'", ' +
 				'"performer": "'+randomNameOne+'", ' +
 				'"age": 6, '+
 				'"lottery": '+randomLotteryOne+', ' +
@@ -111,7 +115,7 @@ describe('Test Import HTTP APIs', () => {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ${auth_code}`
 			},
-			body: '{"class_name": "CC.P-4.A", ' +
+			body: '{"class_name": "'+randomClassOne+'", ' +
 				'"performer": "'+randomNameOne+'", ' +
 				'"age": 6, '+
 				'"lottery": '+randomLotteryOne+', ' +
@@ -148,7 +152,7 @@ describe('Test Import HTTP APIs', () => {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ${auth_code}`
 			},
-			body: '{"class_name": "CC.P-4.A", ' +
+			body: '{"class_name": "'+randomClassOne+'", ' +
 				'"performer_name": "'+randomNameOne+'", ' +
 				'"age": 6, '+
 				'"instrument": "Cello",' +
@@ -175,7 +179,7 @@ describe('Test Import HTTP APIs', () => {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ${auth_code}`
 			},
-			body: '{"class_name": "CC.P-4.A", ' +
+			body: '{"class_name": "'+randomClassOne+'", ' +
 				'"performer_name": "Does Not Exist", ' +
 				'"age": 99, '+
 				'"instrument": "Cello",' +
@@ -200,7 +204,7 @@ describe('Test Import HTTP APIs', () => {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ${auth_code}`
 			},
-			body: '{ "class_name": "CC.P-4.A", ' +
+			body: '{ "class_name": "'+randomClassTwo+'", ' +
 				'"performer": "'+randomNameTwo+'", ' +
 				'"age": 6, '+
 				'"lottery": '+randomLotteryTwo+', ' +
@@ -242,7 +246,7 @@ describe('Test Import HTTP APIs', () => {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ${auth_code}`
 			},
-			body: '{ "class_name": "CC.P-4.A", ' +
+			body: '{ "class_name": "'+randomClassTwo+'", ' +
 				'"performer": "'+randomNameTwo+'", ' +
 				'"age": 6, '+
 				'"lottery": '+randomLotteryTwo+', ' +
