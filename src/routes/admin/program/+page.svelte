@@ -169,7 +169,7 @@
 					<td>{entry.concertSeries}</td>
 					<td>{entry.concertNumberInSeries}</td>
 					{#if entry.comment != null}
-						<td class="program-comment">{entry.comment}</td>
+						<td class="program-comment"><div class="scroll-container">{entry.comment}</div></td>
 					{:else}
 						<td></td>
 					{/if}

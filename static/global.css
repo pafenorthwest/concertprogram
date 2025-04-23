@@ -94,6 +94,12 @@ li p {
     width: 300px;
 }
 
+.scroll-container {
+    overflow-x: auto;
+    white-space: nowrap;
+    max-width: 140px; /* or set a fixed width like 300px */
+}
+
 .login-container {
     padding: var(--popover-space);
 }
