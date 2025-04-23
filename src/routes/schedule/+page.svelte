@@ -26,9 +26,8 @@
         // Check for duplicates
         const uniqueValues = new Set(values);
 
-        // If the number of unique values is less than the total values, duplicates exist
-        // if no choices also bad
-        return uniqueValues.size !== values.length;
+        // Need to have at least on value choice
+        return !(uniqueValues.size > 0)
     }
 
     function handleCheckboxChange(event) {
