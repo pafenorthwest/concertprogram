@@ -12,6 +12,7 @@
     --shadow-color: #888;
     --allok-color: #4DA761;
     --warning-color: #E0B50F;
+    --comment-bg-color: #7eede8;
     --error-color: #F95F53;
     --action-color: #0D6EFD;
     --text-size: 18px;
@@ -237,11 +238,13 @@ li p {
 .form-group label i {
     font-size: .75em;
 }
-.form-group p {
+.form-group p,
+.form-group span {
     font-size: .75em;
     color: var(--low-em-color);
 }
-.form-group p.concerto-confirm {
+.form-group p.concerto-confirm,
+.form-group span.concerto-confirm {
     font-size: calc(var(--text-size)*2.2);
 }
 
@@ -446,6 +449,10 @@ h3.schedule {
 p.top-message {
     margin-bottom: var(--margin);
     margin-left: var(--margin);
+}
+
+.program-comment {
+    background-color: var(--comment-bg-color);
 }
 
 @media screen and (min-width: 800px) {

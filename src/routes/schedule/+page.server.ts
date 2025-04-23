@@ -7,7 +7,13 @@ import {
 	pafe_series,
 	type ScheduleFormInterface, compareReformatISODate
 } from '$lib/server/common'
-import {createDBSchedule, lookupByCode, lookupByDetails, selectDBSchedule} from "$lib/server/db";
+import {
+	createDBSchedule,
+	lookupByCode,
+	lookupByDetails,
+	selectDBSchedule,
+	updateConcertPerformance
+} from '$lib/server/db';
 import { getCachedTimeStamps } from '$lib/cache';
 
 function parseRankChoice(choice:string|null): number | null {
@@ -130,8 +136,9 @@ async function retrievePerformerByCode(code: string): Promise<PerformerSearchRes
 				performer_id: 0,
 				performer_name: '',
 				musical_piece: '',
-				lottery_code: code,
-				concert_series: ''
+				lottery_code: Number(code),
+				concert_series: '',
+				performance_id: 0
 			}
 		}
 		return {
@@ -140,7 +147,8 @@ async function retrievePerformerByCode(code: string): Promise<PerformerSearchRes
 			performer_name: result.performer_name,
 			musical_piece: result.musical_piece,
 			lottery_code: result.lottery_code,
-			concert_series: result.concert_series
+			concert_series: result.concert_series,
+			performance_id: result.performance_id,
 		}
 	} catch {
 		return {
@@ -149,7 +157,8 @@ async function retrievePerformerByCode(code: string): Promise<PerformerSearchRes
 			performer_name: '',
 			musical_piece: '',
 			lottery_code: 0,
-			concert_series: ''
+			concert_series: '',
+			performance_id: 0
 		}
 	}
 }
@@ -163,7 +172,8 @@ async function retrievePerformerByDetails(performerLastName:string, age: number,
 				performer_name: performerLastName,
 				musical_piece: '',
 				lottery_code: 0,
-				concert_series: ''
+				concert_series: '',
+				performance_id: 0
 			}
 		}
 		return {
@@ -172,7 +182,8 @@ async function retrievePerformerByDetails(performerLastName:string, age: number,
 			performer_name: result.performer_name,
 			musical_piece: result.musical_piece,
 			lottery_code: result.lottery_code,
-			concert_series: result.concert_series
+			concert_series: result.concert_series,
+			performance_id: result.performance_id
 		}
 	} catch {
 		return {
@@ -181,7 +192,8 @@ async function retrievePerformerByDetails(performerLastName:string, age: number,
 			performer_name: '',
 			musical_piece: '',
 			lottery_code: 0,
-			concert_series: ''
+			concert_series: '',
+			performance_id: 0
 		}
 	}
 }
@@ -196,7 +208,8 @@ export async function load({url}) {
 		performer_name: '',
 		musical_piece: '',
 		lottery_code: 0,
-		concert_series: ''
+		concert_series: '',
+		performance_id: 0
 	}
 	let formValues = null
 
@@ -214,7 +227,8 @@ export async function load({url}) {
 				lottery_code: performerSearchResults.lottery_code,
 				concert_series: performerSearchResults.concert_series,
 				formValues: null,
-				concertTimes: concertStartTimes.data
+				concertTimes: concertStartTimes.data,
+				performance_id: performerSearchResults.performance_id
 			}
 		}
 	} else {
@@ -240,7 +254,8 @@ export async function load({url}) {
 					lottery_code: performerSearchResults.lottery_code,
 					concert_series: performerSearchResults.concert_series,
 					formValues: null,
-					concertTimes: concertStartTimes.data
+					concertTimes: concertStartTimes.data,
+					performance_id: performerSearchResults.performance_id
 				}
 			}
 		} else {
@@ -252,7 +267,8 @@ export async function load({url}) {
 				lottery_code: '',
 				concert_series: '',
 				formValues: null,
-				concertTimes: null
+				concertTimes: null,
+				performance_id: 0
 			}
 		}
 	}
@@ -281,7 +297,8 @@ export async function load({url}) {
 		lottery_code: performerSearchResults.lottery_code,
 		concert_series: performerSearchResults.concert_series,
 		formValues: formValues,
-		concertTimes: concertStartTimes.data
+		concertTimes: concertStartTimes.data,
+		performance_id: performerSearchResults.performance_id
 	}
 }
 
@@ -291,6 +308,9 @@ export const actions = {
 
 		const performerId = formData.get('performerId')
 		const concertSeries = formData.get('concertSeries') ? String(formData.get('concertSeries')) : null
+		const performanceId = formData.get('performanceId')
+		const duration : number = formData.get('duration') ? Number(formData.get('duration')) : 0
+		const comment : string | null = formData.get('comment') ? String(formData.get('comment')) : null
 
 		if (performerId != null
 			&& concertSeries != null
@@ -300,6 +320,13 @@ export const actions = {
 			const performerIdAsNumber = Number(performerId)
 			if (! Number.isInteger(performerIdAsNumber)) {
 				return fail(400, {error: "performer id must be an integer"});
+			}
+
+			// update duration and comment across all concert series
+			if ( performanceId != null ) {
+				const performanceIdAsNumber = Number(performanceId)
+				// if this fails return some error??
+				await updateConcertPerformance(performanceIdAsNumber,duration, comment)
 			}
 
 			if (concertSeries.toLowerCase() === "concerto") {

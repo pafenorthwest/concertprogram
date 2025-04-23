@@ -16,7 +16,7 @@
         }
 
         // Get all select elements within the form
-        const selectElements = form.querySelectorAll("select");
+        const selectElements = form.querySelectorAll("select:not(#duration)");
 
         // Extract values from the select elements
         const values = Array.from(selectElements)
@@ -133,8 +133,22 @@
                     <div class="form-group">
                         <input type="hidden" name="performerId" value={data.performer_id} />
                         <input type="hidden" name="concertSeries" value={data.concert_series} />
+                        <input type="hidden" name="performanceId" value={data.performance_id} />
                         <input type="checkbox" name="concert-confirm" class="concerto-confirm" id="concert-confirm">
-                        <p class="concerto-confirm">Confirm Attendance</p>
+                        <p class="concerto-confirm">Confirm Attendance</p><br/><br/>
+                        <label for="duration"><span class="concerto-confirm">Duration: </span><br/><span> performance time in minutes</span></label>
+                        <select class="action" name="duration" id="duration">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                        </select><br/><br/>
+                        <label for="comment"><span class="concerto-confirm">Comments:</span></label>
+                        <input type="text" id="comment" name="comment" required><br/><br/>
                     </div>
                     <div class="form-group">
                         <button type="submit">Submit</button>
@@ -151,13 +165,15 @@
             <div id="success-icon" class="base-icon hidden"><p>✓</p></div>
             <form id="ranked-choice-form" class="form-container" method="POST" action="?/add">
                 <div class="form-group">
+                    <input type="hidden" name="performerId" value={data.performer_id}/>
+                    <input type="hidden" name="concertSeries" value={data.concert_series}/>
+                    <input type="hidden" name="performanceId" value={data.performance_id} />
+                    <span class="concerto-confirm">Rank Choice: </span><br/>
                     <p>Please rank the following options (1 = most preferred, 4 = least preferred).</p>
                     <br/><br/>
 
                     <!-- Option 1 -->
                     <div class="inline-form">
-                        <input type="hidden" name="performerId" value={data.performer_id}/>
-                        <input type="hidden" name="concertSeries" value={data.concert_series}/>
                         <label for="rank-sat-first" style="width:180px">{data.concertTimes[1].displayStartTime}:</label>
                         <select name="rank-sat-first" id="rank-sat-first" on:change={enforceValidSelect}>
                             <option value="" selected disabled>Rank</option>
@@ -215,7 +231,20 @@
                                on:change={handleCheckboxChange}>
                         <p>Not Available</p>
                     </div>
-                    <br/>
+                    <br/><br/>
+                    <label for="duration"><span class="concerto-confirm">Duration: </span><br/><span> performance time in minutes</span></label>
+                    <select class="action" name="duration" id="duration">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                    </select><br/><br/>
+                    <label for="comment"><span class="concerto-confirm">Comments:</span></label>
+                    <input type="text" id="comment" name="comment" required><br/><br/>
                     <div class="form-group">
                         <button type="submit" disabled="{disableFormSubmit}">Submit</button>
                     </div>

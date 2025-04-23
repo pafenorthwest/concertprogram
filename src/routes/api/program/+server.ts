@@ -81,7 +81,7 @@ function flattenProgram(input: OrderedPerformanceInterface): ProgramCSVExportInt
 		performerId: input.performerId ? input.performerId : 0,
 		performerName: input.performerName ? input.performerName : '',
 		instrument: input.instrument ? input.instrument : '',
-		age: input.age ? input.age : '',
+		age: input.age ? input.age : 0,
 		accompanist: input.accompanist ? input.accompanist : '',
 
 		musicalPieceOneTitle: safeStringTitle(input.musicalTitles[0]),
@@ -94,7 +94,10 @@ function flattenProgram(input: OrderedPerformanceInterface): ProgramCSVExportInt
 		musicalPieceTwoMovement: safeStringMovement(input.musicalTitles[1]),
 		musicalPieceTwoComposer1: safeStringComposer(input.musicalTitles[1]? input.musicalTitles[1] : null,0),
 		musicalPieceTwoComposer2: safeStringComposer(input.musicalTitles[1]? input.musicalTitles[1] : null,1),
-		musicalPieceTwoComposer3: safeStringComposer(input.musicalTitles[1]? input.musicalTitles[1] : null,2)
+		musicalPieceTwoComposer3: safeStringComposer(input.musicalTitles[1]? input.musicalTitles[1] : null,2),
+
+		duration: input.duration,
+		comment: input.comment
 	}
 }
 
