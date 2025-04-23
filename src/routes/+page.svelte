@@ -8,9 +8,6 @@
 
   async function handleSubmitLookupByCode(event) {
       event.preventDefault();
-
-      // Code param limited to 4 chars
-      lookupCode = lookupCode.slice(0, 4)
       goto(`/schedule?code=${lookupCode}`);
   }
   async function handleSubmitLookupByDetails(event) {
@@ -18,8 +15,8 @@
 
       // Navigate to the /schedule page with the parameters
       // params binding in form definition, cap size
-      performerName = performerName.slice(0,30)
-      composerName = composerName.slice(0,30)
+      performerName = performerName.slice(0,50)
+      composerName = composerName.slice(0,50)
       goto(`/schedule?performerLastName=${performerName}&age=${age}&composerName=${composerName}`);
   }
 </script>

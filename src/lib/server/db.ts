@@ -90,7 +90,7 @@ export async function lookupByDetails(performerLastName: string, age: number, co
         const searchQuery = "SELECT performer.id, performer.full_name as performer_name, \n" +
             "class_lottery.lottery as lottery_code, \n"+
             "musical_piece.printed_name as musical_piece,  performance.concert_series, \n" +
-            "performance.id \n"+
+            "performance.id as performance_id\n"+
             "FROM performer \n"+
             "JOIN performance ON performance.performer_id = performer.id \n" +
             "JOIN class_lottery ON performance.class_name = class_lottery.class_name \n" +
@@ -113,7 +113,8 @@ export async function lookupByDetails(performerLastName: string, age: number, co
                 "performer_name": dbResult.rows[0].performer_name,
                 "musical_piece": dbResult.rows[0].musical_piece,
                 "lottery_code": dbResult.rows[0].lottery_code,
-                "concert_series": dbResult.rows[0].concert_series
+                "concert_series": dbResult.rows[0].concert_series,
+                "performance_id": dbResult.rows[0].performance_id
             }
         } else {
             return null;
@@ -133,7 +134,7 @@ export async function lookupByCode(code: string): Promise<PerformerSearchResults
         const searchQuery = "SELECT performer.id, performer.full_name as performer_name, \n" +
             "class_lottery.lottery as lottery_code, \n"+
             "musical_piece.printed_name as musical_piece, performance.concert_series, \n" +
-            "performance.id \n"+
+            "performance.id as performance_id \n"+
             "FROM performer \n"+
             "JOIN performance ON performance.performer_id = performer.id \n" +
             "JOIN class_lottery on performance.class_name = class_lottery.class_name \n" +
@@ -153,7 +154,8 @@ export async function lookupByCode(code: string): Promise<PerformerSearchResults
                 "performer_name": dbResult.rows[0].performer_name,
                 "musical_piece": dbResult.rows[0].musical_piece,
                 "lottery_code": dbResult.rows[0].lottery_code,
-                "concert_series": dbResult.rows[0].concert_series
+                "concert_series": dbResult.rows[0].concert_series,
+                "performance_id": dbResult.rows[0].performance_id
             }
         } else {
             return null;
@@ -319,12 +321,12 @@ export async function insertPerformance(data: PerformanceInterface,
     }
 }
 
-export async function updateConcertPerformance(performanceId:number,duration:number, comments: string | null): Promise<bool> {
+export async function updateConcertPerformance(performanceId:number,duration:number, comment: string | null): Promise<bool> {
     try {
         const connection = await pool.connect()
         let setSQL = "SET duration = "+duration
-        if (comments != null) {
-            setSQL = setSQL + ", comments = '" + comments + "'"
+        if (comment != null) {
+            setSQL = setSQL + ", comment = '" + comment + "'"
         }
         const updateSQL = 'UPDATE performance '+setSQL+' WHERE performance.id = '+performanceId
         const result = await connection.query(updateSQL)
@@ -332,7 +334,10 @@ export async function updateConcertPerformance(performanceId:number,duration:num
         // Release the connection back to the pool
         connection.release();
 
-        return true
+        if (result.rowCount != 0) {
+            return true
+        }
+        return false
 
     } catch (error) {
         console.error('Error executing insertPerformance:', error);
@@ -712,7 +717,8 @@ export async function queryPerformanceDetailsById(id: number) {
     try {
         const connection = await pool.connect();
         const querySQL = "SELECT performance.performer_id, performer.full_name as performer_full_name, \n" +
-          "performance.instrument, performer.epoch, accompanist.full_name as accompanist_name\n" +
+          "performance.instrument, performer.epoch, accompanist.full_name as accompanist_name, \n" +
+          "performance.duration, performance.comment \n" +
           "FROM performance \n" +
           "JOIN performer ON performance.performer_id = performer.id \n" +
           "LEFT JOIN accompanist ON performance.accompanist_id = accompanist.id \n" +

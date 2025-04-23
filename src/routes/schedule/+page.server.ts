@@ -310,7 +310,7 @@ export const actions = {
 		const concertSeries = formData.get('concertSeries') ? String(formData.get('concertSeries')) : null
 		const performanceId = formData.get('performanceId')
 		const duration : number = formData.get('duration') ? Number(formData.get('duration')) : 0
-		const comments : string = formData.get('comments') ? String(formData.get('comments')) : null
+		const comment : string | null = formData.get('comment') ? String(formData.get('comment')) : null
 
 		if (performerId != null
 			&& concertSeries != null
@@ -322,11 +322,11 @@ export const actions = {
 				return fail(400, {error: "performer id must be an integer"});
 			}
 
-			// update duration and comments across all concert serices
+			// update duration and comment across all concert series
 			if ( performanceId != null ) {
 				const performanceIdAsNumber = Number(performanceId)
 				// if this fails return some error??
-				await updateConcertPerformance(performanceIdAsNumber,duration, comments)
+				await updateConcertPerformance(performanceIdAsNumber,duration, comment)
 			}
 
 			if (concertSeries.toLowerCase() === "concerto") {

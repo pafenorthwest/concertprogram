@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 
 	export let data;
+	let showPopover = null;
 	let draggable = true;
 	let filterSeries = 'Concerto';
 	let filterConcertNumber = 0;
@@ -144,6 +145,8 @@
 			<th>Grab</th>
 			<th>Concert Series</th>
 			<th>Num in Series</th>
+			<th>Comment</th>
+			<th>Duration</th>
 			<th>Musical Piece</th>
 			<th>Composers</th>
 			<th>Performer</th>
@@ -165,6 +168,12 @@
 					</td>
 					<td>{entry.concertSeries}</td>
 					<td>{entry.concertNumberInSeries}</td>
+					{#if entry.comment != null}
+						<td class="program-comment">{entry.comment}</td>
+					{:else}
+						<td></td>
+					{/if}
+					<td>{entry.duration}</td>
 					<td>
 						{#each entry.musicalTitles as piece}
 							{piece.title}<br />

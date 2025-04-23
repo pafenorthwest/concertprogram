@@ -22,6 +22,8 @@ export interface PerformanceDetailsInterface {
 	instrument: string;
 	age: number;
 	accompanist: string;
+	duration: number;
+	comment: string | null;
 }
 
 export interface OrderedPerformanceInterface extends PerformanceDetailsInterface {
@@ -47,6 +49,8 @@ export interface ProgramCSVExportInterface extends PerformanceDetailsInterface {
 	musicalPieceTwoComposer1: string;
 	musicalPieceTwoComposer2: string;
 	musicalPieceTwoComposer3: string;
+	duration: number;
+	comment: string | null;
 }
 
 class ConcertCount {
@@ -135,6 +139,7 @@ export class Program {
 						performerId: performance.performer_id,
 						performerName: performanceDetails.performerName,
 						instrument: performanceDetails.instrument,
+						duration: performanceDetails.duration,
 						age: performanceDetails.age,
 						accompanist: performanceDetails.accompanist,
 						lottery: performance.lottery,
@@ -142,7 +147,8 @@ export class Program {
 						concertSeries: hasPlacement ? performance.concert_series: "Waitlist",
 						concertNumberInSeries: numberInSeries,
 						order: performance.performance_order,
-						musicalTitles: musicalTitles
+						musicalTitles: musicalTitles,
+						comment: performanceDetails.comment
 					});
 
 				}
@@ -248,7 +254,9 @@ export class Program {
 				performerName: data.rows[0].performer_full_name,
 				instrument: data.rows[0].instrument,
 				age: calcEpochAge(data.rows[0].epoch),
-				accompanist: data.rows[0].accompanist_name ? data.rows[0].accompanist_name : ''
+				accompanist: data.rows[0].accompanist_name ? data.rows[0].accompanist_name : '',
+				duration: data.rows[0].duration,
+				comment: data.rows[0].comment,
 			}
 		} else {
 			throw new Error(`Unable to query performance details with id ${performanceId} for program`);
