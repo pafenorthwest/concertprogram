@@ -34,7 +34,7 @@
     <form id="codeLookup" on:submit={handleSubmitLookupByCode}>
         <div class="form-group">
             <label for="code">Enter Code:</label>
-            <input type="text" id="code" bind:value={lookupCode} name="code" maxlength="10">
+            <input type="text" id="code" bind:value={lookupCode} name="code" maxlength="20">
         </div>
         <div class="form-group">
             <button type="submit">Lookup</button>

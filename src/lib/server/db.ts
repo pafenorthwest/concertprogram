@@ -450,10 +450,10 @@ export async function updateById(table: string, data: ComposerInterface | Accomp
                     setCols = setCols + ", all_movements = '" + (data as MusicalPieceInterface).all_movements.replaceAll("'","''").trim() + "' "
                 }
                 if (isNonEmptyString((data as MusicalPieceInterface).second_composer_id)) {
-                    setCols = setCols + ", email = '" + (data as MusicalPieceInterface).second_composer_id + "' "
+                    setCols = setCols + ", second_composer_id = '" + (data as MusicalPieceInterface).second_composer_id + "' "
                 }
                 if (isNonEmptyString((data as MusicalPieceInterface).third_composer_id)) {
-                    setCols = setCols + ", email = '" + (data as MusicalPieceInterface).third_composer_id + "' "
+                    setCols = setCols + ", third_composer_id = '" + (data as MusicalPieceInterface).third_composer_id + "' "
                 }
                 break;
         }
