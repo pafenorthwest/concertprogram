@@ -77,6 +77,8 @@ export async function GET({ request, cookies }) {
 
 function flattenProgram(input: OrderedPerformanceInterface): ProgramCSVExportInterface {
 	return {
+		series: input.concertSeries,
+		concertNum: input.concertNumberInSeries,
 		id: input.id ? input.id : 0,
 		performerId: input.performerId ? input.performerId : 0,
 		performerName: input.performerName ? input.performerName : '',
