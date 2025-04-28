@@ -125,7 +125,7 @@
 
             <label for="concert-series">Choose a concert series:</label>
             <select class="action" name="concert-series" id="concert-series">
-                <option value="EastSide">EastSide</option>
+                <option value="Eastside">Eastside</option>
                 <option value="Concerto">Concerto</option>
             </select>
         </div>

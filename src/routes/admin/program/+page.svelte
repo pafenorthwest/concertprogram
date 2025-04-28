@@ -201,10 +201,10 @@
 											data-id="{entry.id}"
 											data-performer-id="{entry.performerId}">
 								<option value="" selected disabled>Mv</option>
-								<option value="EastSide-1">E1</option>
-								<option value="EastSide-2">E2</option>
-								<option value="EastSide-3">E3</option>
-								<option value="EastSide-4">E4</option>
+								<option value="Eastside-1">E1</option>
+								<option value="Eastside-2">E2</option>
+								<option value="Eastside-3">E3</option>
+								<option value="Eastside-4">E4</option>
 								<option value="Waitlist-1">WL</option>
 							</select>
 						{/if}
