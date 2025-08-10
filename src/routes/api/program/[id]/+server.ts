@@ -1,5 +1,5 @@
 import { year } from '$lib/server/common';
-import { movePerformanceByChair, updateById } from '$lib/server/db';
+import { movePerformanceByChair } from '$lib/server/db';
 import { fail, json } from '@sveltejs/kit';
 import { isAuthorized } from '$lib/server/apiAuth';
 import { getCachedTimeStamps } from '$lib/cache';

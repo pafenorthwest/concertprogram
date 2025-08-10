@@ -4,7 +4,6 @@
 
 	let disableStatus = false;
 	export let data;
-	let editable = false;
 	let editing = {};
 
 	async function handleSave(performer) {

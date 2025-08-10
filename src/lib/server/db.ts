@@ -1,6 +1,6 @@
 import pkg from 'pg';
 const { Pool } = pkg;
-import { db_user, db_pass, db_name, db_host, db_port, db_ssl } from '$env/static/private';
+import { DATABASE_URL, DB_SSL } from '$env/static/private';
 import {
 	type AccompanistInterface,
 	type ComposerInterface,
@@ -16,12 +16,8 @@ import {
 import { isNonEmptyString } from '$lib/server/common';
 
 const pool = new Pool({
-	user: db_user,
-	host: db_host,
-	database: db_name,
-	password: db_pass,
-	port: db_port,
-	ssl: db_ssl === 'true' ? { rejectUnauthorized: false } : undefined
+	connectionString: DATABASE_URL,
+	ssl: DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
 });
 
 export async function queryTable(table: string, id?: number) {
@@ -1011,7 +1007,8 @@ export async function searchPerformanceByPerformer(
 			"    AND LOWER(concert_series) = '" +
 			concert_series.toLowerCase() +
 			"' \n" +
-			'    AND year = ' + year;
+			'    AND year = ' +
+			year;
 
 		const result = connection.query(searchSQL);
 
@@ -1094,7 +1091,8 @@ export async function getDBSchedule(performer_id: number, concert_series: string
 			"  AND concert_series = '" +
 			concert_series +
 			"' \n" +
-			'  AND year = ' + year +
+			'  AND year = ' +
+			year +
 			' \n' +
 			'ORDER BY concert_series \n';
 

@@ -1,4 +1,3 @@
-//import pg from 'pg';
 import { deleteById, queryTable } from '$lib/server/db';
 import {
 	calcEpochAge,
@@ -7,8 +6,6 @@ import {
 	selectInstrument
 } from '$lib/server/common';
 import { createPerformer } from '$lib/server/performer';
-
-//const { QueryArrayResult } = pg;
 
 export async function load({ cookies }) {
 	const pafeAuth = cookies.get('pafe_auth');

@@ -8,14 +8,22 @@ describe('Database Schedule Operations', () => {
 		const concert_series = 'testing';
 		const year = 2033;
 		const first_concert_time = '04/07/2033 7:00:00 PM';
-		const expected_date_string = '07 Apr 2033, 07 pm'
+		const expected_date_string = '07 Apr 2033, 07 pm';
 
 		// Create a schedule entry
-		await createDBSchedule(performer_id, concert_series, year, first_concert_time, null, null, null);
+		await createDBSchedule(
+			performer_id,
+			concert_series,
+			year,
+			first_concert_time,
+			null,
+			null,
+			null
+		);
 
 		// Retrieve the schedule entry
 		const result = await getDBSchedule(performer_id, concert_series, year);
-		const db_first_choice_time = displayReformatISODate(result.rows[0].first_choice_time)
+		const db_first_choice_time = displayReformatISODate(result.rows[0].first_choice_time);
 
 		// Verify the result
 		expect(result).toBeDefined();

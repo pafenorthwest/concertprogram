@@ -65,7 +65,7 @@
 		}
 	}
 
-	function enforceValidSelect(event) {
+	function enforceValidSelect() {
 		const lacksGoodChoices = lacksGoodRankChoices();
 		if (lacksGoodChoices) {
 			const error_icon = document.getElementById('error-icon');

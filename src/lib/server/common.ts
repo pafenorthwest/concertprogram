@@ -130,6 +130,7 @@ export function formatFieldNames(input: string): string {
 		.join(' '); // Join the words with spaces
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isNonEmptyString(value: any): boolean {
 	return typeof value === 'string' && value.trim().length > 0;
 }

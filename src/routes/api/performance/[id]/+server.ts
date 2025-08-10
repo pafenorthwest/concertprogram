@@ -75,7 +75,7 @@ export async function PUT({ params, request }) {
 				return json({ id: params.id, message: 'Update failed' }, { status: 500 });
 			}
 		}
-	} catch (error) {
+	} catch {
 		return json({ status: 'error', message: 'Failed to process the request' }, { status: 500 });
 	}
 }

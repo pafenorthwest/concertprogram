@@ -461,11 +461,7 @@ export class Performance {
 			return { result: 'error', reason: 'Not Found' };
 		}
 
-		const performanceRes = await searchPerformanceByPerformer(
-			performerId,
-			concertSeries,
-			year()
-		);
+		const performanceRes = await searchPerformanceByPerformer(performerId, concertSeries, year());
 		let performanceId: number;
 		if (
 			performanceRes.rowCount != null &&

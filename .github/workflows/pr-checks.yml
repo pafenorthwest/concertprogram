@@ -1,0 +1,67 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: pafe
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pafe
+      PGPASSWORD: postgres
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..10}; do
+            if pg_isready -h localhost -U postgres; then
+              echo "Postgres is ready!"
+              break
+            fi
+            echo "Waiting for Postgres..."
+            sleep 2
+          done
+      - name: Initialize Database
+        run: psql -h localhost -d pafe -U postgres -f database/init.sql
+      - run: npm test test/lib
+
+  check-all:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - name: All checks passed
+        run: echo "All checks passed!"
