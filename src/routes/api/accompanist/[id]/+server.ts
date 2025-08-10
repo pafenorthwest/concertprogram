@@ -5,7 +5,7 @@ import { isAuthorized } from '$lib/server/apiAuth';
 import { auth_code } from '$env/static/private';
 import type { QueryResult } from 'pg';
 
-export async function GET({ params, request }) {
+export async function GET({ params }) {
 	let res: QueryResult;
 	try {
 		const identifier = Number(params.id);

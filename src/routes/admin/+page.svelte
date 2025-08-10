@@ -4,19 +4,10 @@
 	let disableStatus = false;
 	export let data;
 	export let formErrors = null;
-	let showHelp = false;
 
 	// Boolean variable to track which form to display
 	let showSingleEntryForm = false;
 
-	// Toggle function to switch between forms
-	function toggleForm() {
-		showSingleEntryForm = !showSingleEntryForm;
-	}
-	function toggleHelp(event) {
-		event.preventDefault();
-		showHelp = !showHelp;
-	}
 	function appear_then_fade(element) {
 		if (element.classList.contains('hidden')) {
 			// Make it visible again

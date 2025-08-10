@@ -1011,7 +1011,8 @@ export async function searchPerformanceByPerformer(
 			"    AND LOWER(concert_series) = '" +
 			concert_series.toLowerCase() +
 			"' \n" +
-			'    AND year = ' + year;
+			'    AND year = ' +
+			year;
 
 		const result = connection.query(searchSQL);
 
@@ -1094,7 +1095,8 @@ export async function getDBSchedule(performer_id: number, concert_series: string
 			"  AND concert_series = '" +
 			concert_series +
 			"' \n" +
-			'  AND year = ' + year +
+			'  AND year = ' +
+			year +
 			' \n' +
 			'ORDER BY concert_series \n';
 

@@ -1,5 +1,3 @@
-import pg from 'pg';
-const { QueryArrayResult } = pg;
 import { queryTable, deleteClassLottery, insertClassLottery } from '$lib/server/db';
 import { type ClassLotteryInterface, formatFieldNames } from '$lib/server/common';
 

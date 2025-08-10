@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
 
 	export let data;
-	let showPopover = null;
 	let draggable = true;
 	let filterSeries = 'Concerto';
 	let filterConcertNumber = 0;

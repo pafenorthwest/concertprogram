@@ -5,6 +5,7 @@ import {
 } from '$lib/server/db';
 import { getCachedTimeStamps } from '$lib/cache';
 import { calcEpochAge, compareReformatISODate } from '$lib/server/common';
+import { type ConcertStartTime } from '$lib/cache';
 
 export interface ProgramComposerInterface {
 	printedName: string;
@@ -87,7 +88,7 @@ export class Program {
 	eastSideSeats: number;
 	orderedPerformance: OrderedPerformanceInterface[] = [];
 	count: ConcertCount = new ConcertCount();
-	concertTimeStamps: any[] = [];
+	concertTimeStamps: ConcertStartTime | null = null;
 
 	constructor(year: number, eastsideSeats: number = 10) {
 		this.year = year;

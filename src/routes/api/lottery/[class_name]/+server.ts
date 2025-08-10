@@ -11,7 +11,7 @@ export async function GET({ params }) {
 			return json({ status: 'error', message: 'Not Found' }, { status: 404 });
 		}
 		return json(res.rows);
-	} catch (error) {
+	} catch {
 		return json({ status: 'error', message: 'Failed to process the request' }, { status: 500 });
 	}
 }
@@ -48,7 +48,7 @@ export async function PUT({ url, cookies, params, request }) {
 				return json({ id: params.class_name }, { status: 500, body: { message: 'Update failed' } });
 			}
 		}
-	} catch (error) {
+	} catch {
 		return json({ status: 'error', message: 'Failed to process the request' }, { status: 500 });
 	}
 }
@@ -65,15 +65,15 @@ export async function POST({ params, request }) {
 		} else {
 			return json({ id: params.class_name }, { status: 500, body: { message: 'Update failed' } });
 		}
-	} catch (error) {
+	} catch {
 		return json({ status: 'error', message: 'Failed to process the request' }, { status: 500 });
 	}
 }
 
 export async function DELETE({ params }) {
 	try {
-		const results = await deleteClassLottery(params.class_name);
-	} catch (error) {
+		await deleteClassLottery(params.class_name);
+	} catch {
 		return json({ status: 'error', message: 'Failed to process the request' }, { status: 500 });
 	}
 }
