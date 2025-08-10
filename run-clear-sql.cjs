@@ -14,12 +14,8 @@ if (process.env.RUN_CICD !== 'True') {
 
 // Database configuration from environment variables
 const pool = new Pool({
-	user: process.env.db_user,
-	host: process.env.db_host,
-	database: process.env.db_name,
-	password: process.env.db_pass,
-	port: process.env.db_port,
-	ssl: process.env.db_ssl === 'true' ? { rejectUnauthorized: false } : undefined
+	connectionString: process.env.DATABASE_URL,
+	ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
 });
 
 async function runClearScript() {
