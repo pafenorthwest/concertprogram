@@ -4,12 +4,16 @@ import { queryTable, deleteClassLottery, insertClassLottery } from '$lib/server/
 import { type ClassLotteryInterface, formatFieldNames } from '$lib/server/common';
 
 export async function load({ cookies }) {
-	const pafeAuth = cookies.get('pafe_auth')
-	const isAuthenticated =  !!pafeAuth;
+	const pafeAuth = cookies.get('pafe_auth');
+	const isAuthenticated = !!pafeAuth;
 
-	const res= await queryTable('class_lottery');
-	const columnNames: string[] =  res.fields.map(record => formatFieldNames(record.name));
-	return {classLottery: res.rows, class_lottery_fields: columnNames, isAuthenticated: isAuthenticated};
+	const res = await queryTable('class_lottery');
+	const columnNames: string[] = res.fields.map((record) => formatFieldNames(record.name));
+	return {
+		classLottery: res.rows,
+		class_lottery_fields: columnNames,
+		isAuthenticated: isAuthenticated
+	};
 }
 
 export const actions = {
@@ -26,22 +30,22 @@ export const actions = {
 			}
 		}
 	},
-	add: async ({request}) => {
+	add: async ({ request }) => {
 		const formData = await request.formData();
 		const classLottery: ClassLotteryInterface = {
 			class_name: formData.get('class'),
 			lottery: formData.get('lottery')
-		}
+		};
 
-		if ( !classLottery.class_name || !classLottery.lottery) {
-			return {status: 400, body: {message: 'Missing Field, Try Again'}}
+		if (!classLottery.class_name || !classLottery.lottery) {
+			return { status: 400, body: { message: 'Missing Field, Try Again' } };
 		} else {
-			const result = await insertClassLottery(classLottery.class_name, classLottery.lottery)
+			const result = await insertClassLottery(classLottery.class_name, classLottery.lottery);
 			if (result.rowCount != null && result.rowCount > 0) {
 				return { status: 200, body: { message: 'Insert successful' } };
 			} else {
 				return { status: 500, body: { message: 'Insert failed' } };
 			}
 		}
-	},
+	}
 };

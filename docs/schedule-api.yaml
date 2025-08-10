@@ -15,32 +15,32 @@ paths:
         - BearerAuth: []
 
       requestBody:
-        description: "json data for the composer"
+        description: 'json data for the composer'
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Composer"
+              $ref: '#/components/schemas/Composer'
 
       responses:
         201:
-          description: "created"
+          description: 'created'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityCreated"
+                $ref: '#/components/schemas/EntityCreated'
         400:
-          description: "bad data, missing fields or incorrect format"
+          description: 'bad data, missing fields or incorrect format'
         401:
-          description: "unauthorized, lacking authorization header"
+          description: 'unauthorized, lacking authorization header'
         403:
-          description: "unauthorized, bad token"
+          description: 'unauthorized, bad token'
         500:
-          description: "service error"
+          description: 'service error'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
   /composer/{id}:
     parameters:
       - in: path
@@ -48,85 +48,85 @@ paths:
         schema:
           type: integer
         required: true
-        description: "numerical id of composer"
+        description: 'numerical id of composer'
 
     get:
-      summary: "get a composer by id"
+      summary: 'get a composer by id'
       responses:
         200:
-          description: "returned"
+          description: 'returned'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Composer"
+                $ref: '#/components/schemas/Composer'
         401:
-          description: "unauthorized, lacking authorization header"
+          description: 'unauthorized, lacking authorization header'
         403:
-          description: "unauthorized, bad token"
+          description: 'unauthorized, bad token'
         404:
-          description: "not found"
+          description: 'not found'
         500:
-          description: "service error"
+          description: 'service error'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
     put:
-      summary: "update a composer by id"
+      summary: 'update a composer by id'
       security:
-        - BearerAuth: [ ]
+        - BearerAuth: []
 
       requestBody:
-        description: "json data for the composer"
+        description: 'json data for the composer'
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Composer"
+              $ref: '#/components/schemas/Composer'
 
       responses:
         200:
-          description: "returned"
+          description: 'returned'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Composer"
+                $ref: '#/components/schemas/Composer'
         401:
-          description: "unauthorized, lacking authorization header"
+          description: 'unauthorized, lacking authorization header'
         403:
-          description: "unauthorized, bad token"
+          description: 'unauthorized, bad token'
         404:
-          description: "not found"
+          description: 'not found'
         500:
-          description: "service error"
+          description: 'service error'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
     delete:
-      summary: "remove a composer by id"
+      summary: 'remove a composer by id'
       security:
-        - BearerAuth: [ ]
+        - BearerAuth: []
 
       responses:
         200:
-          description: "returned"
+          description: 'returned'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityCreated"
+                $ref: '#/components/schemas/EntityCreated'
         401:
-          description: "unauthorized, lacking authorization header"
+          description: 'unauthorized, lacking authorization header'
         403:
-          description: "unauthorized, bad token"
+          description: 'unauthorized, bad token'
         404:
-          description: "not found"
+          description: 'not found'
         500:
-          description: "service error"
+          description: 'service error'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
 components:
   schemas:
@@ -141,8 +141,8 @@ components:
         - printed_name
         - years_active
       example:
-        printed_name: "Johann Sebastian Bach"
-        years_active: "1685 - 1750"
+        printed_name: 'Johann Sebastian Bach'
+        years_active: '1685 - 1750'
     Error:
       type: object
       properties:
@@ -151,8 +151,8 @@ components:
         reason:
           type: string
       example:
-        result: "error"
-        reason: "a database error occurred"
+        result: 'error'
+        reason: 'a database error occurred'
     EntityCreated:
       type: object
       properties:
@@ -164,6 +164,5 @@ components:
     BearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT  # Optional: indicates the token format (e.g., JWT)
+      bearerFormat: JWT # Optional: indicates the token format (e.g., JWT)
 
-  

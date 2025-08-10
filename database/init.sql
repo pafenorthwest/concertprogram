@@ -5,7 +5,11 @@ CREATE DATABASE pafe
     OWNER = 'concertchair'
     LOCALE = 'en_US.UTF-8';
 
- CREATE TYPE instrument_list AS ENUM ('Cello',
+ALTER DATABASE pafe SET timezone TO 'UTC';
+
+\c pafe
+
+CREATE TYPE instrument_list AS ENUM ('Cello',
                                 'Flute',
                                 'Piano',
                                 'Violin',
@@ -66,14 +70,14 @@ CREATE UNIQUE INDEX lookup_class_lottery_idx ON class_lottery(class_name);
 CREATE TABLE performer_ranked_choice (
     performer_id INTEGER NOT NULL,
     concert_series VARCHAR(255) NOT NULL,
-    pafe_series INTEGER NOT NULL,
+    year INTEGER NOT NULL,
     concert_chair_choice BOOLEAN NOT NULL DEFAULT FALSE,
     first_choice_time TIMESTAMP NOT NULL,
     second_choice_time TIMESTAMP NULL,
     third_choice_time TIMESTAMP NULL,
     fourth_choice_time TIMESTAMP NULL
 );
-CREATE UNIQUE INDEX lookup_ranked_choice_idx ON performer_ranked_choice(performer_id, concert_series, pafe_series);
+CREATE UNIQUE INDEX lookup_ranked_choice_idx ON performer_ranked_choice(performer_id, concert_series, year);
 
 CREATE TABLE performance (
     id SERIAL PRIMARY KEY,
@@ -81,7 +85,7 @@ CREATE TABLE performance (
     performance_order INTEGER DEFAULT 100 NOT NULL,
     class_name VARCHAR(255) NOT NULL,
     concert_series VARCHAR(255) NOT NULL,
-    pafe_series INTEGER NOT NULL,
+    year INTEGER NOT NULL,
     duration INTEGER DEFAULT 0 NOT NULL,
     accompanist_id INTEGER NULL,
     instrument instrument_list,
@@ -93,21 +97,21 @@ CREATE TABLE performance (
 
 CREATE TABLE concert_times (
     concert_series VARCHAR(255) NOT NULL,
-    pafe_series INTEGER NOT NULL,
+    year INTEGER NOT NULL,
     concert_number_in_series INTEGER NOT NULL DEFAULT 0,
     start_time TIMESTAMP NOT NULL
 );
 
-INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
-VALUES ('Concerto',37,0,'04/27/2025T15:00:00');
-INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
-VALUES ('Eastside',37,1,'05/03/2025T16:00:00');
-INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
-VALUES ('Eastside',37,2,'05/03/2025T19:00:00');
-INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
-VALUES ('Eastside',37,3,'05/04/2025T14:00:00');
-INSERT INTO concert_times (concert_series, pafe_series,concert_number_in_series,start_time)
-VALUES ('Eastside',37,4,'05/04/2025T17:00:00');
+INSERT INTO concert_times (concert_series, year,concert_number_in_series,start_time)
+VALUES ('Concerto',2026,0,'04/27/2026T15:00:00');
+INSERT INTO concert_times (concert_series, year,concert_number_in_series,start_time)
+VALUES ('Eastside',2026,1,'05/03/2026T16:00:00');
+INSERT INTO concert_times (concert_series, year,concert_number_in_series,start_time)
+VALUES ('Eastside',2026,2,'05/03/2026T19:00:00');
+INSERT INTO concert_times (concert_series, year,concert_number_in_series,start_time)
+VALUES ('Eastside',2026,3,'05/04/2026T14:00:00');
+INSERT INTO concert_times (concert_series, year,concert_number_in_series,start_time)
+VALUES ('Eastside',2026,4,'05/04/2026T17:00:00');
 
 
 INSERT INTO composer (full_name, years_active) VALUES ('Adele Adkins','1988 - current');

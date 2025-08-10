@@ -3,12 +3,12 @@ import {
 	queryPerformanceDetailsById,
 	retrievePerformanceByLottery
 } from '$lib/server/db';
-import {getCachedTimeStamps} from '$lib/cache'
+import { getCachedTimeStamps } from '$lib/cache';
 import { calcEpochAge, compareReformatISODate } from '$lib/server/common';
 
 export interface ProgramComposerInterface {
 	printedName: string;
-	yearsActive: string
+	yearsActive: string;
 }
 export interface MusicalTitleInterface {
 	title: string;
@@ -40,12 +40,12 @@ export interface ConcertDetailInterface {
 
 export interface ProgramCSVExportInterface extends PerformanceDetailsInterface {
 	musicalPieceOneTitle: string;
-	musicalPieceOneMovement:string;
+	musicalPieceOneMovement: string;
 	musicalPieceOneComposer1: string;
 	musicalPieceOneComposer2: string;
 	musicalPieceOneComposer3: string;
 	musicalPieceTwoTitle: string;
-	musicalPieceTwoMovement:string;
+	musicalPieceTwoMovement: string;
 	musicalPieceTwoComposer1: string;
 	musicalPieceTwoComposer2: string;
 	musicalPieceTwoComposer3: string;
@@ -54,84 +54,87 @@ export interface ProgramCSVExportInterface extends PerformanceDetailsInterface {
 }
 
 class ConcertCount {
-	orderMap: ConcertDetailInterface = {}
+	orderMap: ConcertDetailInterface = {};
 
 	createKey = (str: string, num: number): string => `${str.toLowerCase()}-${num}`;
 
 	init(concertSeries: string, concertNumberInSeries: number) {
-		this.set(concertSeries,concertNumberInSeries,1)
+		this.set(concertSeries, concertNumberInSeries, 1);
 	}
 	increment(concertSeries: string, concertNumberInSeries: number) {
 		this.set(
 			concertSeries,
 			concertNumberInSeries,
-			this.get(concertSeries,concertNumberInSeries)+1
-		)
+			this.get(concertSeries, concertNumberInSeries) + 1
+		);
 	}
 	set(concertSeries: string, concertNumberInSeries: number, count: number) {
-		this.orderMap[this.createKey(concertSeries,concertNumberInSeries)] = count;
+		this.orderMap[this.createKey(concertSeries, concertNumberInSeries)] = count;
 	}
 	get(concertSeries: string, concertNumberInSeries: number): number {
-		return this.orderMap[this.createKey(concertSeries,concertNumberInSeries)]
+		return this.orderMap[this.createKey(concertSeries, concertNumberInSeries)];
 	}
 	exists(concertSeries: string, concertNumberInSeries: number): boolean {
-		return this.orderMap[this.createKey(concertSeries, concertNumberInSeries)] != null &&
-			this.orderMap[this.createKey(concertSeries, concertNumberInSeries)] >= 0;
+		return (
+			this.orderMap[this.createKey(concertSeries, concertNumberInSeries)] != null &&
+			this.orderMap[this.createKey(concertSeries, concertNumberInSeries)] >= 0
+		);
 	}
 }
 
 export class Program {
-	pafeSeries: number;
+	year: number;
 	eastSideSeats: number;
-	orderedPerformance: OrderedPerformanceInterface[] = []
-	count: ConcertCount = new ConcertCount()
-	concertTimeStamps: any[] = []
+	orderedPerformance: OrderedPerformanceInterface[] = [];
+	count: ConcertCount = new ConcertCount();
+	concertTimeStamps: any[] = [];
 
-	constructor(pafe_series: number, eastsideSeats: number = 10) {
-		this.pafeSeries = pafe_series;
+	constructor(year: number, eastsideSeats: number = 10) {
+		this.year = year;
 		this.eastSideSeats = eastsideSeats;
 	}
 
 	async build() {
 		try {
 			// set the timestamps needed to map ranked choice concert times to concert number in series
-			await this.setConcertTimeStamps()
+			await this.setConcertTimeStamps();
 			// fetch performances order by concert_series & lottery
 			//  - performer id, lottery num, concert_series, array of concert times
-			//  - filter by pafe_series
+			//  - filter by year
 			//  - concerto concerts show up first and takes precedent
-			const performancesWithLottery =  await retrievePerformanceByLottery(this.pafeSeries);
+			const performancesWithLottery = await retrievePerformanceByLottery(this.year);
 			if (performancesWithLottery.rowCount != null && performancesWithLottery.rowCount > 0) {
-
 				// iterate over the list in order, add the performances
 				//  - track seat limit per EastSide concert (#1,#2,#3,#4), and stop adding when limit reached
 				//  - choncertChairChoice overrides and ignores any limits
 				for (const performance of performancesWithLottery.rows) {
 					// first thing create an array of concerts in order of ranked choice
-					const rankedChoiceConcerts: number[] = this.computeRankedChoices(
-						[performance.first_choice_time,
+					const rankedChoiceConcerts: number[] = this.computeRankedChoices([
+						performance.first_choice_time,
 						performance.second_choice_time,
 						performance.third_choice_time,
-						performance.fourth_choice_time]
-					)
+						performance.fourth_choice_time
+					]);
 
-					let hasPlacement = false
-					let numberInSeries = 1
+					let hasPlacement = false;
+					let numberInSeries = 1;
 					for (const concertNum of rankedChoiceConcerts) {
 						// Not Full Set to This Concert
-						if (!this.isFull(performance.concert_series, concertNum, performance.concert_chair_choice)) {
-							this.incrementConcertCount(performance.concert_series, concertNum)
-							numberInSeries = concertNum
-							hasPlacement = true
+						if (
+							!this.isFull(performance.concert_series, concertNum, performance.concert_chair_choice)
+						) {
+							this.incrementConcertCount(performance.concert_series, concertNum);
+							numberInSeries = concertNum;
+							hasPlacement = true;
 							break;
 						}
 						// Last Concert Was Full Move to Next
 					}
 
 					// build array of musical title
-					const musicalTitles = await this.queryMusicalPiece(performance.id)
+					const musicalTitles = await this.queryMusicalPiece(performance.id);
 					// get performance details
-					const performanceDetails = await this.queryPerformanceDetails(performance.id)
+					const performanceDetails = await this.queryPerformanceDetails(performance.id);
 
 					// add performance
 					this.orderedPerformance.push({
@@ -144,25 +147,23 @@ export class Program {
 						accompanist: performanceDetails.accompanist,
 						lottery: performance.lottery,
 						// put Remaining performers, whose desired schedule can not be met  into "Waitlist" concert series
-						concertSeries: hasPlacement ? performance.concert_series: "Waitlist",
+						concertSeries: hasPlacement ? performance.concert_series : 'Waitlist',
 						concertNumberInSeries: numberInSeries,
 						order: performance.performance_order,
 						musicalTitles: musicalTitles,
 						comment: performanceDetails.comment
 					});
-
 				}
 			}
 		} catch (error) {
-			throw new Error(`Failed to build program ${(error as Error).message}`)
+			throw new Error(`Failed to build program ${(error as Error).message}`);
 		}
 	}
 
 	// when retrieving sort by Concert Series, Concert Number in Series, and Performance Order
 	//   - late arrivals get default order of 100, and likely will fall to bottom
 	retrieveAllConcertPrograms(): OrderedPerformanceInterface[] {
-		return this.orderedPerformance
-			.sort((a, b) => {
+		return this.orderedPerformance.sort((a, b) => {
 			if (a.concertSeries !== b.concertSeries) {
 				return a.concertSeries.localeCompare(b.concertSeries);
 			}
@@ -173,19 +174,19 @@ export class Program {
 		});
 	}
 
-	incrementConcertCount(concertSeries:string, numberInSeries: number): void {
+	incrementConcertCount(concertSeries: string, numberInSeries: number): void {
 		// switch to EastSide form Concerto
-		if (this.count.exists(concertSeries,numberInSeries)) {
-			this.count.increment(concertSeries,numberInSeries)
+		if (this.count.exists(concertSeries, numberInSeries)) {
+			this.count.increment(concertSeries, numberInSeries);
 		} else {
-			this.count.init(concertSeries,numberInSeries)
+			this.count.init(concertSeries, numberInSeries);
 		}
 	}
 
 	async setConcertTimeStamps() {
 		// init once, no need to reinit
 		if (this.concertTimeStamps == null || this.concertTimeStamps.length <= 0) {
-			this.concertTimeStamps = await getCachedTimeStamps()
+			this.concertTimeStamps = await getCachedTimeStamps();
 		}
 	}
 
@@ -194,25 +195,32 @@ export class Program {
 	// return concert_number_in_series from matching record and convert to Number
 	computeRankedChoices(choiceTimes: (string | null)[]): number[] {
 		return choiceTimes
-			.filter(mapped => mapped !== null)
-			.map(item =>
-				Number(this.concertTimeStamps.data
-					.find(concert => concert.normalizedStartTime === compareReformatISODate(item))?.concert_number_in_series)
-			)
+			.filter((mapped) => mapped !== null)
+			.map((item) =>
+				Number(
+					this.concertTimeStamps.data.find(
+						(concert) => concert.normalizedStartTime === compareReformatISODate(item)
+					)?.concert_number_in_series
+				)
+			);
 	}
 
 	isFull(concertSeries: string, concertNum: number, chairOverride: boolean): boolean {
-		if (chairOverride) { return false }
-		return concertSeries.toLowerCase() === "eastside" &&
-			this.count.get(concertSeries, concertNum) >= this.eastSideSeats;
+		if (chairOverride) {
+			return false;
+		}
+		return (
+			concertSeries.toLowerCase() === 'eastside' &&
+			this.count.get(concertSeries, concertNum) >= this.eastSideSeats
+		);
 	}
 
-	async queryMusicalPiece(performanceId:number): Promise<MusicalTitleInterface[]> {
+	async queryMusicalPiece(performanceId: number): Promise<MusicalTitleInterface[]> {
 		const data = await queryMusicalPieceByPerformanceId(performanceId);
-		const musicalTitles: MusicalTitleInterface[] = []
+		const musicalTitles: MusicalTitleInterface[] = [];
 		if (data.rowCount != null && data.rowCount !== 0) {
 			for (const piece of data.rows) {
-				const composers: ProgramComposerInterface[] = []
+				const composers: ProgramComposerInterface[] = [];
 				if (piece.composer_one_name != null) {
 					composers.push({
 						printedName: piece.composer_one_name,
@@ -236,7 +244,7 @@ export class Program {
 						title: piece.printed_name,
 						movement: piece.movement ? piece.movement : '',
 						composers: composers
-					})
+					});
 				}
 			}
 			return musicalTitles;
@@ -245,8 +253,8 @@ export class Program {
 		}
 	}
 
-	async queryPerformanceDetails(performanceId:number): Promise<PerformanceDetailsInterface> {
-		const data = await queryPerformanceDetailsById(performanceId)
+	async queryPerformanceDetails(performanceId: number): Promise<PerformanceDetailsInterface> {
+		const data = await queryPerformanceDetailsById(performanceId);
 		if (data.rowCount != null && data.rowCount !== 0) {
 			return {
 				id: performanceId,
@@ -256,8 +264,8 @@ export class Program {
 				age: calcEpochAge(data.rows[0].epoch),
 				accompanist: data.rows[0].accompanist_name ? data.rows[0].accompanist_name : '',
 				duration: data.rows[0].duration,
-				comment: data.rows[0].comment,
-			}
+				comment: data.rows[0].comment
+			};
 		} else {
 			throw new Error(`Unable to query performance details with id ${performanceId} for program`);
 		}

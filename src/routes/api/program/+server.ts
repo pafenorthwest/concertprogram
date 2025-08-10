@@ -7,13 +7,13 @@ import {
 	type ProgramCSVExportInterface
 } from '$lib/server/program';
 import { updateProgramOrder } from '$lib/server/db';
-import {auth_code} from '$env/static/private';
-import { pafe_series } from '$lib/server/common';
+import { auth_code } from '$env/static/private';
+import { year } from '$lib/server/common';
 import Papa from 'papaparse';
 
 export async function POST({ request, cookies }) {
 	// Get the Authorization header
-	const pafeAuth = cookies.get('pafe_auth')
+	const pafeAuth = cookies.get('pafe_auth');
 	if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
 		return new Response('Unauthorized', { status: 401 });
 	}
@@ -24,10 +24,10 @@ export async function POST({ request, cookies }) {
 	};
 
 	try {
-		const program: OrderedPerformanceInterface[]  = await request.json()
+		const program: OrderedPerformanceInterface[] = await request.json();
 
 		if (!program) {
-			fail(400, {error: 'No Data Passed in, Try Again'})
+			fail(400, { error: 'No Data Passed in, Try Again' });
 		}
 
 		// loop over and send updates to db
@@ -37,16 +37,19 @@ export async function POST({ request, cookies }) {
 
 		// Execute all updates
 		await Promise.all(updatePromises);
-		return json({status: 200, body: {message: 'Update successful'}, headers: access_control_headers});
-
+		return json({
+			status: 200,
+			body: { message: 'Update successful' },
+			headers: access_control_headers
+		});
 	} catch (error) {
-		fail(500, {error: `Failed to process the request ${(error as Error).message}`})
+		fail(500, { error: `Failed to process the request ${(error as Error).message}` });
 	}
 }
 
 export async function GET({ request, cookies }) {
 	// Get the Authorization header
-	const pafeAuth = cookies.get('pafe_auth')
+	const pafeAuth = cookies.get('pafe_auth');
 	if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
 		return new Response('Unauthorized', { status: 401 });
 	}
@@ -57,22 +60,22 @@ export async function GET({ request, cookies }) {
 	};
 
 	try {
-		const program = new Program(pafe_series())
-		await program.build()
+		const program = new Program(year());
+		await program.build();
 
 		if (!program) {
-			fail(400, {error: 'No Data Passed in, Try Again'})
+			fail(400, { error: 'No Data Passed in, Try Again' });
 		}
 
-		const flattenedArray: ProgramCSVExportInterface[] = program.retrieveAllConcertPrograms().map(flattenProgram);
+		const flattenedArray: ProgramCSVExportInterface[] = program
+			.retrieveAllConcertPrograms()
+			.map(flattenProgram);
 
 		const csv = Papa.unparse(flattenedArray);
 		return new Response(csv, { headers: download_headers });
-
 	} catch (error) {
-		fail(500, {error: `Failed to process the request ${(error as Error).message}`})
+		fail(500, { error: `Failed to process the request ${(error as Error).message}` });
 	}
-
 }
 
 function flattenProgram(input: OrderedPerformanceInterface): ProgramCSVExportInterface {
@@ -88,36 +91,73 @@ function flattenProgram(input: OrderedPerformanceInterface): ProgramCSVExportInt
 
 		musicalPieceOneTitle: safeStringTitle(input.musicalTitles[0]),
 		musicalPieceOneMovement: safeStringMovement(input.musicalTitles[0]),
-		musicalPieceOneComposer1: safeStringComposer(input.musicalTitles[0]? input.musicalTitles[0] : null,0),
-		musicalPieceOneComposer2: safeStringComposer(input.musicalTitles[0]? input.musicalTitles[0] : null,1),
-		musicalPieceOneComposer3: safeStringComposer(input.musicalTitles[0]? input.musicalTitles[0] : null,2),
+		musicalPieceOneComposer1: safeStringComposer(
+			input.musicalTitles[0] ? input.musicalTitles[0] : null,
+			0
+		),
+		musicalPieceOneComposer2: safeStringComposer(
+			input.musicalTitles[0] ? input.musicalTitles[0] : null,
+			1
+		),
+		musicalPieceOneComposer3: safeStringComposer(
+			input.musicalTitles[0] ? input.musicalTitles[0] : null,
+			2
+		),
 
 		musicalPieceTwoTitle: safeStringTitle(input.musicalTitles[1]),
 		musicalPieceTwoMovement: safeStringMovement(input.musicalTitles[1]),
-		musicalPieceTwoComposer1: safeStringComposer(input.musicalTitles[1]? input.musicalTitles[1] : null,0),
-		musicalPieceTwoComposer2: safeStringComposer(input.musicalTitles[1]? input.musicalTitles[1] : null,1),
-		musicalPieceTwoComposer3: safeStringComposer(input.musicalTitles[1]? input.musicalTitles[1] : null,2),
+		musicalPieceTwoComposer1: safeStringComposer(
+			input.musicalTitles[1] ? input.musicalTitles[1] : null,
+			0
+		),
+		musicalPieceTwoComposer2: safeStringComposer(
+			input.musicalTitles[1] ? input.musicalTitles[1] : null,
+			1
+		),
+		musicalPieceTwoComposer3: safeStringComposer(
+			input.musicalTitles[1] ? input.musicalTitles[1] : null,
+			2
+		),
 
 		duration: input.duration,
 		comment: input.comment
-	}
+	};
 }
 
-function safeStringComposer(input: MusicalTitleInterface | null , referenceLoc: number ): string {
-	if (input == null) { return '' }
-	if (input.composers == null || input.composers.length <= referenceLoc) { return '' }
-	if (input.composers[referenceLoc] == null) { return '' }
-	return input.composers[referenceLoc].printedName + ' (' + input.composers[referenceLoc].yearsActive + ')';
+function safeStringComposer(input: MusicalTitleInterface | null, referenceLoc: number): string {
+	if (input == null) {
+		return '';
+	}
+	if (input.composers == null || input.composers.length <= referenceLoc) {
+		return '';
+	}
+	if (input.composers[referenceLoc] == null) {
+		return '';
+	}
+	return (
+		input.composers[referenceLoc].printedName +
+		' (' +
+		input.composers[referenceLoc].yearsActive +
+		')'
+	);
 }
 
 function safeStringMovement(input: MusicalTitleInterface | null): string {
-	if (input == null) { return '' }
-	if (input.movement == null ) { return '' }
-	return input.movement
+	if (input == null) {
+		return '';
+	}
+	if (input.movement == null) {
+		return '';
+	}
+	return input.movement;
 }
 
 function safeStringTitle(input: MusicalTitleInterface | null): string {
-	if (input == null) { return '' }
-	if (input.title == null ) { return '' }
-	return input.title
+	if (input == null) {
+		return '';
+	}
+	if (input.title == null) {
+		return '';
+	}
+	return input.title;
 }
