@@ -31,7 +31,7 @@
 			filterSeries = concertSeries;
 			filterConcertNumber = Number(concertNum);
 		} else {
-			filterSeries = chooser.value
+			filterSeries = chooser.value;
 		}
 	}
 
@@ -87,7 +87,7 @@
 				if (keyCell) {
 					const performanceId = Number(keyCell.getAttribute('data-id'));
 					//find(concert => concert.normalizedStartTime === compareReformatISODate(item))?.concert_number_in_series)
-					const programEntry = data.program.find(entry => entry.id === performanceId);
+					const programEntry = data.program.find((entry) => entry.id === performanceId);
 					if (programEntry) {
 						programEntry.order = i;
 					}
@@ -129,89 +129,91 @@
 <h2>Programs</h2>
 {#if data.isAuthenticated}
 	<div class="program-top-bar">
-	<select name="concert-selector" id="concert-selector" on:change={filterByConcert}>
-		{#each data.concert_times as concert}
-			<option value="{concert.concert_series+'-'+concert.concert_number_in_series}">{concert.concert_series}
-				#{concert.concert_number_in_series} {concert.displayStartTime}</option>
-		{/each}
-		<option value="Waitlist">Waitlist NoTime</option>
-		<option value="All">All</option>
-	</select>
+		<select name="concert-selector" id="concert-selector" on:change={filterByConcert}>
+			{#each data.concert_times as concert}
+				<option value={concert.concert_series + '-' + concert.concert_number_in_series}
+					>{concert.concert_series}
+					#{concert.concert_number_in_series}
+					{concert.displayStartTime}</option
+				>
+			{/each}
+			<option value="Waitlist">Waitlist NoTime</option>
+			<option value="All">All</option>
+		</select>
 		<a href="/api/program/">Export to csv</a>
 	</div>
 	<table class="table" id="sortable-table">
 		<thead>
-		<tr>
-			<th>Grab</th>
-			<th>Concert Series</th>
-			<th>Num in Series</th>
-			<th>Comment</th>
-			<th>Duration</th>
-			<th>Musical Piece</th>
-			<th>Composers</th>
-			<th>Performer</th>
-			<th>Age</th>
-			<th>Accompanist</th>
-			<th>Move</th>
-		</tr>
+			<tr>
+				<th>Grab</th>
+				<th>Concert Series</th>
+				<th>Num in Series</th>
+				<th>Comment</th>
+				<th>Duration</th>
+				<th>Musical Piece</th>
+				<th>Composers</th>
+				<th>Performer</th>
+				<th>Age</th>
+				<th>Accompanist</th>
+				<th>Move</th>
+			</tr>
 		</thead>
 		<tbody>
-		{#each data.program as entry}
-			{#if (entry.concertSeries === filterSeries
-				&& entry.concertNumberInSeries === filterConcertNumber)
-			|| (entry.concertSeries === filterSeries
-				&& filterSeries === 'Waitlist')
-			|| filterSeries === 'All'}
-				<tr class="sortable-row" draggable={draggable}>
-					<td data-id="{entry.id}">
-						<button class="grab-button" draggable="true">☰</button>
-					</td>
-					<td>{entry.concertSeries}</td>
-					<td>{entry.concertNumberInSeries}</td>
-					{#if entry.comment != null}
-						<td class="program-comment"><div class="scroll-container">{entry.comment}</div></td>
-					{:else}
-						<td></td>
-					{/if}
-					<td>{entry.duration}</td>
-					<td>
-						{#each entry.musicalTitles as piece}
-							{piece.title}<br />
-							{piece.movement}<br />
-						{/each}
-					</td>
-					<td>
-						{#each entry.musicalTitles as piece}
-							{#each piece.composers as composer}
-								{composer.printedName} {composer.yearsActive}<br />
+			{#each data.program as entry}
+				{#if (entry.concertSeries === filterSeries && entry.concertNumberInSeries === filterConcertNumber) || (entry.concertSeries === filterSeries && filterSeries === 'Waitlist') || filterSeries === 'All'}
+					<tr class="sortable-row" {draggable}>
+						<td data-id={entry.id}>
+							<button class="grab-button" draggable="true">☰</button>
+						</td>
+						<td>{entry.concertSeries}</td>
+						<td>{entry.concertNumberInSeries}</td>
+						{#if entry.comment != null}
+							<td class="program-comment"><div class="scroll-container">{entry.comment}</div></td>
+						{:else}
+							<td></td>
+						{/if}
+						<td>{entry.duration}</td>
+						<td>
+							{#each entry.musicalTitles as piece}
+								{piece.title}<br />
+								{piece.movement}<br />
 							{/each}
-							<br />
-						{/each}
-					</td>
-					<td>Soloist on {entry.instrument}: {entry.performerName}</td>
-					<td>{entry.age}</td>
-					<td>
-						{#if (entry.accompanist !== '')}
-							Pianist: {entry.accompanist}
-						{/if}
-					</td>
-					<td>
-						{#if (entry.concertSeries !== 'Concerto')}
-							<select name="override-selector" on:change={forceMove}
-											data-id="{entry.id}"
-											data-performer-id="{entry.performerId}">
-								<option value="" selected disabled>Mv</option>
-								<option value="Eastside-1">E1</option>
-								<option value="Eastside-2">E2</option>
-								<option value="Eastside-3">E3</option>
-								<option value="Eastside-4">E4</option>
-								<option value="Waitlist-1">WL</option>
-							</select>
-						{/if}
-					</td>
-				</tr>
-			{/if}
-		{/each}
+						</td>
+						<td>
+							{#each entry.musicalTitles as piece}
+								{#each piece.composers as composer}
+									{composer.printedName} {composer.yearsActive}<br />
+								{/each}
+								<br />
+							{/each}
+						</td>
+						<td>Soloist on {entry.instrument}: {entry.performerName}</td>
+						<td>{entry.age}</td>
+						<td>
+							{#if entry.accompanist !== ''}
+								Pianist: {entry.accompanist}
+							{/if}
+						</td>
+						<td>
+							{#if entry.concertSeries !== 'Concerto'}
+								<select
+									name="override-selector"
+									on:change={forceMove}
+									data-id={entry.id}
+									data-performer-id={entry.performerId}
+								>
+									<option value="" selected disabled>Mv</option>
+									<option value="Eastside-1">E1</option>
+									<option value="Eastside-2">E2</option>
+									<option value="Eastside-3">E3</option>
+									<option value="Eastside-4">E4</option>
+									<option value="Waitlist-1">WL</option>
+								</select>
+							{/if}
+						</td>
+					</tr>
+				{/if}
+			{/each}
 		</tbody>
 	</table>
 {:else}

@@ -1,9 +1,9 @@
-import {auth_code} from '$env/static/private';
+import { auth_code } from '$env/static/private';
 
 export function isAuthorized(authHeader: string): boolean {
 	// Check if the Authorization header is present
 	if (!authHeader || !authHeader.startsWith('Bearer ')) {
-		return false
+		return false;
 	}
 
 	// Extract the token from the header
@@ -11,5 +11,4 @@ export function isAuthorized(authHeader: string): boolean {
 
 	// Validate the token (you can replace this with your actual token validation logic)
 	return token === auth_code;
-
 }
