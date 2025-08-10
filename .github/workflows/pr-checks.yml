@@ -25,6 +25,20 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      - name: Setup PostgreSQL
+        uses: harmon758/postgresql-action@v1
+        with:
+          postgresql version: '15'
+          postgresql db: 'pafe'
+          postgresql user: 'postgres'
+          postgresql password: 'postgres'
+      - name: Initialize Database
+        run: psql -h localhost -d pafe -U postgres -f database/init.sql
+        env:
+          PGPASSWORD: postgres
+      - name: Set Environment Variables
+        run: |
+          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pafe" >> .env
       - run: npm test test/lib
 
   check-all:
