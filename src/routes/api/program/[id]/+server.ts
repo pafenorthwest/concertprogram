@@ -1,4 +1,4 @@
-import { pafe_series } from '$lib/server/common';
+import { year } from '$lib/server/common';
 import { movePerformanceByChair, updateById } from '$lib/server/db';
 import { fail, json } from '@sveltejs/kit';
 import { isAuthorized } from '$lib/server/apiAuth';
@@ -40,7 +40,7 @@ export async function PUT({ params, request, cookies }) {
 			const success = await movePerformanceByChair(
 				id,
 				performance.performerId,
-				pafe_series(),
+				year(),
 				performance.concertSeries,
 				concertStart
 			);

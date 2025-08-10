@@ -1,11 +1,11 @@
 import { selectPerformanceLottery } from '$lib/server/db';
-import { displayReformatISODate, formatFieldNames, pafe_series } from '$lib/server/common';
+import { displayReformatISODate, formatFieldNames, year } from '$lib/server/common';
 
 export async function load({ cookies }) {
 	const pafeAuth = cookies.get('pafe_auth');
 	const isAuthenticated = !!pafeAuth;
 
-	const res = await selectPerformanceLottery(pafe_series());
+	const res = await selectPerformanceLottery(year());
 
 	const columnNames: string[] = res.fields
 		.filter((record) => record.name !== 'concert_chair_choice')

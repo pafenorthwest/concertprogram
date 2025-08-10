@@ -83,14 +83,14 @@ class ConcertCount {
 }
 
 export class Program {
-	pafeSeries: number;
+	year: number;
 	eastSideSeats: number;
 	orderedPerformance: OrderedPerformanceInterface[] = [];
 	count: ConcertCount = new ConcertCount();
 	concertTimeStamps: any[] = [];
 
-	constructor(pafe_series: number, eastsideSeats: number = 10) {
-		this.pafeSeries = pafe_series;
+	constructor(year: number, eastsideSeats: number = 10) {
+		this.year = year;
 		this.eastSideSeats = eastsideSeats;
 	}
 
@@ -100,9 +100,9 @@ export class Program {
 			await this.setConcertTimeStamps();
 			// fetch performances order by concert_series & lottery
 			//  - performer id, lottery num, concert_series, array of concert times
-			//  - filter by pafe_series
+			//  - filter by year
 			//  - concerto concerts show up first and takes precedent
-			const performancesWithLottery = await retrievePerformanceByLottery(this.pafeSeries);
+			const performancesWithLottery = await retrievePerformanceByLottery(this.year);
 			if (performancesWithLottery.rowCount != null && performancesWithLottery.rowCount > 0) {
 				// iterate over the list in order, add the performances
 				//  - track seat limit per EastSide concert (#1,#2,#3,#4), and stop adding when limit reached

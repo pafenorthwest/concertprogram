@@ -3,7 +3,7 @@ import { Performance } from '$lib/server/import';
 import {
 	type ImportMusicalTitleInterface,
 	type ImportPerformanceInterface,
-	pafe_series,
+	year,
 	parseMusicalPiece,
 	type PerformanceFilterInterface
 } from '$lib/server/common';
@@ -203,7 +203,7 @@ describe('Test Import Code', () => {
 
 		// count rows in DB
 		const filter: PerformanceFilterInterface = {
-			pafe_series: pafe_series(),
+			year: year(),
 			concert_series: 'Eastside'
 		};
 		let res = await queryPerformances(filter);

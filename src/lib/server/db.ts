@@ -10,7 +10,7 @@ import {
 	type PerformanceFilterInterface,
 	type PerformancePieceInterface,
 	type PerformerSearchResultsInterface,
-	pafe_series,
+	year,
 	calcEpochAge
 } from '$lib/server/common';
 import { isNonEmptyString } from '$lib/server/common';
@@ -47,7 +47,7 @@ export async function queryTable(table: string, id?: number) {
 					'id, printed_name, first_composer_id, all_movements, second_composer_id, third_composer_id';
 				break;
 			case 'concert_times':
-				fields = 'concert_series, pafe_series,concert_number_in_series,start_time';
+				fields = 'concert_series, year,concert_number_in_series,start_time';
 				break;
 			case 'class_lottery':
 				fields = 'class_name, lottery';
@@ -114,8 +114,8 @@ export async function lookupByDetails(
 			'  AND performer.epoch = ' +
 			birthYear +
 			' \n' +
-			'  AND performance.pafe_series =' +
-			pafe_series() +
+			'  AND performance.year =' +
+			year() +
 			' \n' +
 			'  ORDER BY performance.concert_series ASC';
 
@@ -159,8 +159,8 @@ export async function lookupByCode(code: string): Promise<PerformerSearchResults
 			'WHERE class_lottery.lottery = ' +
 			code +
 			' \n' +
-			'  AND performance.pafe_series =' +
-			pafe_series() +
+			'  AND performance.year =' +
+			year() +
 			' \n' +
 			'  ORDER BY performance.concert_series ASC';
 
@@ -345,7 +345,7 @@ export async function insertPerformance(
 	try {
 		const connection = await pool.connect();
 
-		let cols = 'performer_id, concert_series, class_name, pafe_series, instrument';
+		let cols = 'performer_id, concert_series, class_name, year, instrument';
 		let vals =
 			performer_id +
 			", '" +
@@ -353,7 +353,7 @@ export async function insertPerformance(
 			"', '" +
 			data.class +
 			"', " +
-			data.pafe_series +
+			data.year +
 			", '" +
 			data.instrument +
 			"'";
@@ -448,8 +448,8 @@ export async function updatePerformance(
 			data.concert_series +
 			", class_name = '" +
 			data.class +
-			', pafe_series = ' +
-			data.pafe_series +
+			', year = ' +
+			data.year +
 			", instrument = '" +
 			data.instrument;
 
@@ -788,7 +788,7 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
 	 *     instrument: string | null;
 	 *     performance_order: number default 100;
 	 *     concert_series: string (Eastside | Concerto Playoff);
-	 *     pafe_series: number of years of pafe
+	 *     year: number of years of pafe
 	 *
 	 */
 	try {
@@ -803,7 +803,7 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
 			'            Third.full_name AS composer3, Third.years_active AS composer3_years_active,\n' +
 			'            accompanist.full_name AS accompanist,\n' +
 			'            performance.duration, performance.comment, performance.instrument,\n' +
-			'            performance.performance_order, performance.concert_series, performance.pafe_series\n';
+			'            performance.performance_order, performance.concert_series, performance.year\n';
 		const joins =
 			' JOIN performance_pieces ON performance.id = performance_pieces.performance_id\n' +
 			'        JOIN musical_piece ON performance_pieces.musical_piece_id = musical_piece.id\n' +
@@ -812,7 +812,7 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
 			'        LEFT JOIN composer Third ON Third.id = musical_piece.second_composer_id\n' +
 			'        LEFT JOIN accompanist ON performance.accompanist_id = accompanist.id\n';
 		const order =
-			'ORDER BY performance.pafe_series, performance.concert_series, performance.performance_order';
+			'ORDER BY performance.year, performance.concert_series, performance.performance_order';
 
 		let queryFilter = '';
 		if (typeof filters != 'undefined' && Object.entries(filters).length > 0) {
@@ -990,7 +990,7 @@ export async function searchMusicalPiece(printed_name: string, first_composer_id
 export async function searchPerformanceByPerformer(
 	performer_id: number,
 	concert_series: string,
-	pafe_series: number
+	year: number
 ) {
 	try {
 		const connection = await pool.connect();
@@ -999,7 +999,7 @@ export async function searchPerformanceByPerformer(
 			'SELECT performance.id, performer.full_name as performer_name, \n' +
 			'musical_piece.printed_name as musical_piece_printed_name, \n' +
 			'performance.performer_id, performance.performance_order, \n' +
-			'performance.concert_series, performance.pafe_series, performance.duration, performance.accompanist_id, \n' +
+			'performance.concert_series, performance.year, performance.duration, performance.accompanist_id, \n' +
 			'performance.comment, performance.instrument, warm_up_room_name, warm_up_room_start, warm_up_room_end \n' +
 			'FROM performance \n' +
 			'JOIN performance_pieces ON performance.id = performance_pieces.performance_id \n' +
@@ -1011,8 +1011,7 @@ export async function searchPerformanceByPerformer(
 			"    AND LOWER(concert_series) = '" +
 			concert_series.toLowerCase() +
 			"' \n" +
-			'    AND pafe_series = ' +
-			pafe_series;
+			'    AND year = ' + year;
 
 		const result = connection.query(searchSQL);
 
@@ -1026,7 +1025,7 @@ export async function searchPerformanceByPerformer(
 	}
 }
 
-export async function selectPerformanceLottery(pafe_series: number) {
+export async function selectPerformanceLottery(year: number) {
 	try {
 		const connection = await pool.connect();
 
@@ -1045,8 +1044,8 @@ export async function selectPerformanceLottery(pafe_series: number) {
 			'JOIN musical_piece ON musical_piece.id = performance_pieces.musical_piece_id \n' +
 			'JOIN composer ON musical_piece.first_composer_id = composer.id \n' +
 			'LEFT JOIN performer_ranked_choice ON performer_ranked_choice.performer_id = performer.id \n' +
-			'WHERE performance.pafe_series = ' +
-			pafe_series +
+			'WHERE performance.year = ' +
+			year +
 			' \n' +
 			'ORDER BY class_lottery.lottery';
 
@@ -1064,7 +1063,7 @@ export async function selectDBSchedule(performer_id: number) {
 		const connection = await pool.connect();
 
 		const selectSQL =
-			'SELECT performer_id, concert_series, pafe_series, \n' +
+			'SELECT performer_id, concert_series, year, \n' +
 			'first_choice_time, second_choice_time, third_choice_time, fourth_choice_time \n' +
 			'FROM public.performer_ranked_choice \n' +
 			'WHERE performer_id = ' +
@@ -1081,10 +1080,37 @@ export async function selectDBSchedule(performer_id: number) {
 	}
 }
 
+export async function getDBSchedule(performer_id: number, concert_series: string, year: number) {
+	try {
+		const connection = await pool.connect();
+
+		const selectSQL =
+			'SELECT performer_id, concert_series, year, \n' +
+			'first_choice_time, second_choice_time, third_choice_time, fourth_choice_time \n' +
+			'FROM public.performer_ranked_choice \n' +
+			'WHERE performer_id = ' +
+			performer_id +
+			' \n' +
+			"  AND concert_series = '" +
+			concert_series +
+			"' \n" +
+			'  AND year = ' + year +
+			' \n' +
+			'ORDER BY concert_series \n';
+
+		const result = connection.query(selectSQL);
+		connection.release();
+		return result;
+	} catch (error) {
+		console.error('Error executing query:', error);
+		throw error;
+	}
+}
+
 export async function createDBSchedule(
 	performer_id: number,
 	concert_series: string,
-	pafe_series: number,
+	year: number,
 	first_concert_time: string,
 	second_concert_time: string | null,
 	third_concert_time: string | null,
@@ -1106,14 +1132,14 @@ export async function createDBSchedule(
 		await connection.query(deleteSQL);
 
 		let insertSQL = 'INSERT INTO performer_ranked_choice ';
-		let insertCOLS = '(performer_id,concert_series,pafe_series,first_choice_time';
+		let insertCOLS = '(performer_id,concert_series,year,first_choice_time';
 		let insertVALS =
 			'VALUES (' +
 			performer_id +
 			", '" +
 			concert_series +
 			"', " +
-			pafe_series +
+			year +
 			", '" +
 			first_concert_time +
 			"'";
@@ -1142,13 +1168,13 @@ export async function createDBSchedule(
 	}
 }
 
-export async function retrievePerformanceByLottery(pafe_series: number) {
+export async function retrievePerformanceByLottery(year: number) {
 	try {
 		const connection = await pool.connect();
 
 		const querySQL =
 			'SELECT performance.id, performance.performer_id, performance.performance_order, \n' +
-			'performance.concert_series, performance.pafe_series, class_lottery.lottery as lookup_code, \n' +
+			'performance.concert_series, performance.year, class_lottery.lottery as lookup_code, \n' +
 			'class_lottery.lottery, \n' +
 			'performer_ranked_choice.concert_chair_choice, performer_ranked_choice.first_choice_time, \n' +
 			'performer_ranked_choice.second_choice_time, performer_ranked_choice.third_choice_time, \n' +
@@ -1156,11 +1182,11 @@ export async function retrievePerformanceByLottery(pafe_series: number) {
 			'FROM performance \n' +
 			'JOIN class_lottery ON class_lottery.class_name = performance.class_name \n' +
 			'JOIN performer_ranked_choice ON performance.performer_id = performer_ranked_choice.performer_id\n' +
-			'        AND performance.pafe_series = performer_ranked_choice.pafe_series\n' +
+			'        AND performance.year = performer_ranked_choice.year\n' +
 			'        AND (performance.concert_series = performer_ranked_choice.concert_series\n' +
 			"              OR performance.concert_series = 'Waitlist') \n" +
-			'WHERE performance.pafe_series = ' +
-			pafe_series +
+			'WHERE performance.year = ' +
+			year +
 			'\n' +
 			'ORDER BY performance.concert_series, class_lottery.lottery';
 
@@ -1235,7 +1261,7 @@ export async function movePerformanceByChair(
 				'WHERE performer_id = ' +
 				performerId +
 				' \n' +
-				'  AND pafe_series = ' +
+				'  AND year = ' +
 				pafeSeries +
 				' \n' +
 				"  AND concert_series = '" +

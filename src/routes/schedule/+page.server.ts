@@ -4,7 +4,7 @@ import { JSDOM } from 'jsdom';
 import {
 	type PerformerSearchResultsInterface,
 	isNonEmptyString,
-	pafe_series,
+	year,
 	type ScheduleFormInterface,
 	compareReformatISODate
 } from '$lib/server/common';
@@ -358,7 +358,7 @@ export const actions = {
 				const results = await createDBSchedule(
 					performerIdAsNumber,
 					concertSeries,
-					pafe_series(),
+					year(),
 					starttime,
 					null,
 					null,
@@ -403,7 +403,7 @@ export const actions = {
 					const results = await createDBSchedule(
 						performerIdAsNumber,
 						concertSeries,
-						pafe_series(),
+						year(),
 						rankedChoiceTimeStamps[0],
 						rankedChoiceTimeStamps[1],
 						rankedChoiceTimeStamps[2],

@@ -6,7 +6,7 @@ import { auth_code } from '$env/static/private';
 
 export async function GET({ params }) {
 	try {
-		const res = await queryTable('performance', params.id);
+		const res = await queryTable('performance', parseInt(params.id, 10));
 		if (res.rowCount != 1) {
 			return json({ status: 'error', message: 'Not Found' }, { status: 404 });
 		}
@@ -25,7 +25,7 @@ export async function PUT({ params, request }) {
 			duration,
 			accompanist_id,
 			concert_series,
-			pafe_series,
+			year,
 			instrument,
 			order,
 			comment,
@@ -36,27 +36,27 @@ export async function PUT({ params, request }) {
 
 		const instrumentEnum = selectInstrument(instrument);
 		if (instrumentEnum == null) {
-			return json({ id: params.id }, { status: 400, body: { message: 'Invalidate Instrument' } });
+			return json({ id: params.id, message: 'Invalidate Instrument' }, { status: 400 });
 		}
 
-		let cleaned_pafe_series = pafe_series;
+		let cleaned_pafe_series = year;
 		if (cleaned_pafe_series == null) {
 			cleaned_pafe_series = pafe_series();
 		}
 
 		const performance: PerformanceInterface = {
-			id: params.id,
+			id: parseInt(params.id, 10),
 			performer_name: performer_name,
 			class: class_name,
 			duration: duration,
 			accompanist_id: accompanist_id,
 			concert_series: concert_series,
-			pafe_series: cleaned_pafe_series,
+			year: cleaned_pafe_series,
 			instrument: instrumentEnum
 		};
 
 		if (!performance.performer_name || !performance.concert_series) {
-			return { status: 400, body: { message: 'Missing Field, Try Again' } };
+			return json({ message: 'Missing Field, Try Again' }, { status: 400 });
 		} else {
 			// get performer id
 			const performer_id = 1;
@@ -70,9 +70,9 @@ export async function PUT({ params, request }) {
 				warm_up_room_end
 			);
 			if (res.rowCount != null && res.rowCount > 0) {
-				return json({ id: params.id }, { status: 200, body: { message: 'Update successful' } });
+				return json({ id: params.id, message: 'Update successful' }, { status: 200 });
 			} else {
-				return json({ id: params.id }, { status: 500, body: { message: 'Update failed' } });
+				return json({ id: params.id, message: 'Update failed' }, { status: 500 });
 			}
 		}
 	} catch (error) {
@@ -82,15 +82,15 @@ export async function PUT({ params, request }) {
 
 export async function DELETE({ params, request, cookies }) {
 	// Get the Authorization header
-	const pafeAuth = cookies.get('pafe_auth');
-	if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
+	const pafeAuth = cookies.get('pafe_auth') || '';
+	if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization') || '')) {
 		return new Response('Unauthorized', { status: 401 });
 	}
-	const rowCount = await deleteById('performance', params.id);
+	const rowCount = await deleteById('performance', parseInt(params.id, 10));
 
 	if (rowCount != null && rowCount > 0) {
-		return { status: 200, body: { message: 'Delete successful' } };
+		return json({ message: 'Delete successful' }, { status: 200 });
 	} else {
-		return { status: 500, body: { message: 'Delete failed' } };
+		return json({ message: 'Delete failed' }, { status: 500 });
 	}
 }

@@ -40,7 +40,7 @@ export interface PerformerInterface {
 
 export interface PerformanceFilterInterface {
 	concert_series: string | null;
-	pafe_series: number;
+	year: number;
 }
 
 /**
@@ -54,7 +54,7 @@ export interface PerformanceInterface {
 	duration: number | null;
 	accompanist_id: number | null;
 	concert_series: string;
-	pafe_series: number;
+	year: number;
 	instrument: string;
 }
 
@@ -72,7 +72,7 @@ export interface ClassLotteryInterface {
 export interface PerformerRankedChoiceInterface {
 	performer_id: number;
 	concert_series: string;
-	pafe_series: number;
+	year: number;
 	first_choice_time: Date;
 	second_choice_time: Date | null;
 	third_choice_time: Date | null;
@@ -134,7 +134,7 @@ export function isNonEmptyString(value: any): boolean {
 	return typeof value === 'string' && value.trim().length > 0;
 }
 
-export function pafe_series(): number {
+export function year(): number {
 	const currentYear = new Date().getFullYear();
 	return currentYear - 1988;
 }

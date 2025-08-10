@@ -31,7 +31,7 @@
 					<td>{performance.instrument}</td>
 					<td>{performance.performance_order}</td>
 					<td>{performance.concert_series}</td>
-					<td>{performance.pafe_series}</td>
+					<td>{performance.year}</td>
 				</tr>
 			{/each}
 		</tbody>

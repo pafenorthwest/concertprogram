@@ -8,7 +8,7 @@ import {
 } from '$lib/server/program';
 import { updateProgramOrder } from '$lib/server/db';
 import { auth_code } from '$env/static/private';
-import { pafe_series } from '$lib/server/common';
+import { year } from '$lib/server/common';
 import Papa from 'papaparse';
 
 export async function POST({ request, cookies }) {
@@ -60,7 +60,7 @@ export async function GET({ request, cookies }) {
 	};
 
 	try {
-		const program = new Program(pafe_series());
+		const program = new Program(year());
 		await program.build();
 
 		if (!program) {

@@ -4,7 +4,7 @@ import {
 	type ImportMusicalTitleInterface,
 	type ImportPerformanceInterface,
 	type MusicalPieceInterface,
-	pafe_series,
+	year,
 	parseMusicalPiece,
 	type PerformanceInterface,
 	type PerformancePieceInterface,
@@ -392,7 +392,7 @@ export class Performance {
 		if (performer?.id == null) {
 			throw new PerformerError("Can't process Performance with null performer");
 		}
-		const res = await searchPerformanceByPerformer(performer.id, concert_series, pafe_series());
+		const res = await searchPerformanceByPerformer(performer.id, concert_series, year());
 		if (res.rowCount == null || res.rowCount < 1) {
 			const thisPerformance: PerformanceInterfaceTagCreate = {
 				id: null,
@@ -401,7 +401,7 @@ export class Performance {
 				duration: null,
 				accompanist_id: accompanist_id,
 				concert_series: concert_series,
-				pafe_series: pafe_series(),
+				year: year(),
 				instrument: performer.instrument,
 				created: true
 			};
@@ -428,7 +428,7 @@ export class Performance {
 			duration: res.rows[0].duration,
 			accompanist_id: res.rows[0].accompanist_id,
 			concert_series: res.rows[0].concert_series,
-			pafe_series: res.rows[0].pafe_series,
+			year: res.rows[0].year,
 			instrument: res.rows[0].instrument,
 			created: false
 		};
@@ -464,7 +464,7 @@ export class Performance {
 		const performanceRes = await searchPerformanceByPerformer(
 			performerId,
 			concertSeries,
-			pafe_series()
+			year()
 		);
 		let performanceId: number;
 		if (

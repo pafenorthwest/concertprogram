@@ -7,7 +7,7 @@ import { auth_code } from '$env/static/private';
 export async function POST({ request, cookies }) {
 	// Get the Authorization header
 	const pafeAuth = cookies.get('pafe_auth');
-	if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
+	if ((pafeAuth || '') != auth_code && !isAuthorized(request.headers.get('Authorization') || '')) {
 		return new Response('Unauthorized', { status: 401 });
 	}
 
@@ -25,7 +25,7 @@ export async function POST({ request, cookies }) {
 			duration,
 			accompanist_id,
 			concert_series,
-			pafe_series,
+			year,
 			instrument,
 			order,
 			comment,
@@ -36,10 +36,10 @@ export async function POST({ request, cookies }) {
 
 		const instrumentEnum = selectInstrument(instrument);
 		if (instrumentEnum == null) {
-			return json({}, { status: 400, body: { message: 'Invalidate Instrument' } });
+			return json({ message: 'Invalidate Instrument' }, { status: 400 });
 		}
 
-		let cleaned_pafe_series = pafe_series;
+		let cleaned_pafe_series = year;
 		if (cleaned_pafe_series == null) {
 			cleaned_pafe_series = pafe_series();
 		}
@@ -51,12 +51,12 @@ export async function POST({ request, cookies }) {
 			duration: duration,
 			accompanist_id: accompanist_id,
 			concert_series: concert_series,
-			pafe_series: cleaned_pafe_series,
+			year: cleaned_pafe_series,
 			instrument: instrumentEnum
 		};
 
 		if (!performance.performer_name || !performance.concert_series) {
-			return json({ status: 400, body: { message: 'Missing Field, Try Again' } });
+			return json({ message: 'Missing Field, Try Again' }, { status: 400 });
 		} else {
 			// get performer id
 			const performer_id = 1;
@@ -72,14 +72,14 @@ export async function POST({ request, cookies }) {
 			if (result.rowCount != null && result.rowCount > 0) {
 				return json({
 					status: 200,
-					body: { message: 'Update successful' },
+					message: 'Update successful',
 					headers: access_control_headers
 				});
 			} else {
-				return json({ status: 500, body: { message: 'Update failed' } });
+				return json({ message: 'Update failed' }, { status: 500 });
 			}
 		}
 	} catch {
-		return json({ status: 'error', message: 'Failed to process the request' });
+		return json({ status: 'error', message: 'Failed to process the request' }, { status: 500 });
 	}
 }

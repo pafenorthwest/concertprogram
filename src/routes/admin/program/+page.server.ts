@@ -1,13 +1,13 @@
 import { getCachedTimeStamps } from '$lib/cache';
 import { Program } from '$lib/server/program';
-import { pafe_series } from '$lib/server/common';
+import { year } from '$lib/server/common';
 
 export async function load({ cookies }) {
 	const pafeAuth = cookies.get('pafe_auth');
 	const isAuthenticated = !!pafeAuth;
 
 	const concertStartTimes = getCachedTimeStamps();
-	const program = new Program(pafe_series());
+	const program = new Program(year());
 	await program.build();
 
 	return {
