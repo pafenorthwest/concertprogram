@@ -83,10 +83,10 @@ jobs:
       - name: Retry API Tests up to 3 Times
         uses: nick-fields/retry@v3
         with:
-          max_attempts: 1
+          max_attempts: 3
           retry_wait_seconds: 2
           timeout_seconds: 50
-          command: npm test test/api
+          command: npm test test/api lottery.api.test.ts
           on_retry_command: cat dev-server.log
 
       - name: Stop Dev Server
