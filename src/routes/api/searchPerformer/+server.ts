@@ -51,7 +51,7 @@ async function retrievePerformerByDetails(
 			age,
 			composerName
 		);
-		if (result == null) {
+		if (result == null || result.performer_id == null) {
 			return {
 				status: 'NOTFOUND',
 				performer_id: 0,
@@ -107,15 +107,12 @@ export async function GET({ url }) {
 				return json({
 					status: 200,
 					body: {
-						message: 'completed successfully',
-						result: {
-							status: performerSearchResults.status,
-							performer_id: performerSearchResults.performer_id,
-							performer_name: performerSearchResults.performer_name,
-							musical_piece: performerSearchResults.musical_piece,
-							lottery_code: performerSearchResults.lottery_code,
-							concert_series: performerSearchResults.concert_series
-						}
+						status: performerSearchResults.status,
+						performer_id: performerSearchResults.performer_id,
+						performer_name: performerSearchResults.performer_name,
+						musical_piece: performerSearchResults.musical_piece,
+						lottery_code: performerSearchResults.lottery_code,
+						concert_series: performerSearchResults.concert_series
 					}
 				});
 			} else {
@@ -138,9 +135,6 @@ export async function GET({ url }) {
 					parseInt(age, 10),
 					composerName
 				);
-				console.log(
-					`RESULTS ${performerSearchResults.status} ${JSON.stringify(performerSearchResults.performer_name)})`
-				);
 				if (performerSearchResults.status == 'OK') {
 					return json({
 						status: 200,
@@ -156,6 +150,8 @@ export async function GET({ url }) {
 							}
 						}
 					});
+				} else {
+					return json({ status: 'error', reason: 'Not Found' }, { status: 404 });
 				}
 			} else {
 				return json({ status: 'error', reason: 'Improperly formatted request' }, { status: 400 });

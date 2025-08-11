@@ -3,14 +3,15 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "vite --port 8888 dev",
 		"build": "vite build",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "vitest --watch=false",
 		"lint": "prettier --check . && eslint ./src",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+		"staggered-api-test": "sleep 1 && npm run test test/api/accompanist-performer-api.test.ts && sleep 1 && npm run test test/api/composer-api.test.ts &&  sleep 1 && npm run test test/api/import-api.test.ts &&             sleep 1 && npm test test/api/lottery-api.test.ts &&             sleep 1 && npm test test/api/musicalpiece-api.test.ts &&             sleep 1 && npm test test/api/performance-api.test.ts &&             sleep 1 && npm test test/api/program-api.test.ts &&             sleep 1 && npm test test/api/searchPerformer-api.test.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.0.0",

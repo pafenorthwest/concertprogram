@@ -1,19 +1,7 @@
 import { assert, beforeAll, describe, expect, it } from 'vitest';
 import { auth_code } from '$env/static/private';
 import { unpackBody } from '$lib/server/common';
-
-function generateRandomString(length: number = 20): string {
-	const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz0123456789';
-	let result = '';
-	for (let i = 0; i < length; i++) {
-		result += chars.charAt(Math.floor(Math.random() * chars.length));
-	}
-	return result;
-}
-
-function generateSixDigitNumber(): number {
-	return Math.floor(100000 + Math.random() * 900000);
-}
+import { generateRandomString, generateSixDigitNumber } from '$lib/server/randomForTest';
 
 let randomNameOne: string;
 let randomEmailOne: string;
@@ -37,7 +25,7 @@ beforeAll(() => {
 
 describe('Test Import HTTP APIs', () => {
 	it('It should return no auth header', async () => {
-		const getResponse = await fetch('http://localhost:5173/api/import', {
+		const getResponse = await fetch('http://localhost:8888/api/import', {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json'
@@ -81,7 +69,7 @@ describe('Test Import HTTP APIs', () => {
 	});
 
 	it('It should return not-authorized for PUT', async () => {
-		const getResponse = await fetch('http://localhost:5173/api/import', {
+		const getResponse = await fetch('http://localhost:8888/api/import', {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
@@ -126,7 +114,7 @@ describe('Test Import HTTP APIs', () => {
 	});
 
 	it('It should return insert with PUT', async () => {
-		const getResponse = await fetch('http://localhost:5173/api/import', {
+		const getResponse = await fetch('http://localhost:8888/api/import', {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
@@ -172,7 +160,7 @@ describe('Test Import HTTP APIs', () => {
 	});
 
 	it('It should DELETE existing', async () => {
-		const getResponse = await fetch('http://localhost:5173/api/import', {
+		const getResponse = await fetch('http://localhost:8888/api/import', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
@@ -204,7 +192,7 @@ describe('Test Import HTTP APIs', () => {
 	});
 
 	it('It should return Not Found when Delete non-existing', async () => {
-		const getResponse = await fetch('http://localhost:5173/api/import', {
+		const getResponse = await fetch('http://localhost:8888/api/import', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
@@ -232,7 +220,7 @@ describe('Test Import HTTP APIs', () => {
 	});
 
 	it('It should insert multiple pieces with PUT', async () => {
-		const getResponse = await fetch('http://localhost:5173/api/import', {
+		const getResponse = await fetch('http://localhost:8888/api/import', {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
@@ -283,7 +271,7 @@ describe('Test Import HTTP APIs', () => {
 	});
 
 	it('It should update multiple pieces with PUT', async () => {
-		const getResponse = await fetch('http://localhost:5173/api/import', {
+		const getResponse = await fetch('http://localhost:8888/api/import', {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',

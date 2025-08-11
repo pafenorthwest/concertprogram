@@ -74,7 +74,6 @@ export async function POST({ url, cookies, params, request }) {
 	try {
 		const { lottery } = await request.json();
 		const class_name = params.class_name;
-		console.log(`class name ${class_name} lottery ${lottery} url ${url.origin}`);
 		if (!class_name || !lottery) {
 			return json({ status: 'error', reason: 'Missing Fields' }, { status: 400 });
 		} else {

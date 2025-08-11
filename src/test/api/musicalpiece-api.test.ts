@@ -6,7 +6,7 @@ import type { MusicalPieceInterface } from '$lib/server/common';
 
 describe('Test MusicalPiece HTTP APIs', () => {
 	it('It should return no-auth', async () => {
-		let getResponseMusicalPiece = await fetch('http://localhost:5173/api/musicalpiece/', {
+		let getResponseMusicalPiece = await fetch('http://localhost:8888/api/musicalpiece/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -20,7 +20,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 			})
 		});
 		expect(getResponseMusicalPiece.status).toBe(401);
-		getResponseMusicalPiece = await fetch('http://localhost:5173/api/musicalpiece/1', {
+		getResponseMusicalPiece = await fetch('http://localhost:8888/api/musicalpiece/1', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json'
@@ -30,7 +30,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 	});
 
 	it('It should return not-authorized', async () => {
-		let getResponseMusicalPiece = await fetch('http://localhost:5173/api/musicalpiece/', {
+		let getResponseMusicalPiece = await fetch('http://localhost:8888/api/musicalpiece/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -57,7 +57,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 			const result = await insertTable('musical_piece', musicalPiece);
 			expect(getResponseMusicalPiece.status).toBe(403);
 			getResponseMusicalPiece = await fetch(
-				`http://localhost:5173/api/musicalpiece/${result.rows[0].id}`,
+				`http://localhost:8888/api/musicalpiece/${result.rows[0].id}`,
 				{
 					method: 'DELETE',
 					headers: {
@@ -73,7 +73,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 	});
 
 	it('It should error when required fields are not present', async () => {
-		const createResponseMusicalPiece = await fetch('http://localhost:5173/api/musicalpiece/', {
+		const createResponseMusicalPiece = await fetch('http://localhost:8888/api/musicalpiece/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -93,7 +93,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 	});
 
 	it('It should create and destroy musicalpiece', async () => {
-		const createResponse = await fetch('http://localhost:5173/api/musicalpiece/', {
+		const createResponse = await fetch('http://localhost:8888/api/musicalpiece/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 			const resultObject = JSON.parse(bodyFromRequest);
 			const newId = resultObject.id;
 			expect(+newId).toBeGreaterThan(0);
-			const delResponse = await fetch(`http://localhost:5173/api/musicalpiece/${newId}`, {
+			const delResponse = await fetch(`http://localhost:8888/api/musicalpiece/${newId}`, {
 				method: 'DELETE',
 				headers: {
 					'Content-Type': 'application/json',

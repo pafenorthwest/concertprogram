@@ -225,6 +225,19 @@ export async function load({ url }) {
 	let formValues = null;
 
 	const concertStartTimes = getCachedTimeStamps();
+	if (concertStartTimes == null) {
+		return {
+			status: 'NOTFOUND',
+			performer_id: 0,
+			performer_name: '',
+			musical_piece: '',
+			lottery_code: '',
+			concert_series: '',
+			formValues: null,
+			concertTimes: null,
+			performance_id: 0
+		};
+	}
 
 	if (url.searchParams.get('code') != null && isNonEmptyString(url.searchParams.get('code'))) {
 		const code = purify.sanitize(url.searchParams.get('code')!);

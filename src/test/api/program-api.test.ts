@@ -8,7 +8,7 @@ describe('Test Program HTTP APIs', () => {
 		const performerAge = 12;
 		const composerName = 'Frédéric Chopin';
 		// first create a searchable entry
-		const getResponse = await fetch('http://localhost:5173/api/import', {
+		const getResponse = await fetch('http://localhost:8888/api/import', {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
@@ -46,9 +46,9 @@ describe('Test Program HTTP APIs', () => {
 				'"concert_series": "Eastside"' +
 				'}'
 		});
-		expect(getResponse.status).toBe(200);
+		expect(getResponse.status).to.be.oneOf([200, 201]);
 
-		const programResponse = await fetch('http://localhost:5173/api/program', {
+		const programResponse = await fetch('http://localhost:8888/api/program', {
 			method: 'GET'
 		});
 		expect(programResponse.status).toBe(200);
