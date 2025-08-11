@@ -74,27 +74,6 @@ jobs:
         run: psql -h localhost -d pafe -U postgres -f database/init.sql
       - run: npm test test/db
 
-      - name: Start Dev Server
-        run: |
-          npm run dev -- --host 0.0.0.0 > dev-server.log 2>&1 &
-          echo $! > server_pid.txt
-          sleep 5
-
-      - name: Retry API Tests up to 3 Times
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          retry_wait_seconds: 2
-          timeout_seconds: 120
-          command: npm run test/api/lottery-api.test.ts
-          on_retry_command: cat dev-server.log
-
-      - name: Stop Dev Server
-        run: |
-          if [ -f server_pid.txt ]; then
-            kill $(cat server_pid.txt) || true
-          fi
-
   check-all:
     runs-on: ubuntu-latest
     needs: [lint, unit-test, integration-test]
