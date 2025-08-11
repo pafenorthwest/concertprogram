@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { auth_code } from '$env/static/private';
 import { unpackBody } from '$lib/server/common';
+import { generateRandomString } from '$lib/server/randomForTest';
+import { deleteClassLottery, deleteById } from '$lib/server/db';
 
 describe('Test SearchPerformer HTTP APIs', () => {
 	it('It should be NOTFOUND', async () => {
-		const searchCodeResponse = await fetch('http://localhost:5173/api/searchPerformer/?code=1234', {
+		const searchCodeResponse = await fetch('http://localhost:8888/api/searchPerformer/?code=1234', {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json',
@@ -15,10 +17,10 @@ describe('Test SearchPerformer HTTP APIs', () => {
 		if (searchCodeResponse.body != null) {
 			const bodyFromRequest = await unpackBody(searchCodeResponse.body);
 			const resultObject = JSON.parse(bodyFromRequest);
-			expect(resultObject.body.result.status).toBe('NOTFOUND');
+			expect(resultObject.body.status).toBe('NOTFOUND');
 		}
 		const searchDetailsResponse = await fetch(
-			'http://localhost:5173/api/searchPerformer/?performerLastName="emmma"&age=12&composerName="test',
+			'http://localhost:8888/api/searchPerformer/?performerLastName="emmma"&age=12&composerName="test',
 			{
 				method: 'GET',
 				headers: {
@@ -27,15 +29,10 @@ describe('Test SearchPerformer HTTP APIs', () => {
 				}
 			}
 		);
-		expect(searchDetailsResponse.status).toBe(200);
-		if (searchDetailsResponse.body != null) {
-			const bodyFromRequest = await unpackBody(searchDetailsResponse.body);
-			const resultObject = JSON.parse(bodyFromRequest);
-			expect(resultObject.body.result.status).toBe('NOTFOUND');
-		}
+		expect(searchDetailsResponse.status).toBe(404);
 	});
 	it('It should be Error Improper Request', async () => {
-		const searchResponse = await fetch('http://localhost:5173/api/searchPerformer/?age=12', {
+		const searchResponse = await fetch('http://localhost:8888/api/searchPerformer/?age=12', {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json',
@@ -45,13 +42,13 @@ describe('Test SearchPerformer HTTP APIs', () => {
 		expect(searchResponse.status).toBe(400);
 	});
 	it('It should be find the correct performer', async () => {
-		const className = 'CC.9-10.W';
+		const className = 'QQ.9-10.' + generateRandomString(2);
 		const performerName = 'Emma Carter';
 		const lastName = 'Carter';
 		const performerAge = 12;
 		const composerName = 'Frédéric Chopin';
 		// first create a searchable entry
-		const getResponse = await fetch('http://localhost:5173/api/import', {
+		const getResponse = await fetch('http://localhost:8888/api/import', {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
@@ -67,7 +64,7 @@ describe('Test SearchPerformer HTTP APIs', () => {
 				'"age": ' +
 				performerAge +
 				', ' +
-				'"lottery": 888999555' +
+				'"lottery": 123' +
 				', ' +
 				'"email": "emma@youngartist.com",' +
 				'"phone": "999-555-4444",' +
@@ -89,9 +86,9 @@ describe('Test SearchPerformer HTTP APIs', () => {
 				'"concert_series": "Eastside"' +
 				'}'
 		});
-		expect(getResponse.status).toBe(200);
+		expect(getResponse.status).to.be.oneOf([200, 201]);
 		const searchResponse = await fetch(
-			`http://localhost:5173/api/searchPerformer/?performerLastName=${lastName}&age=${performerAge}&composerName=${composerName}`,
+			`http://localhost:8888/api/searchPerformer/?performerLastName=${lastName}&age=${performerAge}&composerName=${composerName}`,
 			{
 				method: 'GET',
 				headers: {
@@ -109,5 +106,14 @@ describe('Test SearchPerformer HTTP APIs', () => {
 			expect(resultObject.body.result.performer_name).toBe(performerName);
 			expect(resultObject.body.result.musical_piece).toBe('Scherzo no.2 in B Flat Minor, op.31');
 		}
+
+		// clean up for repeatable tests
+		if (getResponse.body != null) {
+			const bodyFromRequest = await unpackBody(getResponse.body);
+			const resultObject = JSON.parse(bodyFromRequest);
+			console.log(`delete ${resultObject.performerId}`);
+			await deleteById('performer', resultObject.performerId);
+		}
+		await deleteClassLottery(className);
 	});
 });

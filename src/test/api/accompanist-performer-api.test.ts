@@ -4,7 +4,7 @@ import { unpackBody } from '$lib/server/common';
 
 describe('Test Accompanist HTTP APIs', () => {
 	it('It should return no-auth', async () => {
-		let getResponseAccompanist = await fetch('http://localhost:5173/api/accompanist/', {
+		let getResponseAccompanist = await fetch('http://localhost:8888/api/accompanist/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -12,7 +12,7 @@ describe('Test Accompanist HTTP APIs', () => {
 			body: JSON.stringify({ full_name: 'John John' })
 		});
 		expect(getResponseAccompanist.status).toBe(401);
-		let getResponsePerformer = await fetch('http://localhost:5173/api/performer/', {
+		let getResponsePerformer = await fetch('http://localhost:8888/api/performer/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -25,14 +25,14 @@ describe('Test Accompanist HTTP APIs', () => {
 			})
 		});
 		expect(getResponsePerformer.status).toBe(401);
-		getResponseAccompanist = await fetch('http://localhost:5173/api/accompanist/1', {
+		getResponseAccompanist = await fetch('http://localhost:8888/api/accompanist/1', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json'
 			}
 		});
 		expect(getResponseAccompanist.status).toBe(401);
-		getResponsePerformer = await fetch('http://localhost:5173/api/performer/1', {
+		getResponsePerformer = await fetch('http://localhost:8888/api/performer/1', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json'
@@ -42,7 +42,7 @@ describe('Test Accompanist HTTP APIs', () => {
 	});
 
 	it('It should return not-authorized', async () => {
-		let getResponseAccompanist = await fetch('http://localhost:5173/api/accompanist/', {
+		let getResponseAccompanist = await fetch('http://localhost:8888/api/accompanist/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -51,7 +51,7 @@ describe('Test Accompanist HTTP APIs', () => {
 			body: JSON.stringify({ full_name: 'John John' })
 		});
 		expect(getResponseAccompanist.status).toBe(403);
-		let getResponsePerformer = await fetch('http://localhost:5173/api/performer/', {
+		let getResponsePerformer = await fetch('http://localhost:8888/api/performer/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ describe('Test Accompanist HTTP APIs', () => {
 			})
 		});
 		expect(getResponsePerformer.status).toBe(403);
-		getResponseAccompanist = await fetch('http://localhost:5173/api/accompanist/1', {
+		getResponseAccompanist = await fetch('http://localhost:8888/api/accompanist/1', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ describe('Test Accompanist HTTP APIs', () => {
 			}
 		});
 		expect(getResponseAccompanist.status).toBe(403);
-		getResponsePerformer = await fetch('http://localhost:5173/api/performer/1', {
+		getResponsePerformer = await fetch('http://localhost:8888/api/performer/1', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ describe('Test Accompanist HTTP APIs', () => {
 	});
 
 	it('It should error when required fields are not present', async () => {
-		const createResponseAccompanist = await fetch('http://localhost:5173/api/accompanist/', {
+		const createResponseAccompanist = await fetch('http://localhost:8888/api/accompanist/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ describe('Test Accompanist HTTP APIs', () => {
 			expect(resultObject.reason).toBe('Missing Fields');
 		}
 
-		const createResponseProduct = await fetch('http://localhost:5173/api/performer/', {
+		const createResponseProduct = await fetch('http://localhost:8888/api/performer/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ describe('Test Accompanist HTTP APIs', () => {
 	});
 
 	it('It should create and destroy accompanist', async () => {
-		const createResponse = await fetch('http://localhost:5173/api/accompanist/', {
+		const createResponse = await fetch('http://localhost:8888/api/accompanist/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -139,7 +139,7 @@ describe('Test Accompanist HTTP APIs', () => {
 			const resultObject = JSON.parse(bodyFromRequest);
 			const newId = resultObject.id;
 			expect(+newId).toBeGreaterThan(0);
-			const delResponse = await fetch(`http://localhost:5173/api/accompanist/${newId}`, {
+			const delResponse = await fetch(`http://localhost:8888/api/accompanist/${newId}`, {
 				method: 'DELETE',
 				headers: {
 					'Content-Type': 'application/json',
@@ -152,7 +152,7 @@ describe('Test Accompanist HTTP APIs', () => {
 		}
 	});
 	it('It should create and destroy performer', async () => {
-		const createResponse = await fetch('http://localhost:5173/api/performer/', {
+		const createResponse = await fetch('http://localhost:8888/api/performer/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -174,7 +174,7 @@ describe('Test Accompanist HTTP APIs', () => {
 			const resultObject = JSON.parse(bodyFromRequest);
 			const newId = resultObject.id;
 			expect(+newId).toBeGreaterThan(0);
-			const delResponse = await fetch(`http://localhost:5173/api/performer/${newId}`, {
+			const delResponse = await fetch(`http://localhost:8888/api/performer/${newId}`, {
 				method: 'DELETE',
 				headers: {
 					'Content-Type': 'application/json',

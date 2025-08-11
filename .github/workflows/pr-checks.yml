@@ -39,7 +39,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
-          - 5173:5173
+          - 8888:8888
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
@@ -86,7 +86,7 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 2
           timeout_seconds: 50
-          command: npm test test/api lottery.api.test.ts
+          command: npm run staggered-api-test
           on_retry_command: cat dev-server.log
 
       - name: Stop Dev Server

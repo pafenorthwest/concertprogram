@@ -51,7 +51,6 @@ async function retrievePerformerByDetails(
 			age,
 			composerName
 		);
-		console.log(`RESULTS ${JSON.stringify(result)}`);
 		if (result == null || result.performer_id == null) {
 			return {
 				status: 'NOTFOUND',
@@ -108,15 +107,12 @@ export async function GET({ url }) {
 				return json({
 					status: 200,
 					body: {
-						message: 'completed successfully',
-						result: {
-							status: performerSearchResults.status,
-							performer_id: performerSearchResults.performer_id,
-							performer_name: performerSearchResults.performer_name,
-							musical_piece: performerSearchResults.musical_piece,
-							lottery_code: performerSearchResults.lottery_code,
-							concert_series: performerSearchResults.concert_series
-						}
+						status: performerSearchResults.status,
+						performer_id: performerSearchResults.performer_id,
+						performer_name: performerSearchResults.performer_name,
+						musical_piece: performerSearchResults.musical_piece,
+						lottery_code: performerSearchResults.lottery_code,
+						concert_series: performerSearchResults.concert_series
 					}
 				});
 			} else {

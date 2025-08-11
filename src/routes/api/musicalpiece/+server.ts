@@ -52,5 +52,4 @@ export async function POST({ url, request, cookies }) {
 	} catch {
 		return json({ status: 'error', message: 'Failed to process the request' }, { status: 500 });
 	}
-	console.log('AT THE END');
 }

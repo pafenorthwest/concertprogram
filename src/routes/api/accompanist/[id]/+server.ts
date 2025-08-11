@@ -48,7 +48,6 @@ export async function PUT({ url, params, request, cookies }) {
 	} else {
 		let rowCount: number | null = 0;
 		try {
-			console.log('trying to update accompanist');
 			rowCount = await updateById('accompanist', accompanist);
 		} catch (err) {
 			return json({ result: 'error', reason: `${(err as Error).message}` }, { status: 500 });
@@ -56,7 +55,6 @@ export async function PUT({ url, params, request, cookies }) {
 		if (rowCount != null && rowCount > 0) {
 			return new Response('OK', { status: 200 });
 		} else {
-			console.log('not found accompanist');
 			return json({ result: 'error', reason: 'Not Found' }, { status: 404 });
 		}
 	}

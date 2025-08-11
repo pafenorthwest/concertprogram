@@ -5,7 +5,6 @@ import { DataParser } from '$lib/server/import';
 
 describe('CSV Import', () => {
 	it('should import each row from Concerto.csv', async () => {
-		console.log(`${__dirname}/../../../test-data/Concerto.csv`);
 		const csvPath = path.resolve(__dirname, '../../../test-data/Concerto.csv');
 		const csvData = fs.readFileSync(csvPath, 'utf8');
 

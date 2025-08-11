@@ -4,19 +4,19 @@ import { unpackBody } from '$lib/server/common';
 
 describe('Test Lottery HTTP APIs', () => {
 	it('It should return no-auth', async () => {
-		const getResponseLottery = await fetch('http://localhost:5173/api/lottery/CC.9-10.Z', {
+		const getResponseLottery = await fetch('http://localhost:8888/api/lottery/CC.9-10.Z', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({ lottery: 876543 })
 		});
-		expect(getResponseLottery.headers.get('origin')).not.toBe('http://localhost:5173');
+		expect(getResponseLottery.headers.get('origin')).not.toBe('http://localhost:8888');
 		expect(getResponseLottery.status).toBe(401);
 	});
 
 	it('It should return not-authorized', async () => {
-		const getResponseLottery = await fetch('http://localhost:5173/api/lottery/CC.9-10.Z', {
+		const getResponseLottery = await fetch('http://localhost:8888/api/lottery/CC.9-10.Z', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -24,12 +24,12 @@ describe('Test Lottery HTTP APIs', () => {
 			},
 			body: JSON.stringify({ lottery: 876543 })
 		});
-		expect(getResponseLottery.headers.get('origin')).not.toBe('http://localhost:5173');
+		expect(getResponseLottery.headers.get('origin')).not.toBe('http://localhost:8888');
 		expect(getResponseLottery.status).toBe(403);
 	});
 
 	it('It should error when required fields are not present', async () => {
-		const createResponseLottery = await fetch('http://localhost:5173/api/lottery/CC.9-10.Z', {
+		const createResponseLottery = await fetch('http://localhost:8888/api/lottery/CC.9-10.Z', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -49,7 +49,7 @@ describe('Test Lottery HTTP APIs', () => {
 	});
 
 	it('It should create and destroy lottery', async () => {
-		const createResponse = await fetch('http://localhost:5173/api/lottery/CC.9-10.Z', {
+		const createResponse = await fetch('http://localhost:8888/api/lottery/CC.9-10.Z', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ describe('Test Lottery HTTP APIs', () => {
 		expect(createResponse.status).toBe(201);
 		// parse stream to get body
 		if (createResponse.body != null) {
-			const delResponse = await fetch(`http://localhost:5173/api/lottery/CC.9-10.Z`, {
+			const delResponse = await fetch(`http://localhost:8888/api/lottery/CC.9-10.Z`, {
 				method: 'DELETE',
 				headers: {
 					'Content-Type': 'application/json',

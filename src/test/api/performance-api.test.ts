@@ -4,7 +4,7 @@ import { unpackBody } from '$lib/server/common';
 
 describe('Test Performance HTTP APIs', () => {
 	it('It should return no-auth', async () => {
-		let getResponsePerformance = await fetch('http://localhost:5173/api/performance/', {
+		let getResponsePerformance = await fetch('http://localhost:8888/api/performance/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -15,7 +15,7 @@ describe('Test Performance HTTP APIs', () => {
 			})
 		});
 		expect(getResponsePerformance.status).toBe(401);
-		getResponsePerformance = await fetch('http://localhost:5173/api/performance/1', {
+		getResponsePerformance = await fetch('http://localhost:8888/api/performance/1', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json'
@@ -25,7 +25,7 @@ describe('Test Performance HTTP APIs', () => {
 	});
 
 	it('It should return not-authorized', async () => {
-		let getResponsePerformance = await fetch('http://localhost:5173/api/performance/', {
+		let getResponsePerformance = await fetch('http://localhost:8888/api/performance/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -38,7 +38,7 @@ describe('Test Performance HTTP APIs', () => {
 			})
 		});
 		expect(getResponsePerformance.status).toBe(403);
-		getResponsePerformance = await fetch('http://localhost:5173/api/performance/1', {
+		getResponsePerformance = await fetch('http://localhost:8888/api/performance/1', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
@@ -49,7 +49,7 @@ describe('Test Performance HTTP APIs', () => {
 	});
 
 	it('It should error when required fields are not present', async () => {
-		const createResponsePerformance = await fetch('http://localhost:5173/api/performance/', {
+		const createResponsePerformance = await fetch('http://localhost:8888/api/performance/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ describe('Test Performance HTTP APIs', () => {
 	});
 
 	it('It should create and destroy performance', async () => {
-		const createResponse = await fetch('http://localhost:5173/api/performance/', {
+		const createResponse = await fetch('http://localhost:8888/api/performance/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ describe('Test Performance HTTP APIs', () => {
 			const resultObject = JSON.parse(bodyFromRequest);
 			const newId = resultObject.id;
 			expect(+newId).toBeGreaterThan(0);
-			const delResponse = await fetch(`http://localhost:5173/api/performance/${newId}`, {
+			const delResponse = await fetch(`http://localhost:8888/api/performance/${newId}`, {
 				method: 'DELETE',
 				headers: {
 					'Content-Type': 'application/json',
