@@ -76,12 +76,22 @@ jobs:
 
       - run: npm ci
 
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..10}; do
+            if pg_isready -h localhost -U postgres; then
+              echo "Postgres is ready!"
+              break
+            fi
+            echo "Waiting for Postgres..."
+            sleep 2
+          done
+
       - name: Initialize Database
         run: psql -h localhost -d pafe -U postgres -f database/init.sql
 
       - name: Run DB Integration Tests
-        run: |
-          sleep 10npm test test/db
+        run: npm test test/db
 
       - name: Start Dev Server
         run: |
