@@ -1,20 +1,25 @@
 import { json } from '@sveltejs/kit';
-import { type PerformanceInterface, selectInstrument } from '$lib/server/common';
+import { type PerformanceInterface, selectInstrument, year as pafeYear } from '$lib/server/common';
 import { insertPerformance } from '$lib/server/db';
 import { isAuthorized } from '$lib/server/apiAuth';
 import { auth_code } from '$env/static/private';
 
-export async function POST({ request, cookies }) {
+export async function POST({ url, request, cookies }) {
 	// Get the Authorization header
 	const pafeAuth = cookies.get('pafe_auth');
-	if ((pafeAuth || '') != auth_code && !isAuthorized(request.headers.get('Authorization') || '')) {
-		return new Response('Unauthorized', { status: 401 });
-	}
+	const origin = request.headers.get('origin'); // The origin of the request (protocol + host + port)
+	const appOrigin = `${url.protocol}//${url.host}`;
 
-	const access_control_headers = {
-		'Access-Control-Allow-Origin': '*', // Allow all hosts
-		'Access-Control-Allow-Methods': 'POST' // Specify allowed methods
-	};
+	// from local app no checks needed
+	if (origin !== appOrigin) {
+		if (!request.headers.has('Authorization')) {
+			return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
+		}
+
+		if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
+			return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
+		}
+	}
 
 	try {
 		// the following fields are often not included
@@ -34,16 +39,12 @@ export async function POST({ request, cookies }) {
 			warm_up_room_end
 		} = await request.json();
 
+		if (instrument == null) {
+			return json({ status: 'error', reason: 'Invalid Instrument' }, { status: 400 });
+		}
+
 		const instrumentEnum = selectInstrument(instrument);
-		if (instrumentEnum == null) {
-			return json({ message: 'Invalidate Instrument' }, { status: 400 });
-		}
-
-		let cleaned_pafe_series = year;
-		if (cleaned_pafe_series == null) {
-			cleaned_pafe_series = pafe_series();
-		}
-
+		const cleaned_pafe_series = year || pafeYear();
 		const performance: PerformanceInterface = {
 			id: null,
 			class: class_name,
@@ -55,8 +56,8 @@ export async function POST({ request, cookies }) {
 			instrument: instrumentEnum
 		};
 
-		if (!performance.performer_name || !performance.concert_series) {
-			return json({ message: 'Missing Field, Try Again' }, { status: 400 });
+		if (!performer_name || !concert_series) {
+			return json({ status: 'error', message: 'Missing Fields' }, { status: 400 });
 		} else {
 			// get performer id
 			const performer_id = 1;
@@ -70,13 +71,9 @@ export async function POST({ request, cookies }) {
 				warm_up_room_end
 			);
 			if (result.rowCount != null && result.rowCount > 0) {
-				return json({
-					status: 200,
-					message: 'Update successful',
-					headers: access_control_headers
-				});
+				return json({ id: result.rows[0].id, message: 'Update successful' }, { status: 201 });
 			} else {
-				return json({ message: 'Update failed' }, { status: 500 });
+				return json({ status: 'error', message: 'Update failed' }, { status: 500 });
 			}
 		}
 	} catch {

@@ -1,59 +1,14 @@
 import { fail, json } from '@sveltejs/kit';
-import { isAuthorized } from '$lib/server/apiAuth';
 import {
 	type MusicalTitleInterface,
 	type OrderedPerformanceInterface,
 	Program,
 	type ProgramCSVExportInterface
 } from '$lib/server/program';
-import { updateProgramOrder } from '$lib/server/db';
-import { auth_code } from '$env/static/private';
 import { year } from '$lib/server/common';
 import Papa from 'papaparse';
 
-export async function POST({ request, cookies }) {
-	// Get the Authorization header
-	const pafeAuth = cookies.get('pafe_auth');
-	if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-		return new Response('Unauthorized', { status: 401 });
-	}
-
-	const access_control_headers = {
-		'Access-Control-Allow-Origin': '*', // Allow all hosts
-		'Access-Control-Allow-Methods': 'POST' // Specify allowed methods
-	};
-
-	try {
-		const program: OrderedPerformanceInterface[] = await request.json();
-
-		if (!program) {
-			fail(400, { error: 'No Data Passed in, Try Again' });
-		}
-
-		// loop over and send updates to db
-		const updatePromises = program.map((program) =>
-			updateProgramOrder(program.id, program.concertSeries, program.order)
-		);
-
-		// Execute all updates
-		await Promise.all(updatePromises);
-		return json({
-			status: 200,
-			body: { message: 'Update successful' },
-			headers: access_control_headers
-		});
-	} catch (error) {
-		fail(500, { error: `Failed to process the request ${(error as Error).message}` });
-	}
-}
-
-export async function GET({ request, cookies }) {
-	// Get the Authorization header
-	const pafeAuth = cookies.get('pafe_auth');
-	if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-		return new Response('Unauthorized', { status: 401 });
-	}
-
+export async function GET() {
 	const download_headers = {
 		'Content-Type': 'text/csv',
 		'Content-Disposition': 'attachment; filename="pafeprogram.csv"'
@@ -64,7 +19,7 @@ export async function GET({ request, cookies }) {
 		await program.build();
 
 		if (!program) {
-			fail(400, { error: 'No Data Passed in, Try Again' });
+			return json({ status: 'error', message: 'Not Found' }, { status: 404 });
 		}
 
 		const flattenedArray: ProgramCSVExportInterface[] = program
@@ -80,7 +35,7 @@ export async function GET({ request, cookies }) {
 
 function flattenProgram(input: OrderedPerformanceInterface): ProgramCSVExportInterface {
 	return {
-		series: input.concertSeries,
+		concertSeries: input.concertSeries,
 		concertNum: input.concertNumberInSeries,
 		id: input.id ? input.id : 0,
 		performerId: input.performerId ? input.performerId : 0,

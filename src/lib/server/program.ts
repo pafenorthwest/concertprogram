@@ -40,6 +40,9 @@ export interface ConcertDetailInterface {
 }
 
 export interface ProgramCSVExportInterface extends PerformanceDetailsInterface {
+	concertSeries: string;
+	concertNum: number;
+	id: number;
 	musicalPieceOneTitle: string;
 	musicalPieceOneMovement: string;
 	musicalPieceOneComposer1: string;
@@ -50,8 +53,6 @@ export interface ProgramCSVExportInterface extends PerformanceDetailsInterface {
 	musicalPieceTwoComposer1: string;
 	musicalPieceTwoComposer2: string;
 	musicalPieceTwoComposer3: string;
-	duration: number;
-	comment: string | null;
 }
 
 class ConcertCount {

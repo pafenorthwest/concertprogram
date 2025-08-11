@@ -55,7 +55,7 @@ export async function PUT({ url, params, request, cookies }) {
 			if (rowCount != null && rowCount > 0) {
 				return json({ id: params.id }, { status: 200, body: { message: 'Update successful' } });
 			} else {
-				return json({ id: params.id }, { status: 500, body: { message: 'Update failed' } });
+				return json({ status: 'error', reason: 'Missing Fields', id: params.id }, { status: 500 });
 			}
 		}
 	} catch {
@@ -63,18 +63,27 @@ export async function PUT({ url, params, request, cookies }) {
 	}
 }
 
-export async function DELETE({ params, request, cookies }) {
+export async function DELETE({ url, params, request, cookies }) {
 	// Get the Authorization header
 	const pafeAuth = cookies.get('pafe_auth');
-	if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-		return new Response('Unauthorized', { status: 401 });
+	const origin = request.headers.get('origin'); // The origin of the request (protocol + host + port)
+	const appOrigin = `${url.protocol}//${url.host}`;
+
+	// from local app no checks needed
+	if (origin !== appOrigin) {
+		if (!request.headers.has('Authorization')) {
+			return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
+		}
+		if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
+			return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
+		}
 	}
 
 	const rowCount = await deleteById('musical_piece', params.id);
 
 	if (rowCount != null && rowCount > 0) {
-		return { status: 200, body: { message: 'Delete successful' } };
+		return json({ status: 200, body: { message: 'Delete successful' } });
 	} else {
-		return { status: 500, body: { message: 'Delete failed' } };
+		return json({ status: 'error', reason: 'Delete failed' }, { status: 500 });
 	}
 }

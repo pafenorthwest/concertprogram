@@ -83,7 +83,7 @@ describe('Test Accompanist HTTP APIs', () => {
 		expect(getResponsePerformer.status).toBe(403);
 	});
 
-	it('It should error when required fileds are not present', async () => {
+	it('It should error when required fields are not present', async () => {
 		const createResponseAccompanist = await fetch('http://localhost:5173/api/accompanist/', {
 			method: 'POST',
 			headers: {
