@@ -80,7 +80,8 @@ jobs:
         run: psql -h localhost -d pafe -U postgres -f database/init.sql
 
       - name: Run DB Integration Tests
-        run: npm test test/db
+        run: |
+          sleep 10npm test test/db
 
       - name: Start Dev Server
         run: |

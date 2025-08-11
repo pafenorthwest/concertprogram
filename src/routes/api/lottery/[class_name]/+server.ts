@@ -61,6 +61,7 @@ export async function POST({ url, cookies, params, request }) {
 	const appOrigin = `${url.protocol}//${url.host}`;
 
 	// from local app no checks needed
+	console.log(`origin ${origin} appOrigin ${appOrigin}`);
 	if (origin !== appOrigin) {
 		if (!request.headers.has('Authorization')) {
 			return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
@@ -74,7 +75,6 @@ export async function POST({ url, cookies, params, request }) {
 	try {
 		const { lottery } = await request.json();
 		const class_name = params.class_name;
-		console.log(`class name ${class_name} lottery ${lottery} url ${url.origin}`);
 		if (!class_name || !lottery) {
 			return json({ status: 'error', reason: 'Missing Fields' }, { status: 400 });
 		} else {
