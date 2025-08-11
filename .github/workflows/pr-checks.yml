@@ -87,17 +87,17 @@ jobs:
           retry_wait_seconds: 2
           timeout_seconds: 50
           command: npm test test/api
+          on_retry_command: cat dev-server.log
 
       - name: Stop Dev Server
         run: |
           if [ -f server_pid.txt ]; then
             kill $(cat server_pid.txt) || true
           fi
-          cat dev-server.log
 
   check-all:
     runs-on: ubuntu-latest
     needs: [lint, unit-test, integration-test]
     steps:
       - name: All checks passed
-        run: echo "All checks passed!"
+        run: echo "✅ All checks passed!"
