@@ -136,8 +136,17 @@ export function isNonEmptyString(value: any): boolean {
 }
 
 export function year(): number {
-	const currentYear = new Date().getFullYear();
-	return currentYear - 1988;
+	const now = new Date();
+	const currentYear = now.getFullYear();
+	const month = now.getMonth(); // 0 = January, 11 = December
+
+	// Months Aug (7) - Dec (11) => return next year
+	if (month >= 7) {
+		return currentYear + 1;
+	}
+
+	// Months Jan (0) - July (6) => return current year
+	return currentYear;
 }
 
 export function displayReformatISODate(isoDate: string): string {
