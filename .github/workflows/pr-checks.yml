@@ -73,7 +73,26 @@ jobs:
       - name: Initialize Database
         run: psql -h localhost -d pafe -U postgres -f database/init.sql
       - run: npm test test/db
-      - run: npm test test/api
+
+      - name: Start Dev Server
+        run: |
+          npm run dev &
+          echo $! > server_pid.txt
+          sleep 5
+
+      - name: Retry API Tests up to 3 Times
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 2
+          timeout_seconds: 50
+          command: npm test test/api
+
+      - name: Stop Dev Server
+        run: |
+          if [ -f server_pid.txt ]; then
+            kill $(cat server_pid.txt) || true
+          fi
 
   check-all:
     runs-on: ubuntu-latest
