@@ -61,7 +61,6 @@ export async function POST({ url, cookies, params, request }) {
 	const appOrigin = `${url.protocol}//${url.host}`;
 
 	// from local app no checks needed
-	console.log(`origin ${origin} appOrigin ${appOrigin}`);
 	if (origin !== appOrigin) {
 		if (!request.headers.has('Authorization')) {
 			return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });

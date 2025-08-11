@@ -11,6 +11,7 @@ describe('Test Lottery HTTP APIs', () => {
 			},
 			body: JSON.stringify({ lottery: 876543 })
 		});
+		expect(getResponseLottery.headers.get('origin')).not.toBe('http://localhost:5173');
 		expect(getResponseLottery.status).toBe(401);
 	});
 
@@ -23,6 +24,7 @@ describe('Test Lottery HTTP APIs', () => {
 			},
 			body: JSON.stringify({ lottery: 876543 })
 		});
+		expect(getResponseLottery.headers.get('origin')).not.toBe('http://localhost:5173');
 		expect(getResponseLottery.status).toBe(403);
 	});
 

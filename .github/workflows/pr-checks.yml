@@ -63,9 +63,9 @@ jobs:
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pafe
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/pafe
       PGPASSWORD: postgres
-      VITE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pafe
+      VITE_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/pafe
       VITE_DB_SSL: False
 
     steps:
@@ -79,7 +79,7 @@ jobs:
       - run: npm ci
 
       - name: Initialize Database
-        run: psql -h localhost -d pafe -U postgres -f database/init.sql
+        run: psql -h 127.0.0.1 -d pafe -U postgres -f database/init.sql
 
       - name: Run DB Integration Tests
         run: npm test test/db
