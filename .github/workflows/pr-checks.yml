@@ -76,14 +76,14 @@ jobs:
 
       - name: Start Dev Server
         run: |
-          npm run dev &
+          npm run dev > dev-server.log 2>&1 &
           echo $! > server_pid.txt
           sleep 5
 
       - name: Retry API Tests up to 3 Times
         uses: nick-fields/retry@v3
         with:
-          max_attempts: 3
+          max_attempts: 1
           retry_wait_seconds: 2
           timeout_seconds: 50
           command: npm test test/api
@@ -93,6 +93,7 @@ jobs:
           if [ -f server_pid.txt ]; then
             kill $(cat server_pid.txt) || true
           fi
+          cat dev-server.log
 
   check-all:
     runs-on: ubuntu-latest
