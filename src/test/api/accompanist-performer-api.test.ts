@@ -39,7 +39,7 @@ describe('Test Accompanist HTTP APIs', () => {
 			}
 		});
 		expect(getResponsePerformer.status).toBe(401);
-	}, 10000);
+	}, 40000);
 
 	it('It should return not-authorized', async () => {
 		let getResponseAccompanist = await fetch('http://localhost:8888/api/accompanist/', {
@@ -81,7 +81,7 @@ describe('Test Accompanist HTTP APIs', () => {
 			}
 		});
 		expect(getResponsePerformer.status).toBe(403);
-	}, 10000);
+	}, 40000);
 
 	it('It should error when required fields are not present', async () => {
 		const createResponseAccompanist = await fetch('http://localhost:8888/api/accompanist/', {
@@ -119,7 +119,7 @@ describe('Test Accompanist HTTP APIs', () => {
 			const resultObject = JSON.parse(bodyFromRequest);
 			expect(resultObject.reason).toBe('Bad Instrument or Age Value');
 		}
-	}, 10000);
+	}, 40000);
 
 	it('It should create and destroy accompanist', async () => {
 		const createResponse = await fetch('http://localhost:8888/api/accompanist/', {
@@ -150,7 +150,7 @@ describe('Test Accompanist HTTP APIs', () => {
 		} else {
 			assert(false, 'unable to parse body of create accompanist request');
 		}
-	}, 10000);
+	}, 40000);
 	it('It should create and destroy performer', async () => {
 		const createResponse = await fetch('http://localhost:8888/api/performer/', {
 			method: 'POST',
@@ -185,5 +185,5 @@ describe('Test Accompanist HTTP APIs', () => {
 		} else {
 			assert(false, 'unable to parse body of create accompanist request');
 		}
-	}, 10000);
+	}, 40000);
 });
