@@ -86,7 +86,7 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 2
           timeout_seconds: 120
-          command: npm run staggered-api-test
+          command: npm run test/api/lottery-api.test.ts
           on_retry_command: cat dev-server.log
 
       - name: Stop Dev Server
