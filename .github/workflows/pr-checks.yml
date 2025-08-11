@@ -58,6 +58,7 @@ jobs:
       - name: Initialize Database
         run: psql -h localhost -d pafe -U postgres -f database/init.sql
       - run: npm test test/lib
+      - run: npm test test/db
 
   check-all:
     runs-on: ubuntu-latest

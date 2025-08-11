@@ -1,4 +1,4 @@
-import { type PerformanceInterface, selectInstrument } from '$lib/server/common';
+import { type PerformanceInterface, selectInstrument, year as pafeYear } from '$lib/server/common';
 import { deleteById, queryTable, updatePerformance } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
 import { isAuthorized } from '$lib/server/apiAuth';
@@ -15,7 +15,22 @@ export async function GET({ params }) {
 		return json({ status: 'error', message: 'Failed to process the request' }, { status: 500 });
 	}
 }
-export async function PUT({ params, request }) {
+export async function PUT({ url, cookies, params, request }) {
+	// Get the Authorization header
+	const pafeAuth = cookies.get('pafe_auth') || '';
+	const origin = request.headers.get('origin'); // The origin of the request (protocol + host + port)
+	const appOrigin = `${url.protocol}//${url.host}`;
+
+	// from local app no checks needed
+	if (origin !== appOrigin) {
+		if (!request.headers.has('Authorization')) {
+			return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
+		}
+
+		if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
+			return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
+		}
+	}
 	try {
 		// the following fields are often not included
 		// order, warm_up_room_name, warm_up_room_start, warm_up_room_name
@@ -36,12 +51,15 @@ export async function PUT({ params, request }) {
 
 		const instrumentEnum = selectInstrument(instrument);
 		if (instrumentEnum == null) {
-			return json({ id: params.id, message: 'Invalidate Instrument' }, { status: 400 });
+			return json(
+				{ id: params.id, result: 'error', reason: 'Invalid Instrument' },
+				{ status: 403 }
+			);
 		}
 
 		let cleaned_pafe_series = year;
 		if (cleaned_pafe_series == null) {
-			cleaned_pafe_series = pafe_series();
+			cleaned_pafe_series = pafeYear();
 		}
 
 		const performance: PerformanceInterface = {
@@ -56,7 +74,7 @@ export async function PUT({ params, request }) {
 		};
 
 		if (!performance.performer_name || !performance.concert_series) {
-			return json({ message: 'Missing Field, Try Again' }, { status: 400 });
+			return json({ status: 'error', reason: 'Missing Field, Try Again' }, { status: 500 });
 		} else {
 			// get performer id
 			const performer_id = 1;
@@ -72,25 +90,35 @@ export async function PUT({ params, request }) {
 			if (res.rowCount != null && res.rowCount > 0) {
 				return json({ id: params.id, message: 'Update successful' }, { status: 200 });
 			} else {
-				return json({ id: params.id, message: 'Update failed' }, { status: 500 });
+				return json({ id: params.id, reason: 'Update failed' }, { status: 500 });
 			}
 		}
 	} catch {
-		return json({ status: 'error', message: 'Failed to process the request' }, { status: 500 });
+		return json({ status: 'error', reason: 'Failed to process the request' }, { status: 500 });
 	}
 }
 
-export async function DELETE({ params, request, cookies }) {
+export async function DELETE({ url, params, request, cookies }) {
 	// Get the Authorization header
 	const pafeAuth = cookies.get('pafe_auth') || '';
-	if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization') || '')) {
-		return new Response('Unauthorized', { status: 401 });
+	const origin = request.headers.get('origin'); // The origin of the request (protocol + host + port)
+	const appOrigin = `${url.protocol}//${url.host}`;
+
+	// from local app no checks needed
+	if (origin !== appOrigin) {
+		if (!request.headers.has('Authorization')) {
+			return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
+		}
+
+		if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
+			return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
+		}
 	}
 	const rowCount = await deleteById('performance', parseInt(params.id, 10));
 
 	if (rowCount != null && rowCount > 0) {
-		return json({ message: 'Delete successful' }, { status: 200 });
+		return json({ id: params.id, message: 'Delete successful' }, { status: 200 });
 	} else {
-		return json({ message: 'Delete failed' }, { status: 500 });
+		return json({ status: 'error', reason: 'Delete failed' }, { status: 500 });
 	}
 }

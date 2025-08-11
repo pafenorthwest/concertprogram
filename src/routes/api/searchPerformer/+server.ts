@@ -10,10 +10,11 @@ async function retrievePerformerByCode(code: string): Promise<PerformerSearchRes
 		if (result == null) {
 			return {
 				status: 'NOTFOUND',
-				performer_id: 0,
+				performer_id: -1,
 				performer_name: '',
+				performance_id: -1,
 				musical_piece: '',
-				lottery_code: code,
+				lottery_code: parseInt(code, 10),
 				concert_series: ''
 			};
 		}
@@ -21,6 +22,7 @@ async function retrievePerformerByCode(code: string): Promise<PerformerSearchRes
 			status: 'OK',
 			performer_id: result.performer_id,
 			performer_name: result.performer_name,
+			performance_id: result.performance_id,
 			musical_piece: result.musical_piece,
 			lottery_code: result.lottery_code,
 			concert_series: result.concert_series
@@ -28,10 +30,11 @@ async function retrievePerformerByCode(code: string): Promise<PerformerSearchRes
 	} catch {
 		return {
 			status: 'ERROR',
-			performer_id: 0,
+			performer_id: -1,
 			performer_name: '',
+			performance_id: -1,
 			musical_piece: '',
-			lottery_code: '',
+			lottery_code: -1,
 			concert_series: ''
 		};
 	}
@@ -53,8 +56,9 @@ async function retrievePerformerByDetails(
 				status: 'NOTFOUND',
 				performer_id: 0,
 				performer_name: performerLastName,
+				performance_id: -1,
 				musical_piece: '',
-				lottery_code: '',
+				lottery_code: -1,
 				concert_series: ''
 			};
 		}
@@ -62,6 +66,7 @@ async function retrievePerformerByDetails(
 			status: 'OK',
 			performer_id: result.performer_id,
 			performer_name: result.performer_name,
+			performance_id: result.performance_id,
 			musical_piece: result.musical_piece,
 			lottery_code: result.lottery_code,
 			concert_series: result.concert_series
@@ -71,8 +76,9 @@ async function retrievePerformerByDetails(
 			status: 'ERROR',
 			performer_id: 0,
 			performer_name: '',
+			performance_id: -1,
 			musical_piece: '',
-			lottery_code: '',
+			lottery_code: -1,
 			concert_series: ''
 		};
 	}
@@ -87,8 +93,9 @@ export async function GET({ url }) {
 		status: 'ERROR',
 		performer_id: 0,
 		performer_name: '',
+		performance_id: -1,
 		musical_piece: '',
-		lottery_code: '',
+		lottery_code: -1,
 		concert_series: ''
 	};
 
@@ -100,7 +107,7 @@ export async function GET({ url }) {
 				return json({
 					status: 200,
 					body: {
-						message: 'Update successful',
+						message: 'completed successfully',
 						result: {
 							status: performerSearchResults.status,
 							performer_id: performerSearchResults.performer_id,
@@ -128,14 +135,17 @@ export async function GET({ url }) {
 				const composerName = purify.sanitize(url.searchParams.get('composerName')!);
 				performerSearchResults = await retrievePerformerByDetails(
 					performerLastName,
-					age,
+					parseInt(age, 10),
 					composerName
 				);
-				if (performerSearchResults.status != 'OK') {
+				console.log(
+					`RESULTS ${performerSearchResults.status} ${JSON.stringify(performerSearchResults.performer_name)})`
+				);
+				if (performerSearchResults.status == 'OK') {
 					return json({
 						status: 200,
 						body: {
-							message: 'Update successful',
+							message: 'completed successfully',
 							result: {
 								status: performerSearchResults.status,
 								performer_id: performerSearchResults.performer_id,
@@ -148,7 +158,7 @@ export async function GET({ url }) {
 					});
 				}
 			} else {
-				return json({ status: 'error', message: 'Not Found' }, { status: 404 });
+				return json({ status: 'error', reason: 'Improperly formatted request' }, { status: 400 });
 			}
 		}
 	} catch {
