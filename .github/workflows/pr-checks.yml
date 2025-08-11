@@ -76,7 +76,7 @@ jobs:
 
       - name: Start Dev Server
         run: |
-          npm run dev > dev-server.log 2>&1 &
+          npm run dev -- --host 0.0.0.0 > dev-server.log 2>&1 &
           echo $! > server_pid.txt
           sleep 5
 
