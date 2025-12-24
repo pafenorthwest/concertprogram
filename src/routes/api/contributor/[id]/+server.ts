@@ -1,4 +1,5 @@
-import type { ComposerInterface } from '$lib/server/common';
+import type { ContributorInterface } from '$lib/server/common';
+import { normalizeContributorRole } from '$lib/server/common';
 import { deleteById, queryTable, updateById } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
 import { isAuthorized } from '$lib/server/apiAuth';
@@ -9,7 +10,7 @@ export async function GET({ params }) {
 	let res: QueryResult;
 	try {
 		const identifier = Number(params.id);
-		res = await queryTable('composer', identifier);
+		res = await queryTable('contributor', identifier);
 	} catch (err) {
 		return json({ result: 'error', reason: `${(err as Error).message}` }, { status: 500 });
 	}
@@ -37,12 +38,14 @@ export async function PUT({ url, params, request, cookies }) {
 		}
 	}
 
-	const { full_name, years_active, notes } = await request.json();
+	const { full_name, years_active, notes, role } = await request.json();
+	const validRole = normalizeContributorRole(role);
 	const identity: number = Number(params.id);
-	const composer: ComposerInterface = {
+	const composer: ContributorInterface = {
 		id: identity,
 		full_name: full_name,
 		years_active: years_active,
+		role: validRole,
 		notes: notes
 	};
 
@@ -51,7 +54,7 @@ export async function PUT({ url, params, request, cookies }) {
 	} else {
 		let rowCount: number | null = 0;
 		try {
-			rowCount = await updateById('composer', composer);
+			rowCount = await updateById('contributor', composer);
 		} catch (err) {
 			return json({ result: 'error', reason: `${(err as Error).message}` }, { status: 500 });
 		}
@@ -78,7 +81,7 @@ export async function DELETE({ params, request, cookies }) {
 	let rowCount: number | null = 0;
 	try {
 		const identity: number = Number(params.id);
-		rowCount = await deleteById('composer', identity);
+		rowCount = await deleteById('contributor', identity);
 	} catch (err) {
 		return json({ result: 'error', reason: `${(err as Error).message}` }, { status: 500 });
 	}

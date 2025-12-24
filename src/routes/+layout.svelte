@@ -69,7 +69,7 @@
 				<a href="/admin/composer">
 					<p class="navicon"><span class="material-symbols-outlined">face</span></p>
 					<br />
-					<p class="subtext">Composers</p>
+					<p class="subtext">Contributors</p>
 				</a>
 			</div>
 			<div class="navbutton">

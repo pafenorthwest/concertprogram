@@ -1,3 +1,10 @@
+import {
+	contributorRoles,
+	defaultContributorRole,
+	normalizeContributorRole,
+	type ContributorRole
+} from '$lib/constants/contributors';
+
 export function selectInstrument(input: string): string {
 	return toTitleCase(input);
 }
@@ -7,10 +14,14 @@ export function calcEpochAge(age: number): number {
 	return currentYear - age;
 }
 
-export interface ComposerInterface {
+export { contributorRoles, defaultContributorRole, normalizeContributorRole };
+export type { ContributorRole };
+
+export interface ContributorInterface {
 	id: number | null;
 	full_name: string;
 	years_active: string;
+	role: ContributorRole;
 	notes: string;
 }
 
@@ -79,14 +90,15 @@ export interface PerformerRankedChoiceInterface {
 	fourth_choice_time: Date | null;
 }
 
-export interface ImportComposerInterface {
+export interface ImportContributorInterface {
 	name: string;
 	yearsActive: string; // e.g., "1900 - 1980" or "None"
+	role?: ContributorRole;
 }
 
 export interface ImportMusicalTitleInterface {
 	title: string; // e.g., "Symphony No. 5 in C Minor"
-	composers: ImportComposerInterface[];
+	contributor: ImportContributorInterface[];
 }
 
 export interface ImportPerformanceInterface {

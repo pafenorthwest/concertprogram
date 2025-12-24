@@ -97,6 +97,8 @@ describe('Test SearchPerformer HTTP APIs', () => {
 				}
 			}
 		);
+		console.log(`SEARCHING performerLastName ${lastName} age ${performerAge} composerName ${composerName}`)
+
 		expect(searchResponse.status).toBe(200);
 		if (searchResponse.body != null) {
 			const bodyFromRequest = await unpackBody(searchResponse.body);

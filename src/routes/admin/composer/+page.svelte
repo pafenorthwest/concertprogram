@@ -1,13 +1,15 @@
 <script>
 	import { enhance } from '$app/forms';
+	import { contributorRoles, defaultContributorRole } from '$lib/constants/contributors';
 
 	let disableStatus = false;
 	export let data;
 	let editing = {};
+	let newRole = defaultContributorRole;
 
 	async function handleSave(composer) {
 		try {
-			const response = await fetch(`/api/composer/${composer.id}`, {
+			const response = await fetch(`/api/contributor/${composer.id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json'
@@ -34,7 +36,7 @@
 	}
 </script>
 
-<h2>Composers</h2>
+<h2>Contributors</h2>
 {#if data.isAuthenticated}
 	<div class="lookup-form">
 		<h3>Add</h3>
@@ -44,6 +46,12 @@
 				<input type="text" id="fullName" name="fullName" maxlength="256" required />
 				<label for="yearsActive">Years Active:</label>
 				<input type="text" id="yearsActive" name="yearsActive" maxlength="25" required />
+				<label for="role">Role:</label>
+				<select id="role" name="role" bind:value={newRole}>
+					{#each contributorRoles as role}
+						<option value={role}>{role}</option>
+					{/each}
+				</select>
 				<label for="notes">Notes:</label>
 				<input type="text" id="notes" name="notes" maxlength="25" />
 			</div>
@@ -87,6 +95,17 @@
 							/>
 						{:else}
 							{composer.years_active}
+						{/if}
+					</td>
+					<td>
+						{#if editing.id === composer.id}
+							<select bind:value={editing.role}>
+								{#each contributorRoles as role}
+									<option value={role}>{role}</option>
+								{/each}
+							</select>
+						{:else}
+							{composer.role}
 						{/if}
 					</td>
 					<td>

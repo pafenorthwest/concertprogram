@@ -6,7 +6,7 @@
 
 ## Methods
 
-- PUT: Create or update entities. Entities created include Performer, Accompanist, Composer, Musical Title, Performance. Entities updated include Performer and Performance. Composer, Accompanist, or Musical Piece can only be created via this API, there are never updated.
+- PUT: Create or update entities. Entities created include Performer, Accompanist, Conributor, Musical Title, Performance. Entities updated include Performer and Performance. Contributor, Accompanist, or Musical Piece can only be created via this API, there are never updated.
 - DELETE: Remove or delete Performer and the performer's associated Performance entries
 - HEAD: Return only headers
 
@@ -36,7 +36,7 @@ All HTTP Code
 - 500: Service error
 
 Note: Only when creating a new Performance or Performer record will return a 201.
-Creating a new accompanist, composer, or musical title and updating and existing performance will return a 204.
+Creating a new accompanist, cotributor, or musical title and updating and existing performance will return a 204.
 Updates that change the value of a compose, musical title, or accompanist on an existing performance will return a 204.
 A 200 response code is only required on a Successful DELETE or HEAD method.
 
@@ -87,7 +87,8 @@ When sending a request is expected to contain json.
 			"composers": [
 				{
 					"name": "name_of_composer",
-					"yearsActive": "birthYear - deathYear | None"
+					"yearsActive": "birthYear - deathYear | None",
+					"role": "Composer"
 				}
 			]
 		}

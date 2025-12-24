@@ -7,20 +7,20 @@ servers:
   - url: 'https://schedule.pafenorthwest.org/api/'
 
 paths:
-  /composer:
+  /contributor:
     post:
-      summary: creates a new composer
-      description: adds a new composer with years active
+      summary: creates a new contributor
+      description: adds a new contributor with role and years active
       security:
         - BearerAuth: []
 
       requestBody:
-        description: 'json data for the composer'
+        description: 'json data for the conttributor'
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Composer'
+              $ref: '#/components/schemas/Contributor'
 
       responses:
         201:
@@ -41,24 +41,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /composer/{id}:
+  /contributor/{id}:
     parameters:
       - in: path
         name: id
         schema:
           type: integer
         required: true
-        description: 'numerical id of composer'
+        description: 'numerical id of contributor'
 
     get:
-      summary: 'get a composer by id'
+      summary: 'get a contributor by id'
       responses:
         200:
           description: 'returned'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Composer'
+                $ref: '#/components/schemas/Contributor'
         401:
           description: 'unauthorized, lacking authorization header'
         403:
@@ -72,17 +72,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     put:
-      summary: 'update a composer by id'
+      summary: 'update a contributor by id'
       security:
         - BearerAuth: []
 
       requestBody:
-        description: 'json data for the composer'
+        description: 'json data for the conributor'
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Composer'
+              $ref: '#/components/schemas/Contributor'
 
       responses:
         200:
@@ -90,7 +90,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Composer'
+                $ref: '#/components/schemas/Contributor'
         401:
           description: 'unauthorized, lacking authorization header'
         403:
@@ -104,7 +104,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     delete:
-      summary: 'remove a composer by id'
+      summary: 'remove a contributor by id'
       security:
         - BearerAuth: []
 
@@ -130,19 +130,34 @@ paths:
 
 components:
   schemas:
-    Composer:
+    Contributor:
       type: object
       properties:
-        printed_name:
+        full_name:
           type: string
         years_active:
           type: string
+        role:
+          type: string
+          description: role this contributor played for the work
+          enum:
+            - Composer
+            - Copyist
+            - Editor
+            - Arrange
+            - Transcriber
+            - Realizer
+            - Orchestrator
+          default: Composer
+        notes:
+          type: string
       required:
-        - printed_name
+        - full_name
         - years_active
       example:
-        printed_name: 'Johann Sebastian Bach'
+        full_name: 'Johann Sebastian Bach'
         years_active: '1685 - 1750'
+        role: 'Composer'
     Error:
       type: object
       properties:
@@ -165,4 +180,3 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT # Optional: indicates the token format (e.g., JWT)
-

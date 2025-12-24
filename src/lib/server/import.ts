@@ -1,6 +1,6 @@
 import {
 	type AccompanistInterface,
-	type ComposerInterface,
+	type ContributorInterface,
 	type ImportMusicalTitleInterface,
 	type ImportPerformanceInterface,
 	type MusicalPieceInterface,
@@ -10,7 +10,8 @@ import {
 	type PerformancePieceInterface,
 	type PerformerInterface,
 	calcEpochAge,
-	selectInstrument
+	selectInstrument,
+	defaultContributorRole
 } from '$lib/server/common';
 import {
 	PerformanceError,
@@ -23,7 +24,7 @@ import Papa from 'papaparse';
 import {
 	insertTable,
 	searchAccompanist,
-	searchComposer,
+	searchContributor,
 	searchMusicalPiece,
 	searchPerformer,
 	searchPerformanceByPerformer,
@@ -48,8 +49,8 @@ interface PerformanceInterfaceTagCreate extends PerformanceInterface {
 export class Performance {
 	public accompanist: AccompanistInterface | null | undefined;
 	public performer: PerformerInterfaceTagCreate | undefined;
-	public composer_1: ComposerInterface[] = [];
-	public composer_2: ComposerInterface[] | null = null;
+	public composer_1: ContributorInterface[] = [];
+	public composer_2: ContributorInterface[] | null = null;
 	public musical_piece_1: MusicalPieceInterface | undefined;
 	public musical_piece_2: MusicalPieceInterface | null | undefined;
 	public performance: PerformanceInterfaceTagCreate | undefined;
@@ -118,6 +119,7 @@ export class Performance {
 						id: null,
 						full_name: composer.name,
 						years_active: composer.yearsActive,
+						role: composer.role ?? defaultContributorRole,
 						notes: 'imported'
 					});
 					this.composer_1.push(processed);
@@ -157,6 +159,7 @@ export class Performance {
 						id: null,
 						full_name: composer.name,
 						years_active: composer.yearsActive,
+						role: composer.role ?? defaultContributorRole,
 						notes: 'imported'
 					});
 					this.composer_2?.push(processed);
@@ -190,17 +193,18 @@ export class Performance {
 	}
 	// searches for matching composer by name returning their id
 	// otherwise creates new composer entry
-	private async processComposer(composer_1: ComposerInterface): Promise<ComposerInterface> {
+	private async processComposer(composer_1: ContributorInterface): Promise<ContributorInterface> {
 		// normalize the string first remove all the Diacritic vowels
-		const res = await searchComposer(composer_1.full_name);
+		const res = await searchContributor(composer_1.full_name, 'Composer');
 		if (res.rowCount == null || res.rowCount < 1) {
-			const composer: ComposerInterface = {
+			const composer: ContributorInterface = {
 				id: null,
 				full_name: composer_1.full_name,
 				years_active: composer_1.years_active,
+				role: composer_1.role ?? defaultContributorRole,
 				notes: 'added via interface'
 			};
-			const result = await insertTable('composer', composer);
+			const result = await insertTable('contributor', composer);
 			// set the new id
 			if (result.rowCount != null && result.rowCount > 0 && result.rows[0].id > 0) {
 				composer.id = result.rows[0].id;
@@ -212,6 +216,7 @@ export class Performance {
 			id: res.rows[0].id,
 			full_name: res.rows[0].full_name,
 			years_active: res.rows[0].years_active,
+			role: res.rows[0].role ?? defaultContributorRole,
 			notes: res.rows[0].notes
 		};
 	}
@@ -288,7 +293,7 @@ export class Performance {
 				`Can not parse instrument ${instrument} from performer ${full_name}`
 			);
 		}
-
+		// TODO: Search is too loose: update import lookup by idempotent key or id
 		const res = await searchPerformer(full_name, email, normalized_instrument);
 		if (res.rowCount == null || res.rowCount < 1) {
 			const importPerformer: PerformerInterfaceTagCreate = {
@@ -328,7 +333,7 @@ export class Performance {
 	private async processMusicalPiece(
 		printed_title: string,
 		movements: string | null,
-		composers: ComposerInterface[]
+		composers: ContributorInterface[]
 	): Promise<MusicalPieceInterface> {
 		if (composers[0].id === null || composers[0].id === null) {
 			throw new ComposerError('Primary Composer Can not be null when creating musical pieces');

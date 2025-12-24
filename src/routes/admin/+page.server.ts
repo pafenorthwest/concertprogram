@@ -1,6 +1,6 @@
 import { DataParser, Performance } from '$lib/server/import';
 import type {
-	ImportComposerInterface,
+	ImportContributorInterface,
 	ImportMusicalTitleInterface,
 	ImportPerformanceInterface
 } from '$lib/server/common';
@@ -27,7 +27,7 @@ export const actions = {
 				}
 			}
 		} else {
-			const composerPieceOne: ImportComposerInterface = {
+			const composerPieceOne: ImportContributorInterface = {
 				name: formData.get('composer-name-piece-1'),
 				years_active: formData.get('composer-years-piece-1'),
 				notes: 'API-import'
@@ -41,7 +41,7 @@ export const actions = {
 				});
 			}
 
-			let composerPieceTwo: ImportComposerInterface;
+			let composerPieceTwo: ImportContributorInterface;
 			if (
 				formData.has('musical-piece-2') &&
 				formData.has('composer-name-piece-2') &&

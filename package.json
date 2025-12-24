@@ -11,11 +11,11 @@
 		"test": "vitest --watch=false",
 		"lint": "prettier --check . && eslint ./src",
 		"format": "prettier --write .",
-		"staggered-api-test": "sleep 1 && npm run test test/api/accompanist-performer-api.test.ts && sleep 1 && npm run test test/api/composer-api.test.ts &&  sleep 1 && npm run test test/api/import-api.test.ts &&             sleep 1 && npm test test/api/lottery-api.test.ts &&             sleep 1 && npm test test/api/musicalpiece-api.test.ts &&             sleep 1 && npm test test/api/performance-api.test.ts &&             sleep 1 && npm test test/api/program-api.test.ts &&             sleep 1 && npm test test/api/searchPerformer-api.test.ts"
+		"staggered-api-test": "sleep 1 && npm run test test/api/accompanist-performer-api.test.ts && sleep 1 && npm run test test/api/contributor-api.test.ts &&  sleep 1 && npm run test test/api/import-api.test.ts &&             sleep 1 && npm test test/api/lottery-api.test.ts &&             sleep 1 && npm test test/api/musicalpiece-api.test.ts &&             sleep 1 && npm test test/api/performance-api.test.ts &&             sleep 1 && npm test test/api/program-api.test.ts &&             sleep 1 && npm test test/api/searchPerformer-api.test.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.0.0",
-		"@sveltejs/adapter-vercel": "^4.0.5",
+		"@sveltejs/adapter-vercel": "^6.2.0",
 		"@sveltejs/kit": "^2.0.0",
 		"@sveltejs/vite-plugin-svelte": "^3.0.0",
 		"@types/eslint": "^8.56.7",

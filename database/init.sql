@@ -7,7 +7,14 @@ CREATE DATABASE pafe
 
 ALTER DATABASE pafe SET timezone TO 'UTC';
 
+GRANT ALL PRIVILEGES ON DATABASE pafe TO concertchair;
+
 \c pafe
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO concertchair;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO concertchair;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON FUNCTIONS TO concertchair;
+
 
 CREATE TYPE instrument_list AS ENUM ('Cello',
                                 'Flute',
@@ -20,6 +27,16 @@ CREATE TYPE instrument_list AS ENUM ('Cello',
                                 'Oboe',
                                 'Bassoon',
                                 'Ensemble');
+
+CREATE TYPE contributor_role AS ENUM (
+    'Composer',
+    'Copyist',
+    'Editor',
+    'Arrange',
+    'Transcriber',
+    'Realizer',
+    'Orchestrator'
+);
 
 CREATE TABLE performer (
     id SERIAL PRIMARY KEY,
@@ -37,13 +54,14 @@ CREATE TABLE accompanist (
     full_name VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE composer (
+CREATE TABLE contributor (
     id SERIAL PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
     years_active VARCHAR(25) NOT NULL,
+    role contributor_role NOT NULL DEFAULT 'Composer',
     notes VARCHAR(255) NULL
 );
-CREATE INDEX composer_name_idx ON composer(full_name);
+CREATE INDEX contributor_name_idx ON contributor(full_name);
 
 CREATE TABLE musical_piece (
     id SERIAL PRIMARY KEY,
@@ -114,49 +132,49 @@ INSERT INTO concert_times (concert_series, year,concert_number_in_series,start_t
 VALUES ('Eastside',2026,4,'05/04/2026T17:00:00');
 
 
-INSERT INTO composer (full_name, years_active) VALUES ('Adele Adkins','1988 - current');
-INSERT INTO composer (full_name, years_active) VALUES ('Amy Beach','1867 - 1944');
-INSERT INTO composer (full_name, years_active) VALUES ('Antonín Dvořák','1841 - 1904');
-INSERT INTO composer (full_name, years_active) VALUES ('Antonio Vivaldi','1678 - 1741');
-INSERT INTO composer (full_name, years_active) VALUES ('Aram Khachaturian','1903 - 1978');
-INSERT INTO composer (full_name, years_active) VALUES ('Bohuslav Martinu','1890 - 1959');
-INSERT INTO composer (full_name, years_active) VALUES ('Camille Saint-Saëns','1835 - 1921');
-INSERT INTO composer (full_name, years_active) VALUES ('Carl Böhm','1844 - 1920');
-INSERT INTO composer (full_name, years_active) VALUES ('Carl Maria von Weber','1786 - 1826');
-INSERT INTO composer (full_name, years_active) VALUES ('Carl Philipp Stamitz','1745 - 1801');
-INSERT INTO composer (full_name, years_active) VALUES ('Charles Dancla','1817 - 1907');
-INSERT INTO composer (full_name, years_active) VALUES ('Dan Wilson','1961 - current');
-INSERT INTO composer (full_name, years_active) VALUES ('Dmitri Shostakovich','1906 - 1975');
-INSERT INTO composer (full_name, years_active) VALUES ('Édouard Lalo','1823 - 1892');
-INSERT INTO composer (full_name, years_active) VALUES ('Edward Elgar','1857 - 1934');
-INSERT INTO composer (full_name, years_active) VALUES ('Emile Pessard','1843 - 1917');
-INSERT INTO composer (full_name, years_active) VALUES ('Frank Wildhorn','1958 - current');
-INSERT INTO composer (full_name, years_active) VALUES ('Franz Joseph Haydn','1732 - 1809');
-INSERT INTO composer (full_name, years_active) VALUES ('Franz Liszt','1811 - 1886');
-INSERT INTO composer (full_name, years_active) VALUES ('Frédéric Chopin','1810 - 1849');
-INSERT INTO composer (full_name, years_active) VALUES ('Georg Philipp Telemann','1681 - 1767');
-INSERT INTO composer (full_name, years_active) VALUES ('George Frideric Handel','1685 - 1759');
-INSERT INTO composer (full_name, years_active, notes) VALUES ('Georges Bizet','1838 - 1875','Bizet');
-INSERT INTO composer (full_name, years_active) VALUES ('Henri Vieuxtemps','1820 - 1881');
-INSERT INTO composer (full_name, years_active) VALUES ('Henryk Wieniawski','1835 - 1881');
-INSERT INTO composer (full_name, years_active) VALUES ('Irving Berlin','1888 - 1989');
-INSERT INTO composer (full_name, years_active) VALUES ('Jean Sibelius','1865 - 1957');
-INSERT INTO composer (full_name, years_active) VALUES ('Johann Christian Bach','1735 - 1782');
-INSERT INTO composer (full_name, years_active, notes) VALUES ('Johann Sebastian Bach','1685 - 1750', 'Johan Sebastian bach');
-INSERT INTO composer (full_name, years_active) VALUES ('Maurice Ravel','1875 - 1837');
-INSERT INTO composer (full_name, years_active) VALUES ('Max Bruch','1838 - 1920');
-INSERT INTO composer (full_name, years_active) VALUES ('Niccolò Paganini','1782 - 1840');
-INSERT INTO composer (full_name, years_active) VALUES ('Nikolai Kapustin','1937 - 2020');
-INSERT INTO composer (full_name, years_active) VALUES ('Otar Gordeli','1928 - 1994');
-INSERT INTO composer (full_name, years_active) VALUES ('Pablo de Sarasate','1844 - 1908');
-INSERT INTO composer (full_name, years_active, notes) VALUES ('Pyotr Ilyich Tchaikovsky','1840 - 1893','Tchaikovsky');
-INSERT INTO composer (full_name, years_active) VALUES ('Richard Rodgers','1902 - 1979');
-INSERT INTO composer (full_name, years_active) VALUES ('Robert Schumann','1810 - 1856');
-INSERT INTO composer (full_name, years_active) VALUES ('Rossini Niccolò Paganini','1782 - 1840');
-INSERT INTO composer (full_name, years_active) VALUES ('Sergei Prokofiev','1891 - 1953');
-INSERT INTO composer (full_name, years_active) VALUES ('William Gillock','1917 - 1993');
-INSERT INTO composer (full_name, years_active, notes) VALUES ('William Henry Squire','1871 - 1963', 'William H. Squire');
-INSERT INTO composer (full_name, years_active) VALUES ('Wolfgang Amadeus Mozart','1756 - 1791');
-INSERT INTO composer (full_name, years_active) VALUES ('Luigi Boccherini','1745 - 1805');
-INSERT INTO composer (full_name, years_active) VALUES ('Gabriel Fauré','1842 - 1924');
-INSERT INTO composer (full_name, years_active) VALUES ('Ludwig van Beethoven','1770 - 1827');
+INSERT INTO contributor (full_name, years_active) VALUES ('Adele Adkins','1988 - current');
+INSERT INTO contributor (full_name, years_active) VALUES ('Amy Beach','1867 - 1944');
+INSERT INTO contributor (full_name, years_active) VALUES ('Antonín Dvořák','1841 - 1904');
+INSERT INTO contributor (full_name, years_active) VALUES ('Antonio Vivaldi','1678 - 1741');
+INSERT INTO contributor (full_name, years_active) VALUES ('Aram Khachaturian','1903 - 1978');
+INSERT INTO contributor (full_name, years_active) VALUES ('Bohuslav Martinu','1890 - 1959');
+INSERT INTO contributor (full_name, years_active) VALUES ('Camille Saint-Saëns','1835 - 1921');
+INSERT INTO contributor (full_name, years_active) VALUES ('Carl Böhm','1844 - 1920');
+INSERT INTO contributor (full_name, years_active) VALUES ('Carl Maria von Weber','1786 - 1826');
+INSERT INTO contributor (full_name, years_active) VALUES ('Carl Philipp Stamitz','1745 - 1801');
+INSERT INTO contributor (full_name, years_active) VALUES ('Charles Dancla','1817 - 1907');
+INSERT INTO contributor (full_name, years_active) VALUES ('Dan Wilson','1961 - current');
+INSERT INTO contributor (full_name, years_active) VALUES ('Dmitri Shostakovich','1906 - 1975');
+INSERT INTO contributor (full_name, years_active) VALUES ('Édouard Lalo','1823 - 1892');
+INSERT INTO contributor (full_name, years_active) VALUES ('Edward Elgar','1857 - 1934');
+INSERT INTO contributor (full_name, years_active) VALUES ('Emile Pessard','1843 - 1917');
+INSERT INTO contributor (full_name, years_active) VALUES ('Frank Wildhorn','1958 - current');
+INSERT INTO contributor (full_name, years_active) VALUES ('Franz Joseph Haydn','1732 - 1809');
+INSERT INTO contributor (full_name, years_active) VALUES ('Franz Liszt','1811 - 1886');
+INSERT INTO contributor (full_name, years_active) VALUES ('Frédéric Chopin','1810 - 1849');
+INSERT INTO contributor (full_name, years_active) VALUES ('Georg Philipp Telemann','1681 - 1767');
+INSERT INTO contributor (full_name, years_active) VALUES ('George Frideric Handel','1685 - 1759');
+INSERT INTO contributor (full_name, years_active, notes) VALUES ('Georges Bizet','1838 - 1875','Bizet');
+INSERT INTO contributor (full_name, years_active) VALUES ('Henri Vieuxtemps','1820 - 1881');
+INSERT INTO contributor (full_name, years_active) VALUES ('Henryk Wieniawski','1835 - 1881');
+INSERT INTO contributor (full_name, years_active) VALUES ('Irving Berlin','1888 - 1989');
+INSERT INTO contributor (full_name, years_active) VALUES ('Jean Sibelius','1865 - 1957');
+INSERT INTO contributor (full_name, years_active) VALUES ('Johann Christian Bach','1735 - 1782');
+INSERT INTO contributor (full_name, years_active, notes) VALUES ('Johann Sebastian Bach','1685 - 1750', 'Johan Sebastian bach');
+INSERT INTO contributor (full_name, years_active) VALUES ('Maurice Ravel','1875 - 1837');
+INSERT INTO contributor (full_name, years_active) VALUES ('Max Bruch','1838 - 1920');
+INSERT INTO contributor (full_name, years_active) VALUES ('Niccolò Paganini','1782 - 1840');
+INSERT INTO contributor (full_name, years_active) VALUES ('Nikolai Kapustin','1937 - 2020');
+INSERT INTO contributor (full_name, years_active) VALUES ('Otar Gordeli','1928 - 1994');
+INSERT INTO contributor (full_name, years_active) VALUES ('Pablo de Sarasate','1844 - 1908');
+INSERT INTO contributor (full_name, years_active, notes) VALUES ('Pyotr Ilyich Tchaikovsky','1840 - 1893','Tchaikovsky');
+INSERT INTO contributor (full_name, years_active) VALUES ('Richard Rodgers','1902 - 1979');
+INSERT INTO contributor (full_name, years_active) VALUES ('Robert Schumann','1810 - 1856');
+INSERT INTO contributor (full_name, years_active) VALUES ('Rossini Niccolò Paganini','1782 - 1840');
+INSERT INTO contributor (full_name, years_active) VALUES ('Sergei Prokofiev','1891 - 1953');
+INSERT INTO contributor (full_name, years_active) VALUES ('William Gillock','1917 - 1993');
+INSERT INTO contributor (full_name, years_active, notes) VALUES ('William Henry Squire','1871 - 1963', 'William H. Squire');
+INSERT INTO contributor (full_name, years_active) VALUES ('Wolfgang Amadeus Mozart','1756 - 1791');
+INSERT INTO contributor (full_name, years_active) VALUES ('Luigi Boccherini','1745 - 1805');
+INSERT INTO contributor (full_name, years_active) VALUES ('Gabriel Fauré','1842 - 1924');
+INSERT INTO contributor (full_name, years_active) VALUES ('Ludwig van Beethoven','1770 - 1827');

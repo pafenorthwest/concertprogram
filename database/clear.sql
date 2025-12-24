@@ -5,4 +5,4 @@ delete from performance;
 delete from performance_pieces;
 delete from performer;
 delete from performer_ranked_choice;
-delete from composer where id > 46;
+delete from contributor where id > 46;
