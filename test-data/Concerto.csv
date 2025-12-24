@@ -1,4 +1,4 @@
-class_name,class_description,performer,age,lottery,email,phone,accompanist,instrument,piece_1,composers_1,piece_2,composers_2
+class_name,class_description,performer,age,lottery,email,phone,accompanist,instrument,piece_1,contributors_1,piece_2,contributors_2
 PC.11-12.A,Piano Concerto for Grades 11-12,Emma Carter,17,1,uFiqpdx@example.com,999-555-4506,"Marlow , Tiara",Piano,"Piano Concerto no.2 op. 18 1st movement","Sergei Prokofiev",,
 WC.9-12.A,Woodwind Concerto for Grades 9-12,Liam Johnson,15,2,xBPxdxs@example.com,999-555-4507,"Zhi, Zhou",Flute,"Flute Concertino in D Major Op.8","Otar Gordeli",,
 SC.11-12.A,Violin-Viola Concerto for Grades 11-12,Olivia Martinez,17,3,YrQseer@example.com,999-555-4508,"Zhi, Zhou",Violin,"Violin Concerto in D Minor, Op. 47 I. Allegro moderato","Jean Sibelius",,

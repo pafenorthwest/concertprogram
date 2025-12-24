@@ -11,7 +11,7 @@ export async function load({ cookies }) {
 
 	const res = await queryTable('contributor');
 	const columnNames: string[] = res.fields.map((record) => formatFieldNames(record.name));
-	return { composers: res.rows, composer_fields: columnNames, isAuthenticated: isAuthenticated };
+	return { contributors: res.rows, composer_fields: columnNames, isAuthenticated: isAuthenticated };
 }
 
 export const actions = {

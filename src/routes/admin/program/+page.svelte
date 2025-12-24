@@ -150,7 +150,7 @@
 				<th>Comment</th>
 				<th>Duration</th>
 				<th>Musical Piece</th>
-				<th>Composers</th>
+				<th>Contributors</th>
 				<th>Performer</th>
 				<th>Age</th>
 				<th>Accompanist</th>
@@ -180,7 +180,7 @@
 						</td>
 						<td>
 							{#each entry.musicalTitles as piece}
-								{#each piece.composers as composer}
+								{#each piece.contributors as composer}
 									{composer.printedName} {composer.yearsActive}<br />
 								{/each}
 								<br />

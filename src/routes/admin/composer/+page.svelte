@@ -19,8 +19,8 @@
 			if (!response.ok) {
 				throw new Error('Failed to save composer');
 			}
-			const index = data.composers.findIndex((c) => c.id === composer.id);
-			data.composers[index] = { ...composer };
+			const index = data.contributors.findIndex((c) => c.id === composer.id);
+			data.contributors[index] = { ...composer };
 			editing = {};
 		} catch (error) {
 			console.error('Error saving composer:', error);
@@ -72,7 +72,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each data.composers as composer}
+			{#each data.contributors as composer}
 				<tr>
 					<td>{composer.id}</td>
 					<td>

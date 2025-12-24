@@ -63,7 +63,7 @@ When sending a request is expected to contain json.
 - instrument: string
 - musicalTitle: at least one
   - title: string
-  - composers: at least one
+  - contributors: at least one
     - name: string
     - yearsActive: string format "birthYear - DeathYear" or "None"
 
@@ -84,7 +84,7 @@ When sending a request is expected to contain json.
 	"musicalTitles": [
 		{
 			"title": "title_of_piece_with_movements_to_be_performed",
-			"composers": [
+			"contributors": [
 				{
 					"name": "name_of_composer",
 					"yearsActive": "birthYear - deathYear | None",
@@ -138,7 +138,7 @@ Along with a result field includes the ids of the performer and performance
 - lottery: 6 digit integer
 - musicalTitle: at least one
   - title: string
-  - composers: at least one
+  - contributors: at least one
     - name: string
     - yearsActive: string format "birthYear - DeathYear" or "None"
 - accompanist
@@ -199,7 +199,7 @@ Headers:
 	"musicalTitles": [
 		{
 			"title": "Poem",
-			"composers": [
+			"contributors": [
 				{
 					"name": "Charles Griffes",
 					"yearsActive": "1884 - 1920"
@@ -243,7 +243,7 @@ Headers:
 	"musicalTitles": [
 		{
 			"title": "Poem",
-			"composers": [
+			"contributors": [
 				{
 					"name": "Charles Griffes",
 					"yearsActive": "1884 - 1920"

@@ -13,10 +13,10 @@ describe('Test MusicalPiece HTTP APIs', () => {
 			},
 			body: JSON.stringify({
 				printed_name: 'Test Piece',
-				first_composer_id: 1,
+				first_contributor_id: 1,
 				all_movements: 'Movement 1',
-				second_composer_id: 2,
-				third_composer_id: 3
+				second_contributor_id: 2,
+				third_contributor_id: 3
 			})
 		});
 		expect(getResponseMusicalPiece.status).toBe(401);
@@ -38,20 +38,20 @@ describe('Test MusicalPiece HTTP APIs', () => {
 			},
 			body: JSON.stringify({
 				printed_name: 'Test Piece',
-				first_composer_id: 1,
+				first_contributor_id: 1,
 				all_movements: 'Movement 1',
-				second_composer_id: 2,
-				third_composer_id: 3
+				second_contributor_id: 2,
+				third_contributor_id: 3
 			})
 		});
 		// db create a musical peice to delete
 		const musicalPiece: MusicalPieceInterface = {
 			id: null,
 			printed_name: 'Fun Song',
-			first_composer_id: 10,
+			first_contributor_id: 10,
 			all_movements: 'I. Allegro, II. Allegro',
-			second_composer_id: null,
-			third_composer_id: null
+			second_contributor_id: null,
+			third_contributor_id: null
 		};
 		try {
 			const result = await insertTable('musical_piece', musicalPiece);
@@ -101,10 +101,10 @@ describe('Test MusicalPiece HTTP APIs', () => {
 			},
 			body: JSON.stringify({
 				printed_name: 'Test Piece',
-				first_composer_id: 1,
+				first_contributor_id: 1,
 				all_movements: 'Movement 1',
-				second_composer_id: 2,
-				third_composer_id: 3
+				second_contributor_id: 2,
+				third_contributor_id: 3
 			})
 		});
 		expect(createResponse.status).toBe(201);

@@ -71,7 +71,7 @@ describe('Test Import Code', () => {
 	it('should insert single performance', async () => {
 		const musicalTitle: ImportMusicalTitleInterface = {
 			title: 'J.C.Bach Concerto in C minor 3rd movement',
-			composers: [{ name: 'Johann Christian Bach', yearsActive: 'none' }]
+			contributors: [{ name: 'Johann Christian Bach', yearsActive: 'none' }]
 		};
 
 		const imported: ImportPerformanceInterface = {
@@ -104,9 +104,9 @@ describe('Test Import Code', () => {
 			'Expected performer name'
 		);
 		assert.equal(singlePerformance.performer.email, 'QFnl@example.com', 'Expected performer email');
-		assert.isDefined(singlePerformance.composer_1[0], 'Expected first composer to be defined');
+		assert.isDefined(singlePerformance.contributor_1[0], 'Expected first composer to be defined');
 		assert.equal(
-			singlePerformance.composer_1[0].full_name,
+			singlePerformance.contributor_1[0].full_name,
 			'Johann Christian Bach',
 			'Expected composer'
 		);
@@ -116,11 +116,11 @@ describe('Test Import Code', () => {
 
 		musicalTitles.push({
 			title: 'Random Title 3rd movement',
-			composers: [{ name: 'Johann Christian Bach', yearsActive: 'none' }]
+			contributors: [{ name: 'Johann Christian Bach', yearsActive: 'none' }]
 		});
 		musicalTitles.push({
 			title: 'Another Title 3rd movement',
-			composers: [{ name: 'NewNewNew', yearsActive: '1970 - 1999' }]
+			contributors: [{ name: 'NewNewNew', yearsActive: '1970 - 1999' }]
 		});
 
 		const imported: ImportPerformanceInterface = {
@@ -163,15 +163,15 @@ describe('Test Import Code', () => {
 		);
 		assert.equal(singlePerformance.performer.email, 'QFnl@example.com', 'Expected performer email');
 
-		assert.isDefined(singlePerformance.composer_1[0], 'Expected first composer to be defined');
+		assert.isDefined(singlePerformance.contributor_1[0], 'Expected first composer to be defined');
 		assert.equal(
-			singlePerformance.composer_1[0].full_name,
+			singlePerformance.contributor_1[0].full_name,
 			'Johann Christian Bach',
 			'Expected composer'
 		);
 
-		assert.isDefined(singlePerformance.composer_2[0], 'Expected first composer to be defined');
-		assert.equal(singlePerformance.composer_2[0].full_name, 'NewNewNew', 'Expected composer');
+		assert.isDefined(singlePerformance.contributor_2[0], 'Expected first composer to be defined');
+		assert.equal(singlePerformance.contributor_2[0].full_name, 'NewNewNew', 'Expected composer');
 	});
 
 	it('should update multiple performances', async () => {
@@ -179,11 +179,11 @@ describe('Test Import Code', () => {
 
 		musicalTitles.push({
 			title: 'Random Title 3rd movement',
-			composers: [{ name: 'Johann Christian Bach', yearsActive: 'none' }]
+			contributors: [{ name: 'Johann Christian Bach', yearsActive: 'none' }]
 		});
 		musicalTitles.push({
 			title: 'Another Title 3rd movement',
-			composers: [{ name: 'NewNewNew', yearsActive: '1970 - 1999' }]
+			contributors: [{ name: 'NewNewNew', yearsActive: '1970 - 1999' }]
 		});
 
 		const imported: ImportPerformanceInterface = {
@@ -257,15 +257,15 @@ describe('Test Import Code', () => {
 			'Expected performer email'
 		);
 
-		assert.isDefined(singlePerformance.composer_1[0], 'Expected first composer to be defined');
+		assert.isDefined(singlePerformance.contributor_1[0], 'Expected first composer to be defined');
 		assert.equal(
-			singlePerformance.composer_1[0].full_name,
+			singlePerformance.contributor_1[0].full_name,
 			'Johann Christian Bach',
 			'Expected composer'
 		);
 
-		assert.isDefined(singlePerformance.composer_2?.[0], 'Expected first composer to be defined');
-		assert.equal(singlePerformance.composer_2?.[0].full_name, 'NewNewNew', 'Expected composer');
+		assert.isDefined(singlePerformance.contributor_2?.[0], 'Expected first composer to be defined');
+		assert.equal(singlePerformance.contributor_2?.[0].full_name, 'NewNewNew', 'Expected composer');
 
 		assert.isTrue(firstResults.new);
 
@@ -273,11 +273,11 @@ describe('Test Import Code', () => {
 
 		updatedMusicalTitles.push({
 			title: 'Updated Title 3rd Movement',
-			composers: [{ name: 'Johann Christian Bach', yearsActive: 'none' }]
+			contributors: [{ name: 'Johann Christian Bach', yearsActive: 'none' }]
 		});
 		updatedMusicalTitles.push({
 			title: 'Second Updated Title',
-			composers: [{ name: 'NewNewNew', yearsActive: '1970 - 1999' }]
+			contributors: [{ name: 'NewNewNew', yearsActive: '1970 - 1999' }]
 		});
 
 		const updatedEntries: ImportPerformanceInterface = {
@@ -348,15 +348,15 @@ describe('Test Import Code', () => {
 			'Expected performer email'
 		);
 
-		assert.isDefined(updatedPerformance.composer_1[0], 'Expected first composer to be defined');
+		assert.isDefined(updatedPerformance.contributor_1[0], 'Expected first composer to be defined');
 		assert.equal(
-			updatedPerformance.composer_1[0].full_name,
+			updatedPerformance.contributor_1[0].full_name,
 			'Johann Christian Bach',
 			'Expected composer'
 		);
 
-		assert.isDefined(updatedPerformance.composer_2[0], 'Expected first composer to be defined');
-		assert.equal(updatedPerformance.composer_2[0].full_name, 'NewNewNew', 'Expected composer');
+		assert.isDefined(updatedPerformance.contributor_2[0], 'Expected first composer to be defined');
+		assert.equal(updatedPerformance.contributor_2[0].full_name, 'NewNewNew', 'Expected composer');
 
 		assert.isFalse(secondResults.new);
 
@@ -367,7 +367,7 @@ describe('Test Import Code', () => {
 
 		musicalTitles.push({
 			title: 'Many Composers 3rd movement',
-			composers: [
+			contributors: [
 				{ name: 'Johann Christian Bach', yearsActive: 'none' },
 				{ name: 'Bohuslav Martinu', yearsActive: 'none' },
 				{ name: 'Carl Maria von Weber', yearsActive: 'none' }
@@ -375,7 +375,7 @@ describe('Test Import Code', () => {
 		});
 		musicalTitles.push({
 			title: 'Another Title 3rd movement',
-			composers: [
+			contributors: [
 				{ name: 'NewNewNew', yearsActive: '1970 - 1999' },
 				{ name: 'Edward Elgar', yearsActive: 'None' }
 			]
@@ -425,37 +425,37 @@ describe('Test Import Code', () => {
 			'Expected performer email'
 		);
 
-		assert.isDefined(singlePerformance.composer_1[0], 'Expected first composer to be defined');
+		assert.isDefined(singlePerformance.contributor_1[0], 'Expected first composer to be defined');
 		assert.equal(
-			singlePerformance.composer_1[0].full_name,
+			singlePerformance.contributor_1[0].full_name,
 			'Johann Christian Bach',
 			'Expected composer'
 		);
 
-		assert.isDefined(singlePerformance.composer_1[1], 'Expected first composer to be defined');
+		assert.isDefined(singlePerformance.contributor_1[1], 'Expected first composer to be defined');
 		assert.equal(
-			singlePerformance.composer_1[1].full_name,
+			singlePerformance.contributor_1[1].full_name,
 			'Bohuslav Martinu',
 			'Expected composer'
 		);
 
-		assert.isDefined(singlePerformance.composer_1[2], 'Expected first composer to be defined');
+		assert.isDefined(singlePerformance.contributor_1[2], 'Expected first composer to be defined');
 		assert.equal(
-			singlePerformance.composer_1[2].full_name,
+			singlePerformance.contributor_1[2].full_name,
 			'Carl Maria von Weber',
 			'Expected composer'
 		);
 
-		assert.isDefined(singlePerformance.composer_2?.[0], 'Expected first composer to be defined');
-		assert.equal(singlePerformance.composer_2?.[0].full_name, 'NewNewNew', 'Expected composer');
+		assert.isDefined(singlePerformance.contributor_2?.[0], 'Expected first composer to be defined');
+		assert.equal(singlePerformance.contributor_2?.[0].full_name, 'NewNewNew', 'Expected composer');
 
-		assert.isDefined(singlePerformance.composer_2?.[1], 'Expected first composer to be defined');
-		assert.equal(singlePerformance.composer_2?.[1].full_name, 'Edward Elgar', 'Expected composer');
+		assert.isDefined(singlePerformance.contributor_2?.[1], 'Expected first composer to be defined');
+		assert.equal(singlePerformance.contributor_2?.[1].full_name, 'Edward Elgar', 'Expected composer');
 	});
 	it('should fail parsing class', async () => {
 		const musicalTitle: ImportMusicalTitleInterface = {
 			title: 'J.C.Bach Concerto in C minor 3rd movement',
-			composers: [{ name: 'Johann Christian Bach', yearsActive: 'none' }]
+			contributors: [{ name: 'Johann Christian Bach', yearsActive: 'none' }]
 		};
 
 		const imported: ImportPerformanceInterface = {

@@ -66,10 +66,10 @@ CREATE INDEX contributor_name_idx ON contributor(full_name);
 CREATE TABLE musical_piece (
     id SERIAL PRIMARY KEY,
     printed_name VARCHAR(512) NOT NULL,
-    first_composer_id INTEGER NOT NULL,
+    first_contributor_id INTEGER NOT NULL,
     all_movements VARCHAR(512) NULL,
-    second_composer_id INTEGER NULL,
-    third_composer_id INTEGER NULL
+    second_contributor_id INTEGER NULL,
+    third_contributor_id INTEGER NULL
 );
 CREATE INDEX musical_piece_name_idx ON musical_piece(printed_name);
 

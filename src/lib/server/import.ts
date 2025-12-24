@@ -16,7 +16,7 @@ import {
 import {
 	PerformanceError,
 	PerformerError,
-	ComposerError,
+	ContributorError,
 	MusicalPieceError,
 	InstrumentError
 } from '$lib/server/customExceptions';
@@ -49,8 +49,8 @@ interface PerformanceInterfaceTagCreate extends PerformanceInterface {
 export class Performance {
 	public accompanist: AccompanistInterface | null | undefined;
 	public performer: PerformerInterfaceTagCreate | undefined;
-	public composer_1: ContributorInterface[] = [];
-	public composer_2: ContributorInterface[] | null = null;
+	public contributor_1: ContributorInterface[] = [];
+	public contributor_2: ContributorInterface[] | null = null;
 	public musical_piece_1: MusicalPieceInterface | undefined;
 	public musical_piece_2: MusicalPieceInterface | null | undefined;
 	public performance: PerformanceInterfaceTagCreate | undefined;
@@ -113,23 +113,23 @@ export class Performance {
 			// process music piece one first
 			const parsedMusic = parseMusicalPiece(data.musical_piece[0].title);
 			// process composers: music piece one
-			for (const composer of data.musical_piece[0].composers) {
-				if (composer?.name != null) {
+			for (const contributor of data.musical_piece[0].contributors) {
+				if (contributor?.name != null) {
 					const processed = await this.processComposer({
 						id: null,
-						full_name: composer.name,
-						years_active: composer.yearsActive,
-						role: composer.role ?? defaultContributorRole,
+						full_name: contributor.name,
+						years_active: contributor.yearsActive,
+						role: contributor.role ?? defaultContributorRole,
 						notes: 'imported'
 					});
-					this.composer_1.push(processed);
+					this.contributor_1.push(processed);
 				}
 			}
-			if (this.composer_1[0]?.id != null && parsedMusic.titleWithoutMovement != null) {
+			if (this.contributor_1[0]?.id != null && parsedMusic.titleWithoutMovement != null) {
 				this.musical_piece_1 = await this.processMusicalPiece(
 					parsedMusic.titleWithoutMovement,
 					parsedMusic.movements,
-					this.composer_1
+					this.contributor_1
 				);
 			} else {
 				throw new MusicalPieceError('Returned null when parsing musical title');
@@ -151,25 +151,25 @@ export class Performance {
 		// cont process musical pieces
 		if (data.musical_piece[1] != null && data.musical_piece[1].title.trim().length > 0) {
 			const parsedMusic = parseMusicalPiece(data.musical_piece[1].title);
-			this.composer_2 = [];
+			this.contributor_2 = [];
 			// process composers: music piece one
-			for (const composer of data.musical_piece[1].composers) {
-				if (composer?.name != null) {
+			for (const contributor of data.musical_piece[1].contributors) {
+				if (contributor?.name != null) {
 					const processed = await this.processComposer({
 						id: null,
-						full_name: composer.name,
-						years_active: composer.yearsActive,
-						role: composer.role ?? defaultContributorRole,
+						full_name: contributor.name,
+						years_active: contributor.yearsActive,
+						role: contributor.role ?? defaultContributorRole,
 						notes: 'imported'
 					});
-					this.composer_2?.push(processed);
+					this.contributor_2?.push(processed);
 				}
 			}
-			if (this.composer_2?.[0]?.id != null && parsedMusic.titleWithoutMovement != null) {
+			if (this.contributor_2?.[0]?.id != null && parsedMusic.titleWithoutMovement != null) {
 				this.musical_piece_2 = await this.processMusicalPiece(
 					parsedMusic.titleWithoutMovement,
 					parsedMusic.movements,
-					this.composer_2
+					this.contributor_2
 				);
 			} else {
 				throw new MusicalPieceError('Invalid musical piece id, id can not be null');
@@ -193,23 +193,23 @@ export class Performance {
 	}
 	// searches for matching composer by name returning their id
 	// otherwise creates new composer entry
-	private async processComposer(composer_1: ContributorInterface): Promise<ContributorInterface> {
+	private async processComposer(contributor_1: ContributorInterface): Promise<ContributorInterface> {
 		// normalize the string first remove all the Diacritic vowels
-		const res = await searchContributor(composer_1.full_name, 'Composer');
+		const res = await searchContributor(contributor_1.full_name, 'Composer');
 		if (res.rowCount == null || res.rowCount < 1) {
-			const composer: ContributorInterface = {
+			const contributor: ContributorInterface = {
 				id: null,
-				full_name: composer_1.full_name,
-				years_active: composer_1.years_active,
-				role: composer_1.role ?? defaultContributorRole,
+				full_name: contributor_1.full_name,
+				years_active: contributor_1.years_active,
+				role: contributor_1.role ?? defaultContributorRole,
 				notes: 'added via interface'
 			};
-			const result = await insertTable('contributor', composer);
+			const result = await insertTable('contributor', contributor);
 			// set the new id
 			if (result.rowCount != null && result.rowCount > 0 && result.rows[0].id > 0) {
-				composer.id = result.rows[0].id;
+				contributor.id = result.rows[0].id;
 			}
-			return composer;
+			return contributor;
 		}
 
 		return {
@@ -333,24 +333,24 @@ export class Performance {
 	private async processMusicalPiece(
 		printed_title: string,
 		movements: string | null,
-		composers: ContributorInterface[]
+		contributors: ContributorInterface[]
 	): Promise<MusicalPieceInterface> {
-		if (composers[0].id === null || composers[0].id === null) {
-			throw new ComposerError('Primary Composer Can not be null when creating musical pieces');
+		if (contributors[0].id === null || contributors[0].id === null) {
+			throw new ContributorError('Primary Composer Can not be null when creating musical pieces');
 		}
-		const second_composer_id: number | null = composers?.[1]?.id ?? null;
-		const third_composer_id: number | null = composers?.[2]?.id ?? null;
+		const second_contributor_id: number | null = contributors?.[1]?.id ?? null;
+		const third_contributor_id: number | null = contributors?.[2]?.id ?? null;
 
-		const res = await searchMusicalPiece(printed_title, composers[0].id);
+		const res = await searchMusicalPiece(printed_title, contributors[0].id);
 		if (res.rowCount == null || res.rowCount < 1) {
 			// create new
 			const musical_piece: MusicalPieceInterface = {
 				id: null,
 				printed_name: printed_title,
-				first_composer_id: composers[0].id,
+				first_contributor_id: contributors[0].id,
 				all_movements: movements,
-				second_composer_id: second_composer_id,
-				third_composer_id: third_composer_id
+				second_contributor_id: second_contributor_id,
+				third_contributor_id: third_contributor_id
 			};
 			const result = await insertTable('musical_piece', musical_piece);
 			if (result.rowCount != null && result.rowCount > 0 && result.rows[0].id != null) {
@@ -364,10 +364,10 @@ export class Performance {
 		return {
 			id: res.rows[0].id,
 			printed_name: res.rows[0].printed_name,
-			first_composer_id: res.rows[0].first_composer_id,
+			first_contributor_id: res.rows[0].first_contributor_id,
 			all_movements: res.rows[0].all_movements,
-			second_composer_id: res.rows[0].second_composer_id,
-			third_composer_id: res.rows[0].third_composer_id
+			second_contributor_id: res.rows[0].second_contributor_id,
+			third_contributor_id: res.rows[0].third_contributor_id
 		};
 	}
 
@@ -584,16 +584,16 @@ export class DataParser {
 
 		for (const record of parsed.data) {
 			const musicalPiecesFromCSV: ImportMusicalTitleInterface[] = [];
-			if (record.piece_1 != null && record.composers_1 != null) {
+			if (record.piece_1 != null && record.contributors_1 != null) {
 				musicalPiecesFromCSV.push({
 					title: record.piece_1,
-					composers: [{ name: record.composers_1, yearsActive: 'None' }]
+					contributors: [{ name: record.contributors_1, yearsActive: 'None' }]
 				});
 			}
-			if (record.piece_2 != null && record.composers_2 != null) {
+			if (record.piece_2 != null && record.contributors_2 != null) {
 				musicalPiecesFromCSV.push({
 					title: record.piece_2,
-					composers: [{ name: record.composers_2, yearsActive: 'None' }]
+					contributors: [{ name: record.contributors_2, yearsActive: 'None' }]
 				});
 			}
 			record.musical_piece = musicalPiecesFromCSV;

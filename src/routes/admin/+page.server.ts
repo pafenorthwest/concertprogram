@@ -37,7 +37,7 @@ export const actions = {
 			if (formData.has('musical-piece-1')) {
 				importMusicalTitle.push({
 					title: formData.get('musical-piece-1'),
-					composers: [composerPieceOne]
+					contributors: [composerPieceOne]
 				});
 			}
 
@@ -54,7 +54,7 @@ export const actions = {
 				};
 				importMusicalTitle.push({
 					title: formData.get('musical-piece-2'),
-					composers: [composerPieceTwo]
+					contributors: [composerPieceTwo]
 				});
 			}
 

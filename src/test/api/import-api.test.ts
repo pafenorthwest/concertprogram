@@ -50,7 +50,7 @@ describe('Test Import HTTP APIs', () => {
 				'"instrument": "Cello",' +
 				'"musical_piece": [ {' +
 				'"title": "Concerto in C minor 3rd movement", ' +
-				'"composers": [ ' +
+				'"contributors": [ ' +
 				'{ "name": "Johann Christian Bach", "yearsActive": "None"} ' +
 				' ] ' +
 				' } ], ' +
@@ -95,7 +95,7 @@ describe('Test Import HTTP APIs', () => {
 				'"instrument": "Cello",' +
 				'"musical_piece": [ {' +
 				'"title": "Concerto in C minor 3rd movement", ' +
-				'"composers": [ ' +
+				'"contributors": [ ' +
 				'{ "name": "Johann Christian Bach", "yearsActive": "None"} ' +
 				' ] ' +
 				' } ], ' +
@@ -139,7 +139,7 @@ describe('Test Import HTTP APIs', () => {
 				'"instrument": "Cello",' +
 				'"musical_piece": [ {' +
 				'"title": "Concerto in C minor 3rd movement", ' +
-				'"composers": [ ' +
+				'"contributors": [ ' +
 				'{ "name": "Johann Christian Bach", "yearsActive": "None"} ' +
 				' ] ' +
 				' } ], ' +
@@ -245,12 +245,12 @@ describe('Test Import HTTP APIs', () => {
 				'"instrument": "Cello",' +
 				'"musical_piece": [ {' +
 				'"title": "Concerto in C minor 3rd movement", ' +
-				'"composers": [ ' +
+				'"contributors": [ ' +
 				'{ "name": "Johann Christian Bach", "yearsActive": "None" } ' +
 				' ] ' +
 				' },{ ' +
 				'"title": "Scherzo no.2 in B Flat Minor, op.31", ' +
-				'"composers": [ ' +
+				'"contributors": [ ' +
 				' { "name": "Frédéric Chopin", "yearsActive": "None" } ' +
 				' ] ' +
 				'} ], ' +
@@ -296,12 +296,12 @@ describe('Test Import HTTP APIs', () => {
 				'"instrument": "Cello",' +
 				'"musical_piece": [ {' +
 				'"title": "Arabeske in C major, Op. 18", ' +
-				'"composers": [ ' +
+				'"contributors": [ ' +
 				'{ "name": "Robert Schumann", "yearsActive": "1810 - 1856" } ' +
 				' ] ' +
 				' },{ ' +
 				'"title": "Prelude Op 34 No.2", ' +
-				'"composers": [ ' +
+				'"contributors": [ ' +
 				' { "name": "Dmitri Shostakovich", "yearsActive": "None" } ' +
 				' ] ' +
 				'} ], ' +

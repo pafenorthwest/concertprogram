@@ -14,7 +14,7 @@ export interface ProgramComposerInterface {
 export interface MusicalTitleInterface {
 	title: string;
 	movement: string;
-	composers: ProgramComposerInterface[];
+	contributors: ProgramComposerInterface[];
 }
 export interface PerformanceDetailsInterface {
 	id: number;
@@ -222,21 +222,21 @@ export class Program {
 		const musicalTitles: MusicalTitleInterface[] = [];
 		if (data.rowCount != null && data.rowCount !== 0) {
 			for (const piece of data.rows) {
-				const composers: ProgramComposerInterface[] = [];
+				const contributors: ProgramComposerInterface[] = [];
 				if (piece.composer_one_name != null) {
-					composers.push({
+					contributors.push({
 						printedName: piece.composer_one_name,
 						yearsActive: piece.composer_one_years
 					});
 				}
 				if (piece.composer_two_name != null) {
-					composers.push({
+					contributors.push({
 						printedName: piece.composer_two_name,
 						yearsActive: piece.composer_two_years
 					});
 				}
 				if (piece.composer_three_name != null) {
-					composers.push({
+					contributors.push({
 						printedName: piece.composer_three_name,
 						yearsActive: piece.composer_two_years
 					});
@@ -245,7 +245,7 @@ export class Program {
 					musicalTitles.push({
 						title: piece.printed_name,
 						movement: piece.movement ? piece.movement : '',
-						composers: composers
+						contributors: contributors
 					});
 				}
 			}

@@ -33,10 +33,10 @@ export interface AccompanistInterface {
 export interface MusicalPieceInterface {
 	id: number | null;
 	printed_name: string;
-	first_composer_id: number;
+	first_contributor_id: number;
 	all_movements: string | null;
-	second_composer_id: number | null;
-	third_composer_id: number | null;
+	second_contributor_id: number | null;
+	third_contributor_id: number | null;
 }
 
 export interface PerformerInterface {

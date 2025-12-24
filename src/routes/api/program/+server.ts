@@ -83,16 +83,16 @@ function safeStringComposer(input: MusicalTitleInterface | null, referenceLoc: n
 	if (input == null) {
 		return '';
 	}
-	if (input.composers == null || input.composers.length <= referenceLoc) {
+	if (input.contributors == null || input.contributors.length <= referenceLoc) {
 		return '';
 	}
-	if (input.composers[referenceLoc] == null) {
+	if (input.contributors[referenceLoc] == null) {
 		return '';
 	}
 	return (
-		input.composers[referenceLoc].printedName +
+		input.contributors[referenceLoc].printedName +
 		' (' +
-		input.composers[referenceLoc].yearsActive +
+		input.contributors[referenceLoc].yearsActive +
 		')'
 	);
 }
