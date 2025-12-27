@@ -35,20 +35,20 @@ export async function PUT({ url, params, request, cookies }) {
 	try {
 		const {
 			printed_name,
-			first_composer_id,
+			first_contributor_id,
 			all_movements,
-			second_composer_id,
-			third_composer_id
+			second_contributor_id,
+			third_contributor_id
 		} = await request.json();
 		const musicalPiece: MusicalPieceInterface = {
 			id: params.id,
 			printed_name: printed_name,
-			first_composer_id: first_composer_id,
+			first_contributor_id: first_contributor_id,
 			all_movements: all_movements,
-			second_composer_id: second_composer_id,
-			third_composer_id: third_composer_id
+			second_contributor_id: second_contributor_id,
+			third_contributor_id: third_contributor_id
 		};
-		if (!musicalPiece.printed_name || !musicalPiece.first_composer_id) {
+		if (!musicalPiece.printed_name || !musicalPiece.first_contributor_id) {
 			return { status: 400, body: { message: 'Missing Field, Try Again' } };
 		} else {
 			const rowCount = await updateById('musical_piece', musicalPiece);

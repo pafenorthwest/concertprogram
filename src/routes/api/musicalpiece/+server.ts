@@ -24,22 +24,22 @@ export async function POST({ url, request, cookies }) {
 	try {
 		const {
 			printed_name,
-			first_composer_id,
+			first_contributor_id,
 			all_movements,
-			second_composer_id,
-			third_composer_id
+			second_contributor_id,
+			third_contributor_id
 		} = await request.json();
 
 		const musicalPiece: MusicalPieceInterface = {
 			id: null,
 			printed_name: printed_name,
-			first_composer_id: first_composer_id,
+			first_contributor_id: first_contributor_id,
 			all_movements: all_movements,
-			second_composer_id: second_composer_id,
-			third_composer_id: third_composer_id
+			second_contributor_id: second_contributor_id,
+			third_contributor_id: third_contributor_id
 		};
 
-		if (!printed_name || !first_composer_id) {
+		if (!printed_name || !first_contributor_id) {
 			return json({ status: 'error', reason: 'Missing Fields' }, { status: 400 });
 		} else {
 			const result = await insertTable('musical_piece', musicalPiece);

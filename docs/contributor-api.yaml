@@ -1,0 +1,328 @@
+openapi: 3.0.3
+info:
+  title: Concert Program APIs
+  description: APIs supporting Concert Program and Scheduling
+  version: 0.5.0
+servers:
+  - url: 'https://schedule.pafenorthwest.org/api/'
+
+paths:
+  /contributor:
+    post:
+      summary: create a new contributor
+      description: >
+        Adds a new contributor with role and years active. External clients must present an
+        Authorization bearer token; requests from the Concert Program app may also provide the
+        `pafe_auth` cookie issued by the service. If the role is omitted or not recognized, it is
+        set to `Composer`. The optional `alias` value is stored in the `notes` field.
+      security:
+        - BearerAuth: []
+
+      requestBody:
+        description: JSON data for the contributor to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContributorCreateRequest'
+            example:
+              full_name: 'Johann Sebastian Bach'
+              years_active: '1685 - 1750'
+              role: 'Composer'
+              alias: 'J. S. Bach'
+
+      responses:
+        201:
+          description: created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntityCreated'
+              example:
+                id: 123
+        400:
+          description: bad data, missing fields or incorrect format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                result: 'error'
+                reason: 'Missing Field'
+        401:
+          description: unauthorized, lacking authorization header
+        403:
+          description: unauthorized, bad token
+        500:
+          description: service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                result: 'error'
+                reason: 'Failed to process the request'
+  /contributor/{id}:
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+        description: numerical id of contributor
+
+    get:
+      summary: get a contributor by id
+      description: Returns the contributor row; no authorization is required.
+      responses:
+        200:
+          description: returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Contributor'
+              example:
+                - id: 1
+                  full_name: 'Johann Sebastian Bach'
+                  years_active: '1685 - 1750'
+                  role: 'Composer'
+                  notes: 'J. S. Bach'
+        404:
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                result: 'error'
+                reason: 'Not Found'
+        500:
+          description: service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: update a contributor by id
+      description: >
+        Updates contributor fields. External requests require an Authorization bearer token; calls
+        from the same origin as the app may omit the header. If the role is omitted or not
+        recognized, it is set to `Composer`.
+      security:
+        - BearerAuth: []
+
+      requestBody:
+        description: JSON data for the contributor
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContributorUpdateRequest'
+            example:
+              full_name: 'Johann Sebastian Bach'
+              years_active: '1685 - 1750'
+              role: 'Composer'
+              notes: 'J. S. Bach'
+
+      responses:
+        200:
+          description: updated
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: OK
+        400:
+          description: missing fields or incorrect format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                result: 'error'
+                reason: 'Missing Fields'
+        401:
+          description: unauthorized, lacking authorization header
+        403:
+          description: unauthorized, bad token
+        404:
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                result: 'error'
+                reason: 'Not Found'
+        500:
+          description: service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: remove a contributor by id
+      description: Requires an Authorization bearer token or valid `pafe_auth` cookie.
+      security:
+        - BearerAuth: []
+
+      responses:
+        200:
+          description: deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationSuccess'
+              example:
+                result: 'success'
+        401:
+          description: unauthorized, lacking authorization header
+        403:
+          description: unauthorized, bad token
+        404:
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                result: 'error'
+                reason: 'Not Found'
+        500:
+          description: service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Contributor:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        years_active:
+          type: string
+        role:
+          type: string
+          description: role this contributor played for the work
+          enum:
+            - Composer
+            - Copyist
+            - Editor
+            - Arrange
+            - Transcriber
+            - Realizer
+            - Orchestrator
+          default: Composer
+        notes:
+          type: string
+          nullable: true
+          description: Alternate name or alias stored for the contributor
+      required:
+        - id
+        - full_name
+        - years_active
+        - role
+      example:
+        id: 123
+        full_name: 'Johann Sebastian Bach'
+        years_active: '1685 - 1750'
+        role: 'Composer'
+        notes: 'J. S. Bach'
+    ContributorCreateRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+        years_active:
+          type: string
+        role:
+          type: string
+          description: role this contributor played for the work
+          enum:
+            - Composer
+            - Copyist
+            - Editor
+            - Arrange
+            - Transcriber
+            - Realizer
+            - Orchestrator
+          default: Composer
+        alias:
+          type: string
+          description: Alternate name stored internally as `notes`
+      required:
+        - full_name
+        - years_active
+      example:
+        full_name: 'Johann Sebastian Bach'
+        years_active: '1685 - 1750'
+        role: 'Composer'
+        alias: 'J. S. Bach'
+    ContributorUpdateRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+        years_active:
+          type: string
+        role:
+          type: string
+          description: role this contributor played for the work
+          enum:
+            - Composer
+            - Copyist
+            - Editor
+            - Arrange
+            - Transcriber
+            - Realizer
+            - Orchestrator
+          default: Composer
+        notes:
+          type: string
+          description: Alternate name or alias
+      required:
+        - full_name
+        - years_active
+      example:
+        full_name: 'Johann Sebastian Bach'
+        years_active: '1685 - 1750'
+        role: 'Composer'
+        notes: 'J. S. Bach'
+    Error:
+      type: object
+      properties:
+        result:
+          type: string
+        reason:
+          type: string
+      example:
+        result: 'error'
+        reason: 'a database error occurred'
+    EntityCreated:
+      type: object
+      properties:
+        id:
+          type: integer
+      example:
+        id: 123
+    OperationSuccess:
+      type: object
+      properties:
+        result:
+          type: string
+          enum:
+            - success
+      example:
+        result: 'success'
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT # Optional: indicates the token format (e.g., JWT)

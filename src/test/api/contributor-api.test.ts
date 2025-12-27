@@ -4,7 +4,7 @@ import { unpackBody } from '$lib/server/common';
 
 describe('Test Composer HTTP APIs', () => {
 	it('It should get composer by id', async () => {
-		const getResponse = await fetch('http://localhost:8888/api/composer/1', {
+		const getResponse = await fetch('http://localhost:8888/api/contributor/1', {
 			method: 'GET'
 		});
 		expect(getResponse.status).toBe(200);
@@ -15,12 +15,13 @@ describe('Test Composer HTTP APIs', () => {
 			// create object from parsed stream to get id of newly created accompanist
 			const resultObject = JSON.parse(bodyFromRequest);
 			expect(resultObject[0].id).toBe(1);
+			expect(resultObject[0].role).toBe('Composer');
 		} else {
 			assert(false, 'unable to parse body of composer request');
 		}
 	});
 	it('It should return no-auth', async () => {
-		const getResponse = await fetch('http://localhost:8888/api/composer/', {
+		const getResponse = await fetch('http://localhost:8888/api/contributor/', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -30,7 +31,7 @@ describe('Test Composer HTTP APIs', () => {
 		expect(getResponse.status).toBe(401);
 	});
 	it('It should return not-authorized for POST', async () => {
-		const getResponse = await fetch('http://localhost:8888/api/composer', {
+		const getResponse = await fetch('http://localhost:8888/api/contributor', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -41,13 +42,13 @@ describe('Test Composer HTTP APIs', () => {
 		expect(getResponse.status).toBe(403);
 	});
 	it('It should return insert with POST', async () => {
-		const getResponse = await fetch('http://localhost:8888/api/composer', {
+		const getResponse = await fetch('http://localhost:8888/api/contributor', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 				Authorization: `Bearer ${auth_code}`
 			},
-			body: JSON.stringify({ full_name: 'John John', years_active: '1980 - 2000' })
+			body: JSON.stringify({ full_name: 'John John', years_active: '1980 - 2000', role: 'Copyist' })
 		});
 		expect(getResponse.status).toBe(201);
 		// parse stream to get body
@@ -61,7 +62,7 @@ describe('Test Composer HTTP APIs', () => {
 		}
 	});
 	it('It should return not-authorized for DELETE', async () => {
-		const getResponse = await fetch('http://localhost:8888/api/composer/999999', {
+		const getResponse = await fetch('http://localhost:8888/api/contributor/999999', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
@@ -71,7 +72,7 @@ describe('Test Composer HTTP APIs', () => {
 		expect(getResponse.status).toBe(403);
 	});
 	it('It should return not-authorized for PUT', async () => {
-		const getResponse = await fetch('http://localhost:8888/api/composer/999999', {
+		const getResponse = await fetch('http://localhost:8888/api/contributor/999999', {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
@@ -82,7 +83,7 @@ describe('Test Composer HTTP APIs', () => {
 		expect(getResponse.status).toBe(403);
 	});
 	it('It should return not-found for GET', async () => {
-		const getResponse = await fetch('http://localhost:8888/api/composer/999999', {
+		const getResponse = await fetch('http://localhost:8888/api/contributor/999999', {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json',
@@ -102,7 +103,7 @@ describe('Test Composer HTTP APIs', () => {
 		}
 	});
 	it('It should return error for DELETE out of range', async () => {
-		const delResponse = await fetch('http://localhost:8888/api/composer/99999', {
+		const delResponse = await fetch('http://localhost:8888/api/contributor/99999', {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
@@ -122,7 +123,7 @@ describe('Test Composer HTTP APIs', () => {
 		}
 	});
 	it('It should return not-found for PUT out of range', async () => {
-		const getResponse = await fetch('http://localhost:8888/api/composer/999999', {
+		const getResponse = await fetch('http://localhost:8888/api/contributor/999999', {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',

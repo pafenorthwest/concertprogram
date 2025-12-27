@@ -5,6 +5,7 @@ describe('Test Program HTTP APIs', () => {
 	it('It should return a program', async () => {
 		const className = 'CC.9-10.W';
 		const performerName = 'Sando Em';
+		const email = 'sando.em@youngartist.com';
 		const performerAge = 12;
 		const composerName = 'Frédéric Chopin';
 		// first create a searchable entry
@@ -26,18 +27,20 @@ describe('Test Program HTTP APIs', () => {
 				', ' +
 				'"lottery": 888999555' +
 				', ' +
-				'"email": "emma@youngartist.com",' +
+				'"email": "' +
+				email +
+				'",' +
 				'"phone": "999-555-4444",' +
 				'"accompanist": "Zhi, Zhou",' +
 				'"instrument": "Cello",' +
 				'"musical_piece": [ {' +
 				'"title": "Concerto in C minor 3rd movement", ' +
-				'"composers": [ ' +
+				'"contributors": [ ' +
 				'{ "name": "Johann Christian Bach", "yearsActive": "None" } ' +
 				' ] ' +
 				' },{ ' +
 				'"title": "Scherzo no.2 in B Flat Minor, op.31", ' +
-				'"composers": [ ' +
+				'"contributors": [ ' +
 				' { "name": "' +
 				composerName +
 				'", "yearsActive": "None" } ' +

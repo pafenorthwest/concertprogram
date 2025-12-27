@@ -86,11 +86,11 @@
 						{#if editing.id === musicalPiece.id}
 							<input
 								type="text"
-								value={editing.first_composer_id}
-								on:input={(event) => handleInputChange(event, 'first_composer_id')}
+								value={editing.first_contributor_id}
+								on:input={(event) => handleInputChange(event, 'first_contributor_id')}
 							/>
 						{:else}
-							{musicalPiece.first_composer_id}
+							{musicalPiece.first_contributor_id}
 						{/if}
 					</td>
 					<td>
@@ -108,22 +108,22 @@
 						{#if editing.id === musicalPiece.id}
 							<input
 								type="text"
-								value={editing.second_composer_id}
-								on:input={(event) => handleInputChange(event, 'second_composer_id')}
+								value={editing.second_contributor_id}
+								on:input={(event) => handleInputChange(event, 'second_contributor_id')}
 							/>
 						{:else}
-							{musicalPiece.second_composer_id}
+							{musicalPiece.second_contributor_id}
 						{/if}
 					</td>
 					<td>
 						{#if editing.id === musicalPiece.id}
 							<input
 								type="text"
-								value={editing.third_composer_id}
-								on:input={(event) => handleInputChange(event, 'third_composer_id')}
+								value={editing.third_contributor_id}
+								on:input={(event) => handleInputChange(event, 'third_contributor_id')}
 							/>
 						{:else}
-							{musicalPiece.third_composer_id}
+							{musicalPiece.third_contributor_id}
 						{/if}
 					</td>
 					<td>

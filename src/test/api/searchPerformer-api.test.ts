@@ -72,12 +72,12 @@ describe('Test SearchPerformer HTTP APIs', () => {
 				'"instrument": "Cello",' +
 				'"musical_piece": [ {' +
 				'"title": "Concerto in C minor 3rd movement", ' +
-				'"composers": [ ' +
+				'"contributors": [ ' +
 				'{ "name": "Johann Christian Bach", "yearsActive": "None" } ' +
 				' ] ' +
 				' },{ ' +
 				'"title": "Scherzo no.2 in B Flat Minor, op.31", ' +
-				'"composers": [ ' +
+				'"contributors": [ ' +
 				' { "name": "' +
 				composerName +
 				'", "yearsActive": "None" } ' +
@@ -97,6 +97,7 @@ describe('Test SearchPerformer HTTP APIs', () => {
 				}
 			}
 		);
+
 		expect(searchResponse.status).toBe(200);
 		if (searchResponse.body != null) {
 			const bodyFromRequest = await unpackBody(searchResponse.body);

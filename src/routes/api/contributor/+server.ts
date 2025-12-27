@@ -1,4 +1,5 @@
-import type { ComposerInterface } from '$lib/server/common';
+import type { ContributorInterface } from '$lib/server/common';
+import { normalizeContributorRole } from '$lib/server/common';
 import { insertTable } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
 import { isAuthorized } from '$lib/server/apiAuth';
@@ -17,11 +18,13 @@ export async function POST({ request, cookies }) {
 		return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
 	}
 
-	const { full_name, years_active, alias } = await request.json();
-	const composer: ComposerInterface = {
+	const { full_name, years_active, alias, role } = await request.json();
+	const validRole = normalizeContributorRole(role);
+	const composer: ContributorInterface = {
 		id: null,
 		full_name: full_name,
 		years_active: years_active,
+		role: validRole,
 		notes: alias
 	};
 
@@ -30,7 +33,7 @@ export async function POST({ request, cookies }) {
 	} else {
 		let result: QueryResult;
 		try {
-			result = await insertTable('composer', composer);
+			result = await insertTable('contributor', composer);
 		} catch {
 			return json({ result: 'error', reason: 'Failed to process the request' }, { status: 500 });
 		}

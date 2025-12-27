@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { contributorRoles, defaultContributorRole } from '$lib/constants/contributors';
 
 	let disableStatus = false;
 	export let data;
 	export let formErrors = null;
+	let contributor_1_role = defaultContributorRole;
+	let contributor_2_role = defaultContributorRole;
 
 	// Boolean variable to track which form to display
 	let showSingleEntryForm = false;
@@ -108,7 +111,7 @@
 			<label for="musical-piece-1">Musical Piece 1:</label>
 			<input type="text" id="musical-piece-1" name="musical-piece-1" maxlength="256" required />
 
-			<label for="composer-name-piece-1">Composer Name, Musical Piece 1:</label>
+			<label for="composer-name-piece-1">Contributor Name, Musical Piece 1:</label>
 			<input
 				type="text"
 				id="composer-name-piece-1"
@@ -116,7 +119,18 @@
 				maxlength="80"
 				required
 			/>
-			<label for="composer-years-piece-1">Composer Years Active, Musical Piece 1:</label>
+			<label for="role">Role, Musical Piece 1:</label>
+			<select
+				class="action"
+				id="contributor-1-role"
+				name="contributor-1-role"
+				bind:value={contributor_1_role}
+			>
+				{#each contributorRoles as role}
+					<option value={role}>{role}</option>
+				{/each}
+			</select>
+			<label for="composer-years-piece-1">Contributor Years Active, Musical Piece 1:</label>
 			<input
 				type="text"
 				id="composer-years-piece-1"
@@ -128,9 +142,20 @@
 			<label for="musical-piece-2">Musical Piece 2 <i>(optional)</i>:</label>
 			<input type="text" id="musical-piece-2" name="musical-piece-2" maxlength="256" />
 
-			<label for="composer-name-piece-2">Composer Name, Musical Piece 2:</label>
+			<label for="composer-name-piece-2">Contributor Name, Musical Piece 2:</label>
 			<input type="text" id="composer-name-piece-2" name="composer-name-piece-2" maxlength="80" />
-			<label for="composer-years-piece-1">Composer Years Active, Musical Piece 2:</label>
+			<label for="role">Role, Musical Piece 2:</label>
+			<select
+				class="action"
+				id="contributor-2-role"
+				name="contributor-2-role"
+				bind:value={contributor_2_role}
+			>
+				{#each contributorRoles as role}
+					<option value={role}>{role}</option>
+				{/each}
+			</select>
+			<label for="composer-years-piece-1">Contributor Years Active, Musical Piece 2:</label>
 			<input type="text" id="composer-years-piece-2" name="composer-years-piece-2" maxlength="80" />
 
 			<label for="concert-series">Choose a concert series:</label>
