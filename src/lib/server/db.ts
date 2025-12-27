@@ -522,7 +522,8 @@ export async function updateById(
 					return null;
 				}
 				setCols = setCols + " full_name = '" + (data as ContributorInterface).full_name + "'";
-				setCols = setCols + ", years_active = '" + (data as ContributorInterface).years_active + "'";
+				setCols =
+					setCols + ", years_active = '" + (data as ContributorInterface).years_active + "'";
 				setCols = setCols + ", role = '" + role + "'";
 				if (isNonEmptyString((data as ContributorInterface).notes)) {
 					setCols = setCols + ", notes = '" + (data as ContributorInterface).notes + "' ";
@@ -913,8 +914,10 @@ export async function searchContributor(composer_name: string, role: string) {
 			composer_name +
 			"' OR LOWER(notes) = '" +
 			composer_name.toLowerCase() +
-			"') " + 
-			"AND role = '"+role+"'";
+			"') " +
+			"AND role = '" +
+			role +
+			"'";
 
 		const result = connection.query(searchSQL);
 

@@ -28,7 +28,9 @@ export const actions = {
 				}
 			}
 		} else {
-			const first_contributor_role = normalizeContributorRole(formData.get('contributor-1-role') as string);
+			const first_contributor_role = normalizeContributorRole(
+				formData.get('contributor-1-role') as string
+			);
 			const composerPieceOne: ImportContributorInterface = {
 				name: formData.get('composer-name-piece-1'),
 				yearsActive: formData.get('composer-years-piece-1'),
@@ -53,7 +55,9 @@ export const actions = {
 				isNonEmptyString(formData.get('composer-name-piece-2')) &&
 				isNonEmptyString(formData.get('composer-years-piece-2'))
 			) {
-				const second_contributor_role = normalizeContributorRole(formData.get('contributor-2-role') as string);
+				const second_contributor_role = normalizeContributorRole(
+					formData.get('contributor-2-role') as string
+				);
 				composerPieceTwo = {
 					name: formData.get('composer-name-piece-2'),
 					yearsActive: formData.get('composer-years-piece-2'),

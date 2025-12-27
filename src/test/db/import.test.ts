@@ -450,7 +450,11 @@ describe('Test Import Code', () => {
 		assert.equal(singlePerformance.contributor_2?.[0].full_name, 'NewNewNew', 'Expected composer');
 
 		assert.isDefined(singlePerformance.contributor_2?.[1], 'Expected first composer to be defined');
-		assert.equal(singlePerformance.contributor_2?.[1].full_name, 'Edward Elgar', 'Expected composer');
+		assert.equal(
+			singlePerformance.contributor_2?.[1].full_name,
+			'Edward Elgar',
+			'Expected composer'
+		);
 	});
 	it('should fail parsing class', async () => {
 		const musicalTitle: ImportMusicalTitleInterface = {

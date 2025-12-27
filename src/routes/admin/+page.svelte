@@ -2,7 +2,6 @@
 	import { enhance } from '$app/forms';
 	import { contributorRoles, defaultContributorRole } from '$lib/constants/contributors';
 
-
 	let disableStatus = false;
 	export let data;
 	export let formErrors = null;
@@ -121,7 +120,12 @@
 				required
 			/>
 			<label for="role">Role, Musical Piece 1:</label>
-			<select  class="action" id="contributor-1-role" name="contributor-1-role" bind:value={contributor_1_role}>
+			<select
+				class="action"
+				id="contributor-1-role"
+				name="contributor-1-role"
+				bind:value={contributor_1_role}
+			>
 				{#each contributorRoles as role}
 					<option value={role}>{role}</option>
 				{/each}
@@ -141,7 +145,12 @@
 			<label for="composer-name-piece-2">Contributor Name, Musical Piece 2:</label>
 			<input type="text" id="composer-name-piece-2" name="composer-name-piece-2" maxlength="80" />
 			<label for="role">Role, Musical Piece 2:</label>
-			<select class="action" id="contributor-2-role" name="contributor-2-role" bind:value={contributor_2_role}>
+			<select
+				class="action"
+				id="contributor-2-role"
+				name="contributor-2-role"
+				bind:value={contributor_2_role}
+			>
 				{#each contributorRoles as role}
 					<option value={role}>{role}</option>
 				{/each}

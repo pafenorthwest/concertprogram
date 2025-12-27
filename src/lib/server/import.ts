@@ -193,9 +193,11 @@ export class Performance {
 	}
 	// searches for matching composer by name returning their id
 	// otherwise creates new composer entry
-	private async processComposer(contributorParam: ContributorInterface): Promise<ContributorInterface> {
+	private async processComposer(
+		contributorParam: ContributorInterface
+	): Promise<ContributorInterface> {
 		// normalize the string first remove all the Diacritic vowels
-		const role = contributorParam.role ?? defaultContributorRole
+		const role = contributorParam.role ?? defaultContributorRole;
 		const res = await searchContributor(contributorParam.full_name, role as string);
 		if (res.rowCount == null || res.rowCount < 1) {
 			const contributorBuildUp: ContributorInterface = {

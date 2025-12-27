@@ -5,7 +5,7 @@ describe('Test Program HTTP APIs', () => {
 	it('It should return a program', async () => {
 		const className = 'CC.9-10.W';
 		const performerName = 'Sando Em';
-		const email = 'sando.em@youngartist.com'
+		const email = 'sando.em@youngartist.com';
 		const performerAge = 12;
 		const composerName = 'Frédéric Chopin';
 		// first create a searchable entry
@@ -27,7 +27,9 @@ describe('Test Program HTTP APIs', () => {
 				', ' +
 				'"lottery": 888999555' +
 				', ' +
-				'"email": "'+email+'",' +
+				'"email": "' +
+				email +
+				'",' +
 				'"phone": "999-555-4444",' +
 				'"accompanist": "Zhi, Zhou",' +
 				'"instrument": "Cello",' +
