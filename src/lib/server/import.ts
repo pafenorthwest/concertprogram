@@ -120,7 +120,7 @@ export class Performance {
 						full_name: contributor.name,
 						years_active: contributor.yearsActive,
 						role: contributor.role ?? defaultContributorRole,
-						notes: 'imported'
+						notes: contributor.notes ?? 'imported processing musical pieces'
 					});
 					this.contributor_1.push(processed);
 				}
@@ -160,7 +160,7 @@ export class Performance {
 						full_name: contributor.name,
 						years_active: contributor.yearsActive,
 						role: contributor.role ?? defaultContributorRole,
-						notes: 'imported'
+						notes: contributor.notes ?? 'imported processing musical pieces'
 					});
 					this.contributor_2?.push(processed);
 				}
@@ -193,23 +193,24 @@ export class Performance {
 	}
 	// searches for matching composer by name returning their id
 	// otherwise creates new composer entry
-	private async processComposer(contributor_1: ContributorInterface): Promise<ContributorInterface> {
+	private async processComposer(contributorParam: ContributorInterface): Promise<ContributorInterface> {
 		// normalize the string first remove all the Diacritic vowels
-		const res = await searchContributor(contributor_1.full_name, 'Composer');
+		const role = contributorParam.role ?? defaultContributorRole
+		const res = await searchContributor(contributorParam.full_name, role as string);
 		if (res.rowCount == null || res.rowCount < 1) {
-			const contributor: ContributorInterface = {
+			const contributorBuildUp: ContributorInterface = {
 				id: null,
-				full_name: contributor_1.full_name,
-				years_active: contributor_1.years_active,
-				role: contributor_1.role ?? defaultContributorRole,
-				notes: 'added via interface'
+				full_name: contributorParam.full_name,
+				years_active: contributorParam.years_active,
+				role: role,
+				notes: contributorParam.notes ?? 'added via import'
 			};
-			const result = await insertTable('contributor', contributor);
+			const result = await insertTable('contributor', contributorBuildUp);
 			// set the new id
 			if (result.rowCount != null && result.rowCount > 0 && result.rows[0].id > 0) {
-				contributor.id = result.rows[0].id;
+				contributorBuildUp.id = result.rows[0].id;
 			}
-			return contributor;
+			return contributorBuildUp;
 		}
 
 		return {
