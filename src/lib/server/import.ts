@@ -11,7 +11,8 @@ import {
 	type PerformerInterface,
 	calcEpochAge,
 	selectInstrument,
-	defaultContributorRole
+	defaultContributorRole,
+	normalizeContributorRole
 } from '$lib/server/common';
 import {
 	PerformanceError,
@@ -197,8 +198,8 @@ export class Performance {
 		contributorParam: ContributorInterface
 	): Promise<ContributorInterface> {
 		// normalize the string first remove all the Diacritic vowels
-		const role = contributorParam.role ?? defaultContributorRole;
-		const res = await searchContributor(contributorParam.full_name, role as string);
+		const role = normalizeContributorRole(contributorParam.role);
+		const res = await searchContributor(contributorParam.full_name, role);
 		if (res.rowCount == null || res.rowCount < 1) {
 			const contributorBuildUp: ContributorInterface = {
 				id: null,

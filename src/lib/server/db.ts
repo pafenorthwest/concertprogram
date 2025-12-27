@@ -906,6 +906,7 @@ export async function queryPerformanceDetailsById(id: number) {
 export async function searchContributor(composer_name: string, role: string) {
 	try {
 		const connection = await pool.connect();
+		const normalizedRole = normalizeContributorRole(role);
 
 		const searchSQL =
 			'SELECT id, full_name, years_active, role, notes ' +
@@ -916,7 +917,7 @@ export async function searchContributor(composer_name: string, role: string) {
 			composer_name.toLowerCase() +
 			"') " +
 			"AND role = '" +
-			role +
+			normalizedRole +
 			"'";
 
 		const result = connection.query(searchSQL);

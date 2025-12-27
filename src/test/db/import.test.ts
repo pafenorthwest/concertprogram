@@ -111,6 +111,38 @@ describe('Test Import Code', () => {
 			'Expected composer'
 		);
 	});
+	it('normalizes contributor role before lookup', async () => {
+		const imported: ImportPerformanceInterface = {
+			class_name: 'RN.ROLE.1',
+			performer: 'Role Normalization',
+			age: 15,
+			lottery: 54321,
+			email: null,
+			phone: null,
+			accompanist: null,
+			instrument: 'Violin',
+			musical_piece: [
+				{
+					title: 'Normalization Piece',
+					contributors: [
+						{
+							name: 'Casey Composer',
+							yearsActive: 'None',
+							role: 'composer' as unknown as ImportMusicalTitleInterface['contributors'][number]['role']
+						}
+					]
+				}
+			],
+			concert_series: 'Eastside'
+		};
+		const performance: Performance = new Performance();
+		try {
+			await performance.initialize(imported);
+			assert.equal(performance.contributor_1[0].role, 'Composer');
+		} finally {
+			await performance.deleteAll();
+		}
+	});
 	it('should insert multiple performances', async () => {
 		const musicalTitles: ImportMusicalTitleInterface[] = [];
 
