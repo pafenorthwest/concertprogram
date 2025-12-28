@@ -141,7 +141,9 @@ async function retrievePerformerByCode(code: string): Promise<PerformerSearchRes
 				musical_piece: '',
 				lottery_code: Number(code),
 				concert_series: '',
-				performance_id: 0
+				performance_id: 0,
+				performance_duration: 0,
+				performance_comment: null
 			};
 		}
 		return {
@@ -151,7 +153,9 @@ async function retrievePerformerByCode(code: string): Promise<PerformerSearchRes
 			musical_piece: result.musical_piece,
 			lottery_code: result.lottery_code,
 			concert_series: result.concert_series,
-			performance_id: result.performance_id
+			performance_id: result.performance_id,
+			performance_duration: result.performance_duration,
+			performance_comment: result.performance_comment
 		};
 	} catch {
 		return {
@@ -161,7 +165,9 @@ async function retrievePerformerByCode(code: string): Promise<PerformerSearchRes
 			musical_piece: '',
 			lottery_code: 0,
 			concert_series: '',
-			performance_id: 0
+			performance_id: 0,
+			performance_duration: 0,
+			performance_comment: null
 		};
 	}
 }
@@ -184,7 +190,9 @@ async function retrievePerformerByDetails(
 				musical_piece: '',
 				lottery_code: 0,
 				concert_series: '',
-				performance_id: 0
+				performance_id: 0,
+				performance_duration: 0,
+				performance_comment: null
 			};
 		}
 		return {
@@ -194,7 +202,9 @@ async function retrievePerformerByDetails(
 			musical_piece: result.musical_piece,
 			lottery_code: result.lottery_code,
 			concert_series: result.concert_series,
-			performance_id: result.performance_id
+			performance_id: result.performance_id,
+			performance_duration: result.performance_duration,
+			performance_comment: result.performance_comment
 		};
 	} catch {
 		return {
@@ -204,7 +214,9 @@ async function retrievePerformerByDetails(
 			musical_piece: '',
 			lottery_code: 0,
 			concert_series: '',
-			performance_id: 0
+			performance_id: 0,
+			performance_duration: 0,
+			performance_comment: null
 		};
 	}
 }
@@ -220,7 +232,9 @@ export async function load({ url }) {
 		musical_piece: '',
 		lottery_code: 0,
 		concert_series: '',
-		performance_id: 0
+		performance_id: 0,
+		performance_duration: 0,
+		performance_comment: null
 	};
 	let formValues = null;
 
@@ -235,7 +249,9 @@ export async function load({ url }) {
 			concert_series: '',
 			formValues: null,
 			concertTimes: null,
-			performance_id: 0
+			performance_id: 0,
+			performance_duration: 0,
+			performance_comment: null
 		};
 	}
 
@@ -252,7 +268,9 @@ export async function load({ url }) {
 				concert_series: performerSearchResults.concert_series,
 				formValues: null,
 				concertTimes: concertStartTimes.data,
-				performance_id: performerSearchResults.performance_id
+				performance_id: performerSearchResults.performance_id,
+				performance_duration: performerSearchResults.performance_duration,
+				performance_comment: performerSearchResults.performance_comment
 			};
 		}
 	} else {
@@ -283,7 +301,9 @@ export async function load({ url }) {
 					concert_series: performerSearchResults.concert_series,
 					formValues: null,
 					concertTimes: concertStartTimes.data,
-					performance_id: performerSearchResults.performance_id
+					performance_id: performerSearchResults.performance_id,
+					performance_duration: performerSearchResults.performance_duration,
+					performance_comment: performerSearchResults.performance_comment
 				};
 			}
 		} else {
@@ -296,7 +316,9 @@ export async function load({ url }) {
 				concert_series: '',
 				formValues: null,
 				concertTimes: null,
-				performance_id: 0
+				performance_id: 0,
+				performance_duration: 0,
+				performance_comment: null
 			};
 		}
 	}
@@ -325,7 +347,9 @@ export async function load({ url }) {
 		concert_series: performerSearchResults.concert_series,
 		formValues: formValues,
 		concertTimes: concertStartTimes.data,
-		performance_id: performerSearchResults.performance_id
+		performance_id: performerSearchResults.performance_id,
+		performance_duration: performerSearchResults.performance_duration,
+		performance_comment: performerSearchResults.performance_comment
 	};
 }
 

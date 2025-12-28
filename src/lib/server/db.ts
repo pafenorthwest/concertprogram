@@ -100,7 +100,9 @@ export async function lookupByDetails(
 			'SELECT performer.id, performer.full_name as performer_name, \n' +
 			'class_lottery.lottery as lottery_code, \n' +
 			'musical_piece.printed_name as musical_piece,  performance.concert_series, \n' +
-			'performance.id as performance_id\n' +
+			'performance.id as performance_id, \n' +
+			'performance.duration as performance_duration, \n' +
+			'performance.comment as performance_comment \n' +
 			'FROM performer \n' +
 			'JOIN performance ON performance.performer_id = performer.id \n' +
 			'JOIN class_lottery ON performance.class_name = class_lottery.class_name \n' +
@@ -134,7 +136,9 @@ export async function lookupByDetails(
 				musical_piece: dbResult.rows[0].musical_piece,
 				lottery_code: dbResult.rows[0].lottery_code,
 				concert_series: dbResult.rows[0].concert_series,
-				performance_id: dbResult.rows[0].performance_id
+				performance_id: dbResult.rows[0].performance_id,
+				performance_duration: dbResult.rows[0].performance_duration,
+				performance_comment: dbResult.rows[0].performance_comment
 			};
 		} else {
 			return null;
@@ -154,7 +158,9 @@ export async function lookupByCode(code: string): Promise<PerformerSearchResults
 			'SELECT performer.id, performer.full_name as performer_name, \n' +
 			'class_lottery.lottery as lottery_code, \n' +
 			'musical_piece.printed_name as musical_piece, performance.concert_series, \n' +
-			'performance.id as performance_id \n' +
+			'performance.id as performance_id, \n' +
+			'performance.duration as performance_duration, \n' +
+			'performance.comment as performance_comment \n' +
 			'FROM performer \n' +
 			'JOIN performance ON performance.performer_id = performer.id \n' +
 			'JOIN class_lottery on performance.class_name = class_lottery.class_name \n' +
@@ -179,7 +185,9 @@ export async function lookupByCode(code: string): Promise<PerformerSearchResults
 				musical_piece: dbResult.rows[0].musical_piece,
 				lottery_code: dbResult.rows[0].lottery_code,
 				concert_series: dbResult.rows[0].concert_series,
-				performance_id: dbResult.rows[0].performance_id
+				performance_id: dbResult.rows[0].performance_id,
+				performance_duration: dbResult.rows[0].performance_duration,
+				performance_comment: dbResult.rows[0].performance_comment
 			};
 		} else {
 			return null;

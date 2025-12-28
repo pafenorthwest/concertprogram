@@ -122,6 +122,8 @@ export interface PerformerSearchResultsInterface {
 	lottery_code: number;
 	concert_series: string;
 	performance_id: number;
+	performance_duration: number;
+	performance_comment: null | string;
 }
 
 export interface EastSideFormInterface {
