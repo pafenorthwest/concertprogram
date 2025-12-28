@@ -4,6 +4,12 @@
 	let disableFormSubmit = true;
 	let firstTimeEntry = true;
 	export let data;
+	const performanceDuration = Number(data?.performance_duration) || 0;
+
+	// Keep as string so SSR-selected option matches option values
+	let durationSelection =
+		performanceDuration > 0 ? Math.min(performanceDuration, 8).toString() : '1';
+	console.log(`performance ${data?.performance_duration} Duration ${durationSelection}`);
 
 	function lacksGoodRankChoices() {
 		// return true if there are dupes or no choices made
@@ -163,7 +169,12 @@
 							<option value="8">8</option>
 						</select><br /><br />
 						<label for="comment"><span class="concerto-confirm">Comments:</span></label>
-						<input type="text" id="comment" name="comment" required /><br /><br />
+						<input
+							type="text"
+							id="comment"
+							name="comment"
+							value={data.performance_comment ?? ''}
+						/><br /><br />
 					</div>
 					<div class="form-group">
 						<button type="submit">Submit</button>
@@ -278,7 +289,7 @@
 							performance time in minutes</span
 						></label
 					>
-					<select class="action" name="duration" id="duration">
+					<select class="action" name="duration" id="duration" bind:value={durationSelection}>
 						<option value="1">1</option>
 						<option value="2">2</option>
 						<option value="3">3</option>
@@ -289,7 +300,12 @@
 						<option value="8">8</option>
 					</select><br /><br />
 					<label for="comment"><span class="concerto-confirm">Comments:</span></label>
-					<input type="text" id="comment" name="comment" required /><br /><br />
+					<input
+						type="text"
+						id="comment"
+						name="comment"
+						value={data.performance_comment ?? ''}
+					/><br /><br />
 					<div class="form-group">
 						<button type="submit" disabled={disableFormSubmit}>Submit</button>
 					</div>
