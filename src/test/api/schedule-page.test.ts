@@ -1,8 +1,8 @@
 import { describe, it, assert, expect } from 'vitest';
 import { chromium } from 'playwright';
 import { Performance } from '$lib/server/import';
-import { type ImportPerformanceInterface, year } from '$lib/server/common';
-import { deleteDBSchedule, getDBSchedule, lookupByCode, selectDBSchedule } from '$lib/server/db';
+import { type ImportPerformanceInterface, year, parseMusicalPiece } from '$lib/server/common';
+import { deleteDBSchedule, getDBSchedule, lookupByCode } from '$lib/server/db';
 
 const emmaCarterPerformance =
 	'{ "class_name": "QQ.9-10.XE", "performer": "Emma Carter", "age": 12, "lottery": 123, "email": "uFiqpdx@example.com","phone": "999-555-4444","accompanist": "Zhi, Zhou","instrument": "Cello","musical_piece": [ {"title": "Concerto in C minor 3rd movement", "contributors": [ { "name": "Johann Christian Bach", "yearsActive": "None" }  ]  },{ "title": "Scherzo no.2 in B Flat Minor, op.31", "contributors": [  { "name": "Frédéric Chopin", "yearsActive": "None" }  ] } ], "concert_series": "Eastside"}';
@@ -34,6 +34,7 @@ describe('Valid Eastside page', () => {
 	it('should display schedule page with ranked choices (playwright)', async () => {
 		const importEmmaCarterResults = await importEmmaCarterPerformance();
 		const EmmaCarterRecord = JSON.parse(emmaCarterPerformance);
+		const EmmaCarterMusicPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[0].title);
 
 		const browser = await chromium.launch({ headless: true });
 		const page = await browser.newPage();
@@ -64,6 +65,81 @@ describe('Valid Eastside page', () => {
 				element.tagName.toLowerCase()
 			);
 			expect(commentTagName).toBe('input');
+
+			await page.selectOption('#rank-sat-first', '1');
+			await page.selectOption('#rank-sat-second', '3');
+			await page.selectOption('#rank-sun-fourth', '2');
+			await page.check('#nonviable-sun-third');
+			await page.selectOption('#duration', '3');
+			await page.fill('#comment', 'Thank you');
+
+			await Promise.all([
+				page.waitForURL('**', { waitUntil: 'networkidle' }),
+				page.click('form#ranked-choice-form button[type="submit"]')
+			]);
+
+			const validateFormValues = async () => {
+				await page.waitForSelector('text=Lookup code 123');
+				const firstRankValue = await page.$eval(
+					'#rank-sat-first',
+					(element) => (element as HTMLSelectElement).value
+				);
+				const secondRankValue = await page.$eval(
+					'#rank-sat-second',
+					(element) => (element as HTMLSelectElement).value
+				);
+				const fourthRankValue = await page.$eval(
+					'#rank-sun-fourth',
+					(element) => (element as HTMLSelectElement).value
+				);
+				const thirdNotAvailableChecked = await page.$eval(
+					'#nonviable-sun-third',
+					(element) => (element as HTMLInputElement).checked
+				);
+				const thirdRankDisabled = await page.$eval(
+					'#rank-sun-third',
+					(element) => (element as HTMLSelectElement).disabled
+				);
+				const durationValue = await page.$eval(
+					'#duration',
+					(element) => (element as HTMLSelectElement).value
+				);
+				const commentValue = await page.$eval(
+					'#comment',
+					(element) => (element as HTMLInputElement).value
+				);
+
+				expect(firstRankValue).toBe('1');
+				expect(secondRankValue).toBe('3');
+				expect(fourthRankValue).toBe('2');
+				expect(thirdNotAvailableChecked).toBe(true);
+				expect(thirdRankDisabled).toBe(true);
+				expect(durationValue).toBe('3');
+				expect(commentValue).toBe('Thank you');
+			};
+
+			await page.goto('http://localhost:8888/schedule?code=123');
+			await validateFormValues();
+
+			await page.reload({ waitUntil: 'networkidle' });
+			await validateFormValues();
+
+			const performanceResults = await lookupByCode('123');
+			expect(performanceResults?.performance_duration).toBe(3);
+			expect(performanceResults?.performance_comment).toBe('Thank you');
+			expect(performanceResults?.lottery_code).toBe(123);
+			expect(performanceResults?.musical_piece).toBe(EmmaCarterMusicPiece.titleWithoutMovement);
+			expect(performanceResults?.concert_series).toBe(EmmaCarterRecord.concert_series);
+
+			const performanceSchedule = await getDBSchedule(
+				importEmmaCarterResults.performerId,
+				EmmaCarterRecord.concert_series,
+				year()
+			);
+			expect(performanceSchedule.rows[0].first_choice_time).toBeTruthy();
+			expect(performanceSchedule.rows[0].second_choice_time).toBeTruthy();
+			expect(performanceSchedule.rows[0].third_choice_time).toBeTruthy();
+			expect(performanceSchedule.rows[0].fourth_choice_time).not.toBeTruthy();
 		} finally {
 			deleteDBSchedule(
 				importEmmaCarterResults.performerId,
@@ -77,6 +153,7 @@ describe('Valid Eastside page', () => {
 	it('Valid Concerto page', async () => {
 		const OrganSonataResults = await importOrganSonataPerformance();
 		const OrganSonataRecord = JSON.parse(organSonataPerformance);
+		const OrganSonataMusicPeice = parseMusicalPiece(OrganSonataRecord.musical_piece[0].title);
 
 		const browser = await chromium.launch({ headless: true });
 		const page = await browser.newPage();
@@ -121,7 +198,7 @@ describe('Valid Eastside page', () => {
 			expect(performanceResults?.performance_duration).toBe(5);
 			expect(performanceResults?.performance_comment).toBe('See you there');
 			expect(performanceResults?.lottery_code).toBe(456);
-			expect(performanceResults?.musical_piece).toBe(OrganSonataRecord.musical_piece[0].title);
+			expect(performanceResults?.musical_piece).toBe(OrganSonataMusicPeice.titleWithoutMovement);
 			expect(performanceResults?.concert_series).toBe(OrganSonataRecord.concert_series);
 
 			const performanceSchedule = await getDBSchedule(
