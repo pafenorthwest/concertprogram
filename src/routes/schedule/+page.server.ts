@@ -325,7 +325,7 @@ export async function load({ url }) {
 
 	// found performer id now see if schedule already exists
 	try {
-		const scheduleRes = await selectDBSchedule(performerSearchResults.performer_id);
+		const scheduleRes = await selectDBSchedule(performerSearchResults.performer_id, year());
 		if (scheduleRes.rowCount != null && scheduleRes.rowCount > 0) {
 			formValues = timestampsToFormValues(scheduleRes.rows[0].concert_series, [
 				scheduleRes.rows[0].first_choice_time,
