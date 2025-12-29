@@ -32,7 +32,7 @@ CREATE TYPE contributor_role AS ENUM (
     'Composer',
     'Copyist',
     'Editor',
-    'Arrange',
+    'Arranger',
     'Transcriber',
     'Realizer',
     'Orchestrator'

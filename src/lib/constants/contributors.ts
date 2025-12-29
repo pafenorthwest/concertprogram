@@ -2,7 +2,7 @@ export const contributorRoles = [
 	'Composer',
 	'Copyist',
 	'Editor',
-	'Arrange',
+	'Arranger',
 	'Transcriber',
 	'Realizer',
 	'Orchestrator'

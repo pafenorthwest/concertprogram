@@ -1087,7 +1087,7 @@ export async function selectPerformanceLottery(year: number) {
 	}
 }
 
-export async function selectDBSchedule(performer_id: number) {
+export async function selectDBSchedule(performer_id: number, year: number) {
 	try {
 		const connection = await pool.connect();
 
@@ -1097,6 +1097,9 @@ export async function selectDBSchedule(performer_id: number) {
 			'FROM public.performer_ranked_choice \n' +
 			'WHERE performer_id = ' +
 			performer_id +
+			' \n' +
+			' AND year = ' +
+			year +
 			' \n' +
 			'ORDER BY concert_series \n';
 
@@ -1157,7 +1160,10 @@ export async function createDBSchedule(
 			'\n' +
 			"  AND concert_series = '" +
 			concert_series +
-			"' \n";
+			"' \n" +
+			'  AND year = ' +
+			year +
+			' \n';
 
 		await connection.query(deleteSQL);
 
@@ -1190,6 +1196,31 @@ export async function createDBSchedule(
 		insertSQL += insertCOLS + insertVALS;
 
 		const result = connection.query(insertSQL);
+		connection.release();
+		return result;
+	} catch (error) {
+		console.error('Error executing query:', error);
+		throw error;
+	}
+}
+
+export async function deleteDBSchedule(performerId: number, concert_series: string, year: number) {
+	try {
+		const connection = await pool.connect();
+
+		const deleteSQL =
+			'DELETE FROM performer_ranked_choice \n' +
+			'WHERE performer_id = ' +
+			performerId +
+			' \n' +
+			"  AND concert_series = '" +
+			concert_series +
+			"' \n" +
+			'  AND year = ' +
+			year +
+			' \n';
+
+		const result = connection.query(deleteSQL);
 		connection.release();
 		return result;
 	} catch (error) {

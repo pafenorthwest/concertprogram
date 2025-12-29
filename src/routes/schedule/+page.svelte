@@ -9,7 +9,6 @@
 	// Keep as string so SSR-selected option matches option values
 	let durationSelection =
 		performanceDuration > 0 ? Math.min(performanceDuration, 8).toString() : '1';
-	console.log(`performance ${data?.performance_duration} Duration ${durationSelection}`);
 
 	function lacksGoodRankChoices() {
 		// return true if there are dupes or no choices made
