@@ -85,18 +85,6 @@ CREATE TABLE class_lottery (
                                lottery INTEGER NOT NULL);
 CREATE UNIQUE INDEX lookup_class_lottery_idx ON class_lottery(class_name);
 
-CREATE TABLE performer_ranked_choice (
-    performer_id INTEGER NOT NULL,
-    concert_series VARCHAR(255) NOT NULL,
-    year INTEGER NOT NULL,
-    concert_chair_choice BOOLEAN NOT NULL DEFAULT FALSE,
-    first_choice_time TIMESTAMP NOT NULL,
-    second_choice_time TIMESTAMP NULL,
-    third_choice_time TIMESTAMP NULL,
-    fourth_choice_time TIMESTAMP NULL
-);
-CREATE UNIQUE INDEX lookup_ranked_choice_idx ON performer_ranked_choice(performer_id, concert_series, year);
-
 CREATE TABLE performance (
     id SERIAL PRIMARY KEY,
     performer_id INTEGER NOT NULL,
@@ -121,6 +109,23 @@ CREATE TABLE concert_times (
     start_time TIMESTAMP NOT NULL,
     CONSTRAINT concert_times_unique UNIQUE (concert_series, year, concert_number_in_series)
 );
+
+CREATE TABLE schedule_slot_choice (
+    performer_id INTEGER NOT NULL,
+    concert_series VARCHAR(255) NOT NULL,
+    year INTEGER NOT NULL,
+    slot_id BIGINT NOT NULL,
+    rank INTEGER NULL,
+    not_available BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX schedule_slot_choice_unique_idx
+    ON schedule_slot_choice(performer_id, concert_series, year, slot_id);
+
+CREATE INDEX schedule_slot_choice_lookup_idx
+    ON schedule_slot_choice(performer_id, concert_series, year);
 
 INSERT INTO concert_times (concert_series, year,concert_number_in_series,start_time)
 VALUES ('Concerto',2026,0,'04/27/2026T15:00:00');

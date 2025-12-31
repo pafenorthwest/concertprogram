@@ -3,9 +3,7 @@ import {
 	queryPerformanceDetailsById,
 	retrievePerformanceByLottery
 } from '$lib/server/db';
-import { getCachedTimeStamps } from '$lib/cache';
-import { calcEpochAge, compareReformatISODate } from '$lib/server/common';
-import { type ConcertStartTime } from '$lib/cache';
+import { calcEpochAge } from '$lib/server/common';
 
 export interface ProgramComposerInterface {
 	printedName: string;
@@ -89,7 +87,6 @@ export class Program {
 	eastSideSeats: number;
 	orderedPerformance: OrderedPerformanceInterface[] = [];
 	count: ConcertCount = new ConcertCount();
-	concertTimeStamps: ConcertStartTime | null = null;
 
 	constructor(year: number, eastsideSeats: number = 10) {
 		this.year = year;
@@ -98,10 +95,8 @@ export class Program {
 
 	async build() {
 		try {
-			// set the timestamps needed to map ranked choice concert times to concert number in series
-			await this.setConcertTimeStamps();
 			// fetch performances order by concert_series & lottery
-			//  - performer id, lottery num, concert_series, array of concert times
+			//  - performer id, lottery num, concert_series, array of ranked slot numbers
 			//  - filter by year
 			//  - concerto concerts show up first and takes precedent
 			const performancesWithLottery = await retrievePerformanceByLottery(this.year);
@@ -110,21 +105,13 @@ export class Program {
 				//  - track seat limit per EastSide concert (#1,#2,#3,#4), and stop adding when limit reached
 				//  - choncertChairChoice overrides and ignores any limits
 				for (const performance of performancesWithLottery.rows) {
-					// first thing create an array of concerts in order of ranked choice
-					const rankedChoiceConcerts: number[] = this.computeRankedChoices([
-						performance.first_choice_time,
-						performance.second_choice_time,
-						performance.third_choice_time,
-						performance.fourth_choice_time
-					]);
+					const rankedChoiceConcerts = this.normalizeRankedChoices(performance.ranked_slots);
 
 					let hasPlacement = false;
 					let numberInSeries = 1;
 					for (const concertNum of rankedChoiceConcerts) {
 						// Not Full Set to This Concert
-						if (
-							!this.isFull(performance.concert_series, concertNum, performance.concert_chair_choice)
-						) {
+						if (!this.isFull(performance.concert_series, concertNum)) {
 							this.incrementConcertCount(performance.concert_series, concertNum);
 							numberInSeries = concertNum;
 							hasPlacement = true;
@@ -137,6 +124,12 @@ export class Program {
 					const musicalTitles = await this.queryMusicalPiece(performance.id);
 					// get performance details
 					const performanceDetails = await this.queryPerformanceDetails(performance.id);
+					if (!performanceDetails) {
+						console.warn(
+							`Skipping program entry for performance ${performance.id}: missing performance details`
+						);
+						continue;
+					}
 
 					// add performance
 					this.orderedPerformance.push({
@@ -185,32 +178,16 @@ export class Program {
 		}
 	}
 
-	async setConcertTimeStamps() {
-		// init once, no need to reinit
-		if (this.concertTimeStamps == null || this.concertTimeStamps.length <= 0) {
-			this.concertTimeStamps = await getCachedTimeStamps();
+	normalizeRankedChoices(choiceSlots: unknown): number[] {
+		if (!Array.isArray(choiceSlots)) {
+			return [];
 		}
+		return choiceSlots
+			.map((slot) => Number(slot))
+			.filter((slot) => Number.isInteger(slot) && slot >= 0);
 	}
 
-	// remove nulls
-	// then find caches concert time stamp entry with matching timestamp
-	// return concert_number_in_series from matching record and convert to Number
-	computeRankedChoices(choiceTimes: (string | null)[]): number[] {
-		return choiceTimes
-			.filter((mapped) => mapped !== null)
-			.map((item) =>
-				Number(
-					this.concertTimeStamps.data.find(
-						(concert) => concert.normalizedStartTime === compareReformatISODate(item)
-					)?.concert_number_in_series
-				)
-			);
-	}
-
-	isFull(concertSeries: string, concertNum: number, chairOverride: boolean): boolean {
-		if (chairOverride) {
-			return false;
-		}
+	isFull(concertSeries: string, concertNum: number): boolean {
 		return (
 			concertSeries.toLowerCase() === 'eastside' &&
 			this.count.get(concertSeries, concertNum) >= this.eastSideSeats
@@ -220,56 +197,56 @@ export class Program {
 	async queryMusicalPiece(performanceId: number): Promise<MusicalTitleInterface[]> {
 		const data = await queryMusicalPieceByPerformanceId(performanceId);
 		const musicalTitles: MusicalTitleInterface[] = [];
-		if (data.rowCount != null && data.rowCount !== 0) {
-			for (const piece of data.rows) {
-				const contributors: ProgramComposerInterface[] = [];
-				if (piece.composer_one_name != null) {
-					contributors.push({
-						printedName: piece.composer_one_name,
-						yearsActive: piece.composer_one_years
-					});
-				}
-				if (piece.composer_two_name != null) {
-					contributors.push({
-						printedName: piece.composer_two_name,
-						yearsActive: piece.composer_two_years
-					});
-				}
-				if (piece.composer_three_name != null) {
-					contributors.push({
-						printedName: piece.composer_three_name,
-						yearsActive: piece.composer_two_years
-					});
-				}
-				if (piece.printed_name != null) {
-					musicalTitles.push({
-						title: piece.printed_name,
-						movement: piece.movement ? piece.movement : '',
-						contributors: contributors
-					});
-				}
-			}
+		if (data.rowCount == null || data.rowCount === 0) {
 			return musicalTitles;
-		} else {
-			throw new Error('Unable to query musical piece for program');
 		}
+		for (const piece of data.rows) {
+			const contributors: ProgramComposerInterface[] = [];
+			if (piece.composer_one_name != null) {
+				contributors.push({
+					printedName: piece.composer_one_name,
+					yearsActive: piece.composer_one_years
+				});
+			}
+			if (piece.composer_two_name != null) {
+				contributors.push({
+					printedName: piece.composer_two_name,
+					yearsActive: piece.composer_two_years
+				});
+			}
+			if (piece.composer_three_name != null) {
+				contributors.push({
+					printedName: piece.composer_three_name,
+					yearsActive: piece.composer_two_years
+				});
+			}
+			if (piece.printed_name != null) {
+				musicalTitles.push({
+					title: piece.printed_name,
+					movement: piece.movement ? piece.movement : '',
+					contributors: contributors
+				});
+			}
+		}
+		return musicalTitles;
 	}
 
-	async queryPerformanceDetails(performanceId: number): Promise<PerformanceDetailsInterface> {
+	async queryPerformanceDetails(
+		performanceId: number
+	): Promise<PerformanceDetailsInterface | null> {
 		const data = await queryPerformanceDetailsById(performanceId);
-		if (data.rowCount != null && data.rowCount !== 0) {
-			return {
-				id: performanceId,
-				performerId: data.rows[0].performer_id,
-				performerName: data.rows[0].performer_full_name,
-				instrument: data.rows[0].instrument,
-				age: calcEpochAge(data.rows[0].epoch),
-				accompanist: data.rows[0].accompanist_name ? data.rows[0].accompanist_name : '',
-				duration: data.rows[0].duration,
-				comment: data.rows[0].comment
-			};
-		} else {
-			throw new Error(`Unable to query performance details with id ${performanceId} for program`);
+		if (data.rowCount == null || data.rowCount === 0) {
+			return null;
 		}
+		return {
+			id: performanceId,
+			performerId: data.rows[0].performer_id,
+			performerName: data.rows[0].performer_full_name,
+			instrument: data.rows[0].instrument,
+			age: calcEpochAge(data.rows[0].epoch),
+			accompanist: data.rows[0].accompanist_name ? data.rows[0].accompanist_name : '',
+			duration: data.rows[0].duration,
+			comment: data.rows[0].comment
+		};
 	}
 }

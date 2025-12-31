@@ -1,4 +1,4 @@
-import { fail, json } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import {
 	type MusicalTitleInterface,
 	type OrderedPerformanceInterface,
@@ -29,7 +29,11 @@ export async function GET() {
 		const csv = Papa.unparse(flattenedArray);
 		return new Response(csv, { headers: download_headers });
 	} catch (error) {
-		fail(500, { error: `Failed to process the request ${(error as Error).message}` });
+		console.error('Failed to process the program request', error);
+		return json(
+			{ status: 'error', message: `Failed to process the request ${(error as Error).message}` },
+			{ status: 500 }
+		);
 	}
 }
 

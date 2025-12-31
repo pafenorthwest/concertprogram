@@ -1,4 +1,4 @@
-import { getCachedTimeStamps, type ConcertRow } from '$lib/cache';
+import { getCachedTimeStamps, refreshCachedTimeStamps, type ConcertRow } from '$lib/cache';
 import { compareReformatISODate, displayReformatISODate } from '$lib/server/common';
 import { queryTable } from '$lib/server/db';
 import type { Slot } from '$lib/types/schedule';
@@ -16,6 +16,7 @@ export type SlotSourceRow = {
 export type SlotLoader = (concertSeries: string, year: number) => Promise<SlotSourceRow[]>;
 
 const defaultSlotLoader: SlotLoader = async () => {
+	await refreshCachedTimeStamps();
 	const cached = getCachedTimeStamps();
 	if (cached?.data?.length) {
 		return cached.data;

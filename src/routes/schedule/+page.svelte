@@ -21,7 +21,8 @@
 		// Only reset the duration when the loaded performance changes so user picks are preserved
 		if (performanceId !== durationPerformanceId) {
 			const performanceDuration = Number(data.performance_duration) || 0;
-			durationSelection = performanceDuration > 0 ? Math.min(performanceDuration, 8).toString() : '1';
+			durationSelection =
+				performanceDuration > 0 ? Math.min(performanceDuration, 8).toString() : '1';
 			durationPerformanceId = performanceId;
 		}
 	}
