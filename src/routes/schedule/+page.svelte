@@ -1,11 +1,17 @@
-<script>
+<script lang="ts">
+	import type { ScheduleViewModel } from '$lib/types/schedule.js';
+
 	let disableFormSubmit = true;
 	let firstTimeEntry = true;
-	let viewModel = null;
+	// view Model type ScheduleViewModel
+	let viewModel: ScheduleViewModel | null = null;
 	let rankSelections = {};
 	let notAvailableSelections = {};
 	let confirmSelections = {};
 	export let data;
+	// eslint-disable-next-line svelte/valid-compile
+	export let params;
+
 	// Keep as string so SSR-selected option matches option values
 	let durationSelection = '1';
 	// Refresh the selection any time the route data changes (e.g., client nav to another performer)

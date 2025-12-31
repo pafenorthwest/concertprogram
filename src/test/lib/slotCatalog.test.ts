@@ -66,11 +66,7 @@ describe('SlotCatalog', () => {
 
 	it('supports loading up to 10 slots', async () => {
 		const rows = Array.from({ length: 10 }, (_, index) =>
-			makeRow(
-				index + 1,
-				index + 1,
-				`05/${String(index + 1).padStart(2, '0')}/2026T10:00:00`
-			)
+			makeRow(index + 1, index + 1, `05/${String(index + 1).padStart(2, '0')}/2026T10:00:00`)
 		).reverse();
 
 		const catalog = await SlotCatalog.load(series, baseYear, {
@@ -84,10 +80,7 @@ describe('SlotCatalog', () => {
 	});
 
 	it('throws when duplicate slot ids are loaded', async () => {
-		const rows = [
-			makeRow(1, 1, '05/03/2026T16:00:00'),
-			makeRow(1, 2, '05/03/2026T19:00:00')
-		];
+		const rows = [makeRow(1, 1, '05/03/2026T16:00:00'), makeRow(1, 2, '05/03/2026T19:00:00')];
 
 		await expect(
 			SlotCatalog.load(series, baseYear, {
