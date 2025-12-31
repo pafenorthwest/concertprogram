@@ -126,6 +126,7 @@ describe('ScheduleMapper', () => {
 		formData.set(scheduleFieldNames.rank(2), '');
 		formData.set(scheduleFieldNames.rank(3), '2');
 		formData.set(scheduleFieldNames.notAvailable(2), 'on');
+		formData.set(scheduleFieldNames.rank(4), '99');
 
 		const submission = ScheduleMapper.fromFormData(formData, {
 			...baseContext,

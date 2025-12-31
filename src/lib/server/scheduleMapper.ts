@@ -13,12 +13,15 @@ const fieldNames = {
 	confirm: (slotId: number) => `slot-${slotId}-confirm`
 };
 
-function coerceRank(value: FormDataEntryValue | null): number | null {
+function coerceRank(value: FormDataEntryValue | null, slotCount: number): number | null {
 	if (typeof value !== 'string' || value.trim() === '') {
 		return null;
 	}
 	const numeric = Number(value);
 	if (!Number.isInteger(numeric)) {
+		return null;
+	}
+	if (numeric < 1 || numeric > slotCount) {
 		return null;
 	}
 	return numeric;
@@ -96,7 +99,7 @@ export class ScheduleMapper {
 					};
 				}
 
-				const rankValue = coerceRank(formData.get(fieldNames.rank(slot.id)));
+				const rankValue = coerceRank(formData.get(fieldNames.rank(slot.id)), slotCount);
 				return {
 					slotId: slot.id,
 					rank: notAvailable ? null : rankValue,
