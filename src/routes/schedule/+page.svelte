@@ -42,8 +42,10 @@
 
 	function selectedRanks() {
 		return Object.entries(rankSelections)
-			.filter(([slotId, rank]) => !notAvailableSelections[slotId] && rank.trim() !== '')
-			.map(([, rank]) => Number(rank))
+			.filter(([slotId]) => !notAvailableSelections[slotId])
+			.map(([, rank]) => String(rank ?? '').trim())
+			.filter((rank) => rank !== '')
+			.map((rank) => Number(rank))
 			.filter((rank) => Number.isInteger(rank));
 	}
 
