@@ -124,6 +124,12 @@ export class Program {
 					const musicalTitles = await this.queryMusicalPiece(performance.id);
 					// get performance details
 					const performanceDetails = await this.queryPerformanceDetails(performance.id);
+					if (!performanceDetails) {
+						console.warn(
+							`Skipping program entry for performance ${performance.id}: missing performance details`
+						);
+						continue;
+					}
 
 					// add performance
 					this.orderedPerformance.push({
@@ -191,56 +197,56 @@ export class Program {
 	async queryMusicalPiece(performanceId: number): Promise<MusicalTitleInterface[]> {
 		const data = await queryMusicalPieceByPerformanceId(performanceId);
 		const musicalTitles: MusicalTitleInterface[] = [];
-		if (data.rowCount != null && data.rowCount !== 0) {
-			for (const piece of data.rows) {
-				const contributors: ProgramComposerInterface[] = [];
-				if (piece.composer_one_name != null) {
-					contributors.push({
-						printedName: piece.composer_one_name,
-						yearsActive: piece.composer_one_years
-					});
-				}
-				if (piece.composer_two_name != null) {
-					contributors.push({
-						printedName: piece.composer_two_name,
-						yearsActive: piece.composer_two_years
-					});
-				}
-				if (piece.composer_three_name != null) {
-					contributors.push({
-						printedName: piece.composer_three_name,
-						yearsActive: piece.composer_two_years
-					});
-				}
-				if (piece.printed_name != null) {
-					musicalTitles.push({
-						title: piece.printed_name,
-						movement: piece.movement ? piece.movement : '',
-						contributors: contributors
-					});
-				}
-			}
+		if (data.rowCount == null || data.rowCount === 0) {
 			return musicalTitles;
-		} else {
-			throw new Error('Unable to query musical piece for program');
 		}
+		for (const piece of data.rows) {
+			const contributors: ProgramComposerInterface[] = [];
+			if (piece.composer_one_name != null) {
+				contributors.push({
+					printedName: piece.composer_one_name,
+					yearsActive: piece.composer_one_years
+				});
+			}
+			if (piece.composer_two_name != null) {
+				contributors.push({
+					printedName: piece.composer_two_name,
+					yearsActive: piece.composer_two_years
+				});
+			}
+			if (piece.composer_three_name != null) {
+				contributors.push({
+					printedName: piece.composer_three_name,
+					yearsActive: piece.composer_two_years
+				});
+			}
+			if (piece.printed_name != null) {
+				musicalTitles.push({
+					title: piece.printed_name,
+					movement: piece.movement ? piece.movement : '',
+					contributors: contributors
+				});
+			}
+		}
+		return musicalTitles;
 	}
 
-	async queryPerformanceDetails(performanceId: number): Promise<PerformanceDetailsInterface> {
+	async queryPerformanceDetails(
+		performanceId: number
+	): Promise<PerformanceDetailsInterface | null> {
 		const data = await queryPerformanceDetailsById(performanceId);
-		if (data.rowCount != null && data.rowCount !== 0) {
-			return {
-				id: performanceId,
-				performerId: data.rows[0].performer_id,
-				performerName: data.rows[0].performer_full_name,
-				instrument: data.rows[0].instrument,
-				age: calcEpochAge(data.rows[0].epoch),
-				accompanist: data.rows[0].accompanist_name ? data.rows[0].accompanist_name : '',
-				duration: data.rows[0].duration,
-				comment: data.rows[0].comment
-			};
-		} else {
-			throw new Error(`Unable to query performance details with id ${performanceId} for program`);
+		if (data.rowCount == null || data.rowCount === 0) {
+			return null;
 		}
+		return {
+			id: performanceId,
+			performerId: data.rows[0].performer_id,
+			performerName: data.rows[0].performer_full_name,
+			instrument: data.rows[0].instrument,
+			age: calcEpochAge(data.rows[0].epoch),
+			accompanist: data.rows[0].accompanist_name ? data.rows[0].accompanist_name : '',
+			duration: data.rows[0].duration,
+			comment: data.rows[0].comment
+		};
 	}
 }

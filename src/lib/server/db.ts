@@ -868,8 +868,8 @@ export async function queryMusicalPieceByPerformanceId(id: number) {
 			'FROM musical_piece\n' +
 			'JOIN performance_pieces ON musical_piece.id = performance_pieces.musical_piece_id\n' +
 			'JOIN contributor one ON one.id = musical_piece.first_contributor_id\n' +
-			'LEFT JOIN contributor two ON two.id = musical_piece. second_contributor_id\n' +
-			'LEFT JOIN contributor three ON three.id = musical_piece. third_contributor_id\n' +
+			'LEFT JOIN contributor two ON two.id = musical_piece.second_contributor_id\n' +
+			'LEFT JOIN contributor three ON three.id = musical_piece.third_contributor_id\n' +
 			'JOIN performance ON performance_pieces.performance_id = performance.id\n' +
 			'AND performance.id = ' +
 			id;

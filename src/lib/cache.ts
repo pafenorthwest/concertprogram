@@ -18,11 +18,19 @@ export type ConcertStartTime = {
 
 let concertStartTimes: ConcertStartTime | null = null;
 
-export async function initializeCache() {
+async function setCacheFromDb() {
 	concertStartTimes = {
 		data: await fetchTimeStamps(),
 		timestamp: new Date().toISOString()
 	};
+}
+
+export async function initializeCache() {
+	await setCacheFromDb();
+}
+
+export async function refreshCachedTimeStamps() {
+	await setCacheFromDb();
 }
 
 export function getCachedTimeStamps(): ConcertStartTime | null {

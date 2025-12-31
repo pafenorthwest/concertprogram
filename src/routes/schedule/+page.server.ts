@@ -10,7 +10,7 @@ import { getCachedTimeStamps, type ConcertRow } from '$lib/cache';
 import type { ScheduleViewModel, Slot } from '$lib/types/schedule';
 
 // Ensure a stable ordering of concert times for both rendering and form processing
-function getSortedConcertTimes(): ConcertRow[] | null {
+async function getSortedConcertTimes(): Promise<ConcertRow[] | null> {
 	const cached = getCachedTimeStamps();
 	if (!cached) {
 		return null;
@@ -41,7 +41,7 @@ export async function load({ url }) {
 	let slotCount = 0;
 	let slots: Slot[] = [];
 
-	const concertStartTimes = getSortedConcertTimes();
+	const concertStartTimes = await getSortedConcertTimes();
 	if (concertStartTimes == null) {
 		return {
 			status: 'NOTFOUND',
