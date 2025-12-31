@@ -47,11 +47,10 @@ export class PerformerLookup {
 		};
 	}
 
-	private mapNotFound(overrides?: Partial<PerformerSearchResultsInterface>): PerformerSearchResultsInterface {
-		return {
-			...baseResult('NOTFOUND'),
-			...overrides
-		};
+	private mapNotFound(
+		overrides?: Partial<PerformerSearchResultsInterface>
+	): PerformerSearchResultsInterface {
+		return { ...baseResult('NOTFOUND'), ...overrides };
 	}
 
 	private mapError(): PerformerSearchResultsInterface {

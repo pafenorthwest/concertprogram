@@ -2,6 +2,7 @@ import { queryTable } from '$lib/server/db';
 import { compareReformatISODate, displayReformatISODate, year } from '$lib/server/common';
 
 export type ConcertRow = {
+	id: number;
 	concert_series: string;
 	year: number;
 	concert_number_in_series: number;
@@ -34,8 +35,15 @@ async function fetchTimeStamps(): Promise<ConcertRow[]> {
 	return res.rows
 		.filter((row) => row.year === year())
 		.map((row) => {
-			row.normalizedStartTime = compareReformatISODate(row.start_time);
-			row.displayStartTime = displayReformatISODate(row.start_time);
-			return row;
+			const startTime = String(row.start_time);
+			return {
+				id: row.id,
+				concert_series: row.concert_series,
+				year: row.year,
+				concert_number_in_series: row.concert_number_in_series,
+				start_time: startTime,
+				normalizedStartTime: compareReformatISODate(startTime),
+				displayStartTime: displayReformatISODate(startTime)
+			};
 		});
 }

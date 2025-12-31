@@ -21,22 +21,15 @@ function getSortedConcertTimes(): ConcertRow[] | null {
 		return null;
 	}
 
-	return cached.data
-		.slice()
-		.sort((a, b) => {
-			if (a.concert_series === b.concert_series) {
-				return a.concert_number_in_series - b.concert_number_in_series;
-			}
-			return a.concert_series.localeCompare(b.concert_series);
-		});
+	return cached.data.slice().sort((a, b) => {
+		if (a.concert_series === b.concert_series) {
+			return a.concert_number_in_series - b.concert_number_in_series;
+		}
+		return a.concert_series.localeCompare(b.concert_series);
+	});
 }
 
-const legacyRankFields = [
-	'rank-sat-first',
-	'rank-sat-second',
-	'rank-sun-third',
-	'rank-sun-fourth'
-];
+const legacyRankFields = ['rank-sat-first', 'rank-sat-second', 'rank-sun-third', 'rank-sun-fourth'];
 const legacyNotAvailableFields = [
 	'nonviable-sat-first',
 	'nonviable-sat-second',
@@ -145,10 +138,7 @@ export async function load({ url }) {
 
 	performerSearchResults = await performerLookup.lookupFromUrl(url);
 	if (performerSearchResults.status === 'OK') {
-		const slotCatalog = await SlotCatalog.load(
-			performerSearchResults.concert_series,
-			year()
-		);
+		const slotCatalog = await SlotCatalog.load(performerSearchResults.concert_series, year());
 		slotCount = slotCatalog.slotCount;
 		slots = slotCatalog.slots;
 

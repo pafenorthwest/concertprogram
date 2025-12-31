@@ -114,10 +114,12 @@ CREATE TABLE performance (
 );
 
 CREATE TABLE concert_times (
+    id BIGSERIAL PRIMARY KEY,
     concert_series VARCHAR(255) NOT NULL,
     year INTEGER NOT NULL,
     concert_number_in_series INTEGER NOT NULL DEFAULT 0,
-    start_time TIMESTAMP NOT NULL
+    start_time TIMESTAMP NOT NULL,
+    CONSTRAINT concert_times_unique UNIQUE (concert_series, year, concert_number_in_series)
 );
 
 INSERT INTO concert_times (concert_series, year,concert_number_in_series,start_time)

@@ -58,7 +58,7 @@ export class ScheduleMapper {
 			};
 		}
 
-		const rankOptions = Array.from({ length: slotCount }, (_, index) => index + 1);
+		const rankOptions = Array.from({ length: slotCount }, (_, index) => String(index + 1));
 
 		return {
 			mode: 'rank-choice',

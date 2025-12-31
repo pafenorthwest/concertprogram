@@ -28,9 +28,8 @@ function normalizeTableName(table: string): string {
 	return table;
 }
 export async function queryTable(table: string, id?: number) {
+	const connection = await pool.connect();
 	try {
-		const connection = await pool.connect();
-
 		let fields = '';
 		let filter = '';
 		let sort = '';
@@ -51,7 +50,7 @@ export async function queryTable(table: string, id?: number) {
 					'id, printed_name, first_contributor_id, all_movements, second_contributor_id, third_contributor_id';
 				break;
 			case 'concert_times':
-				fields = 'concert_series, year,concert_number_in_series,start_time';
+				fields = 'id, concert_series, year, concert_number_in_series, start_time';
 				break;
 			case 'class_lottery':
 				fields = 'class_name, lottery';
@@ -65,23 +64,17 @@ export async function queryTable(table: string, id?: number) {
 
 		// tables with no id field
 		switch (tableName) {
-			case 'concert_times':
-				sort = '';
-				break;
 			case 'class_lottery':
 				sort = '';
 				break;
 		}
 
-		const result = connection.query('SELECT ' + fields + ' FROM ' + tableName + filter + sort);
-
-		// Release the connection back to the pool
-		connection.release();
-
-		return result;
+		return await connection.query('SELECT ' + fields + ' FROM ' + tableName + filter + sort);
 	} catch (error) {
 		console.error('Error executing query:', error);
 		throw error;
+	} finally {
+		connection.release();
 	}
 }
 
@@ -646,7 +639,7 @@ export async function insertPerformancePieceMap(performancePieceMap: Performance
 				performancePieceMap.musical_piece_id +
 				' )';
 		}
-		const result = connection.query(insertSQL);
+		const result = await connection.query(insertSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -672,7 +665,7 @@ export async function deletePerformancePieceMap(
 			deleteSQL = deleteSQL + ' AND musical_piece_id = ' + performancePieceMap.musical_piece_id;
 		}
 
-		const result = connection.query(deleteSQL);
+		const result = await connection.query(deleteSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -689,7 +682,7 @@ export async function deletePerformancePieceByPerformanceId(performance_id: numb
 		const connection = await pool.connect();
 
 		const deleteSQL = 'DELETE FROM performance_pieces where performance_id = ' + performance_id;
-		const result = connection.query(deleteSQL);
+		const result = await connection.query(deleteSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -711,7 +704,7 @@ export async function getClassLottery(class_name: string) {
 	try {
 		const connection = await pool.connect();
 
-		const result = connection.query(
+		const result = await connection.query(
 			'SELECT class_name, lottery' +
 				'       FROM class_lottery' +
 				"      WHERE class_name = '" +
@@ -850,7 +843,7 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
 		}
 		queryFilter = queryFilter + '\n';
 
-		const result = connection.query(
+		const result = await connection.query(
 			'SELECT ' + fields + ' FROM performance' + joins + queryFilter + order
 		);
 
@@ -881,7 +874,7 @@ export async function queryMusicalPieceByPerformanceId(id: number) {
 			'AND performance.id = ' +
 			id;
 
-		const result = connection.query(querySQL);
+		const result = await connection.query(querySQL);
 		connection.release();
 		return result;
 	} catch (error) {
@@ -902,7 +895,7 @@ export async function queryPerformanceDetailsById(id: number) {
 			'LEFT JOIN accompanist ON performance.accompanist_id = accompanist.id \n' +
 			'WHERE performance.id = ' +
 			id;
-		const result = connection.query(querySQL);
+		const result = await connection.query(querySQL);
 		connection.release();
 		return result;
 	} catch (error) {
@@ -928,7 +921,7 @@ export async function searchContributor(composer_name: string, role: string) {
 			normalizedRole +
 			"'";
 
-		const result = connection.query(searchSQL);
+		const result = await connection.query(searchSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -951,7 +944,7 @@ export async function searchAccompanist(accompanist: string) {
 			accompanist.toLowerCase() +
 			"'";
 
-		const result = connection.query(searchSQL);
+		const result = await connection.query(searchSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -979,7 +972,7 @@ export async function searchPerformer(full_name: string, email: string | null, i
 			searchSQL = searchSQL + " OR (LOWER(email) = '" + email.toLowerCase() + "')";
 		}
 
-		const result = connection.query(searchSQL);
+		const result = await connection.query(searchSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -1003,7 +996,7 @@ export async function searchMusicalPiece(printed_name: string, first_contributor
 			"' AND first_contributor_id = " +
 			first_contributor_id;
 
-		const result = connection.query(searchSQL);
+		const result = await connection.query(searchSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -1042,7 +1035,7 @@ export async function searchPerformanceByPerformer(
 			'    AND year = ' +
 			year;
 
-		const result = connection.query(searchSQL);
+		const result = await connection.query(searchSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -1078,7 +1071,7 @@ export async function selectPerformanceLottery(year: number) {
 			' \n' +
 			'ORDER BY class_lottery.lottery';
 
-		const result = connection.query(searchSQL);
+		const result = await connection.query(searchSQL);
 		connection.release();
 		return result;
 	} catch (error) {
@@ -1103,7 +1096,7 @@ export async function selectDBSchedule(performer_id: number, year: number) {
 			' \n' +
 			'ORDER BY concert_series \n';
 
-		const result = connection.query(selectSQL);
+		const result = await connection.query(selectSQL);
 		connection.release();
 		return result;
 	} catch (error) {
@@ -1131,7 +1124,7 @@ export async function getDBSchedule(performer_id: number, concert_series: string
 			' \n' +
 			'ORDER BY concert_series \n';
 
-		const result = connection.query(selectSQL);
+		const result = await connection.query(selectSQL);
 		connection.release();
 		return result;
 	} catch (error) {
@@ -1195,7 +1188,7 @@ export async function createDBSchedule(
 		insertVALS += ') \n';
 		insertSQL += insertCOLS + insertVALS;
 
-		const result = connection.query(insertSQL);
+		const result = await connection.query(insertSQL);
 		connection.release();
 		return result;
 	} catch (error) {
@@ -1220,7 +1213,7 @@ export async function deleteDBSchedule(performerId: number, concert_series: stri
 			year +
 			' \n';
 
-		const result = connection.query(deleteSQL);
+		const result = await connection.query(deleteSQL);
 		connection.release();
 		return result;
 	} catch (error) {

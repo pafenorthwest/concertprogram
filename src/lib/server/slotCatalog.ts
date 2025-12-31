@@ -4,6 +4,7 @@ import { queryTable } from '$lib/server/db';
 import type { Slot } from '$lib/types/schedule';
 
 export type SlotSourceRow = {
+	id: number;
 	concert_series: string;
 	year: number;
 	concert_number_in_series: number;
@@ -34,7 +35,7 @@ function normalizeSlot(row: SlotSourceRow): Slot {
 	const displayStartTime = row.displayStartTime ?? displayReformatISODate(String(row.start_time));
 
 	return {
-		id: row.concert_number_in_series,
+		id: row.id,
 		concertSeries: row.concert_series,
 		year: row.year,
 		concertNumberInSeries: row.concert_number_in_series,
@@ -67,6 +68,11 @@ export class SlotCatalog {
 			.slice()
 			.sort((a, b) => a.concert_number_in_series - b.concert_number_in_series)
 			.map((row) => normalizeSlot(row));
+
+		const ids = new Set(slots.map((slot) => slot.id));
+		if (ids.size !== slots.length) {
+			throw new Error('Duplicate slot ids detected during slot catalog load.');
+		}
 
 		return new SlotCatalog(slots);
 	}

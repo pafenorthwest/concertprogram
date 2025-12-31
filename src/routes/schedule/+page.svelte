@@ -11,8 +11,7 @@
 	// Refresh the selection any time the route data changes (e.g., client nav to another performer)
 	$: if (data) {
 		const performanceDuration = Number(data.performance_duration) || 0;
-		durationSelection =
-			performanceDuration > 0 ? Math.min(performanceDuration, 8).toString() : '1';
+		durationSelection = performanceDuration > 0 ? Math.min(performanceDuration, 8).toString() : '1';
 	}
 
 	const fieldNames = {
@@ -171,7 +170,7 @@
 								performance time in minutes</span
 							></label
 						>
-						<select class="action" name="duration" id="duration">
+						<select class="action" name="duration" id="duration" bind:value={durationSelection}>
 							<option value="1">1</option>
 							<option value="2">2</option>
 							<option value="3">3</option>
@@ -211,12 +210,13 @@
 					<input type="hidden" name="performanceId" value={data.performance_id} />
 					<span class="concerto-confirm">Rank Choice: </span><br />
 					<p>
-						Please rank the following options (1 = most preferred, {data.viewModel.slotCount} =
-						least preferred).
+						Please rank the following options (1 = most preferred, {data.viewModel.slotCount} = least
+						preferred).
 					</p>
 					<br /><br />
 
-					{#each data.viewModel.slots as slot (slot.slotId)}
+					<!-- assert and filter; best to surface the dupliate data bug, two zero slots, early -->
+					{#each (data.viewModel.slots ?? []).filter((s) => s?.slotId != null) as slot (slot.slotId)}
 						<div class="inline-form">
 							<label for={fieldNames.rank(slot.slotId)} style="width:180px"
 								>{slot.displayTime}:</label
