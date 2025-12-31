@@ -66,6 +66,7 @@ describe('Valid Eastside page', () => {
 			);
 			expect(commentTagName).toBe('input');
 
+			console.log('test phase 1')
 			await page.selectOption('#rank-sat-first', '1');
 			await page.selectOption('#rank-sat-second', '3');
 			await page.selectOption('#rank-sun-fourth', '2');
@@ -77,7 +78,7 @@ describe('Valid Eastside page', () => {
 				page.waitForURL('**', { waitUntil: 'networkidle' }),
 				page.click('form#ranked-choice-form button[type="submit"]')
 			]);
-
+			console.log('test phase 2')
 			const validateFormValues = async () => {
 				await page.waitForSelector('text=Lookup code 123');
 				const firstRankValue = await page.$eval(
@@ -108,7 +109,7 @@ describe('Valid Eastside page', () => {
 					'#comment',
 					(element) => (element as HTMLInputElement).value
 				);
-
+				console.log('test phase 3')
 				expect(firstRankValue).toBe('1');
 				expect(secondRankValue).toBe('3');
 				expect(fourthRankValue).toBe('2');
@@ -118,12 +119,13 @@ describe('Valid Eastside page', () => {
 				expect(commentValue).toBe('Thank you');
 			};
 
+			console.log('test phase 4')
 			await page.goto('http://localhost:8888/schedule?code=123');
 			await validateFormValues();
 
 			await page.reload({ waitUntil: 'networkidle' });
 			await validateFormValues();
-
+			console.log('test phase 5')
 			const performanceResults = await lookupByCode('123');
 			expect(performanceResults?.performance_duration).toBe(3);
 			expect(performanceResults?.performance_comment).toBe('Thank you');

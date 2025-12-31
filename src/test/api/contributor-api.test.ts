@@ -48,7 +48,7 @@ describe('Test Composer HTTP APIs', () => {
 				'Content-Type': 'application/json',
 				Authorization: `Bearer ${auth_code}`
 			},
-			body: JSON.stringify({ full_name: 'John John', years_active: '1980 - 2000', role: 'Copyist' })
+			body: JSON.stringify({ full_name: 'John The Copyist', years_active: '1980 - 2000', role: 'Copyist' })
 		});
 		expect(getResponse.status).toBe(201);
 		// parse stream to get body

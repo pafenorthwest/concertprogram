@@ -1,11 +1,11 @@
-import type { ScheduleChoice, ScheduleSubmission, ScheduleViewModel, Slot } from '$lib/types/schedule';
+import type {
+	ScheduleChoice,
+	ScheduleSubmission,
+	ScheduleViewModel,
+	Slot
+} from '$lib/types/schedule';
 
-type ScheduleContext = {
-	performerId: number;
-	concertSeries: string;
-	year: number;
-	slots: Slot[];
-};
+type ScheduleContext = { performerId: number; concertSeries: string; year: number; slots: Slot[] };
 
 const fieldNames = {
 	rank: (slotId: number) => `slot-${slotId}-rank`,
@@ -27,7 +27,9 @@ function coerceRank(value: FormDataEntryValue | null, slotCount: number): number
 	return numeric;
 }
 
-function buildSlotLookup(choice: ScheduleChoice | null): Map<number, ScheduleChoice['slots'][number]> {
+function buildSlotLookup(
+	choice: ScheduleChoice | null
+): Map<number, ScheduleChoice['slots'][number]> {
 	const lookup = new Map<number, ScheduleChoice['slots'][number]>();
 	if (!choice) {
 		return lookup;
@@ -51,12 +53,7 @@ export class ScheduleMapper {
 					const saved = slotLookup.get(slot.id);
 					const notAvailable = saved?.notAvailable ?? false;
 					const confirmed = !notAvailable && (saved?.rank ?? null) === 1;
-					return {
-						slotId: slot.id,
-						displayTime: slot.displayTime,
-						confirmed,
-						notAvailable
-					};
+					return { slotId: slot.id, displayTime: slot.displayTime, confirmed, notAvailable };
 				})
 			};
 		}
@@ -92,19 +89,11 @@ export class ScheduleMapper {
 				const notAvailable = formData.get(fieldNames.notAvailable(slot.id)) !== null;
 				if (confirmOnly) {
 					const confirmed = formData.get(fieldNames.confirm(slot.id)) !== null;
-					return {
-						slotId: slot.id,
-						rank: !notAvailable && confirmed ? 1 : null,
-						notAvailable
-					};
+					return { slotId: slot.id, rank: !notAvailable && confirmed ? 1 : null, notAvailable };
 				}
 
 				const rankValue = coerceRank(formData.get(fieldNames.rank(slot.id)), slotCount);
-				return {
-					slotId: slot.id,
-					rank: notAvailable ? null : rankValue,
-					notAvailable
-				};
+				return { slotId: slot.id, rank: notAvailable ? null : rankValue, notAvailable };
 			})
 		};
 	}

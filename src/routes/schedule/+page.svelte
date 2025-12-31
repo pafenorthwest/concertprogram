@@ -4,11 +4,14 @@
 	let disableFormSubmit = true;
 	let firstTimeEntry = true;
 	export let data;
-	const performanceDuration = Number(data?.performance_duration) || 0;
-
 	// Keep as string so SSR-selected option matches option values
-	let durationSelection =
-		performanceDuration > 0 ? Math.min(performanceDuration, 8).toString() : '1';
+	let durationSelection = '1';
+	// Refresh the selection any time the route data changes (e.g., client nav to another performer)
+	$: if (data) {
+		const performanceDuration = Number(data.performance_duration) || 0;
+		durationSelection =
+			performanceDuration > 0 ? Math.min(performanceDuration, 8).toString() : '1';
+	}
 
 	function lacksGoodRankChoices() {
 		// return true if there are dupes or no choices made

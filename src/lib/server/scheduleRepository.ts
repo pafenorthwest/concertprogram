@@ -1,11 +1,7 @@
 import { pool } from '$lib/server/db';
 import type { ScheduleChoice } from '$lib/types/schedule';
 
-type ScheduleSlotChoiceRow = {
-	slot_id: number;
-	rank: number | null;
-	not_available: boolean;
-};
+type ScheduleSlotChoiceRow = { slot_id: number; rank: number | null; not_available: boolean };
 
 export class ScheduleRepository {
 	async fetchChoices(

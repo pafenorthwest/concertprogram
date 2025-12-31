@@ -15,7 +15,24 @@ import {
 	selectDBSchedule,
 	updateConcertPerformance
 } from '$lib/server/db';
-import { getCachedTimeStamps } from '$lib/cache';
+import { getCachedTimeStamps, type ConcertRow } from '$lib/cache';
+
+// Ensure a stable ordering of concert times for both rendering and form processing
+function getSortedConcertTimes(): ConcertRow[] | null {
+	const cached = getCachedTimeStamps();
+	if (!cached) {
+		return null;
+	}
+
+	return cached.data
+		.slice()
+		.sort((a, b) => {
+			if (a.concert_series === b.concert_series) {
+				return a.concert_number_in_series - b.concert_number_in_series;
+			}
+			return a.concert_series.localeCompare(b.concert_series);
+		});
+}
 
 function parseRankChoice(choice: string | null): number | null {
 	if (!choice || choice === '') {
@@ -38,13 +55,14 @@ function createRankedChoiceTimestamps(
 	secondConcertRankChoice: number | null,
 	thirdConcertRankChoice: number | null,
 	fourthConcertRankChoice: number | null
-): (string | null)[] {
-	const concertStartTimes = getCachedTimeStamps();
-	const concertTimeStamps: string[] = concertStartTimes.data
-		.slice() // Create a shallow copy to avoid mutating the original array
-		.sort((a, b) => a.concert_number_in_series - b.concert_number_in_series) // Sort by concert_num
-		.map((concert) => (concert.concert_series !== 'Concerto' ? concert.normalizedStartTime : null)) // Eastside Only
-		.filter((mapped) => mapped !== null); // rm nulls rm entry previously labeled Concert
+): string[] {
+	const concertStartTimes = getSortedConcertTimes();
+	if (!concertStartTimes) {
+		return [];
+	}
+	const concertTimeStamps: string[] = concertStartTimes
+		.filter((concert) => concert.concert_series !== 'Concerto') // Eastside Only
+		.map((concert) => concert.normalizedStartTime);
 
 	// initialize what we will return
 	const rankedConcertTimeStamps: (string | null)[] = [null, null, null, null];
@@ -68,18 +86,28 @@ function createRankedChoiceTimestamps(
 	// compact and remove the nulls
 	// now that we have the timestamps that is all we need
 	// this filter also removed gaps if the user had non-contiguous ranks
-	return rankedConcertTimeStamps.filter((value): value is string => value !== null);
+	return rankedConcertTimeStamps.filter((value): value is string => value != null);
 }
 
 function timestampsToFormValues(
 	concert_series: string,
 	timestamps: string[]
 ): ScheduleFormInterface[] {
-	const concertStartTimes = getCachedTimeStamps();
+	const concertStartTimes = getSortedConcertTimes();
+	const defaultFormData: ScheduleFormInterface[] = [
+		{ rank: null, notSelected: true },
+		{ rank: null, notSelected: true },
+		{ rank: null, notSelected: true },
+		{ rank: null, notSelected: true }
+	];
+
+	if (!concertStartTimes) {
+		return defaultFormData;
+	}
 
 	if (concert_series === 'Concerto') {
 		// get concerto start time from cache
-		const starttime: string = concertStartTimes.data.find(
+		const starttime: string | undefined = concertStartTimes.find(
 			(concert) => concert.concert_series === 'Concerto'
 		)?.normalizedStartTime;
 		if (compareReformatISODate(timestamps[0]) === starttime) {
@@ -89,19 +117,14 @@ function timestampsToFormValues(
 
 	const mapTimesToRanks = new Map<string, number>();
 
-	concertStartTimes.data.forEach((concert) => {
+	concertStartTimes.forEach((concert) => {
 		if (concert.concert_series !== 'Concerto') {
 			mapTimesToRanks.set(concert.normalizedStartTime, concert.concert_number_in_series);
 		}
 	});
 
 	// init array
-	const formData: ScheduleFormInterface[] = [
-		{ rank: null, notSelected: true },
-		{ rank: null, notSelected: true },
-		{ rank: null, notSelected: true },
-		{ rank: null, notSelected: true }
-	];
+	const formData: ScheduleFormInterface[] = defaultFormData.map((entry) => ({ ...entry }));
 	/*
 	 * formData has an entry for each possible concert ordered chronologically
 	 * The first element for formData represents the first concert, the second element
@@ -238,7 +261,7 @@ export async function load({ url }) {
 	};
 	let formValues = null;
 
-	const concertStartTimes = getCachedTimeStamps();
+	const concertStartTimes = getSortedConcertTimes();
 	if (concertStartTimes == null) {
 		return {
 			status: 'NOTFOUND',
@@ -267,7 +290,7 @@ export async function load({ url }) {
 				lottery_code: performerSearchResults.lottery_code,
 				concert_series: performerSearchResults.concert_series,
 				formValues: null,
-				concertTimes: concertStartTimes.data,
+				concertTimes: concertStartTimes,
 				performance_id: performerSearchResults.performance_id,
 				performance_duration: performerSearchResults.performance_duration,
 				performance_comment: performerSearchResults.performance_comment
@@ -300,7 +323,7 @@ export async function load({ url }) {
 					lottery_code: performerSearchResults.lottery_code,
 					concert_series: performerSearchResults.concert_series,
 					formValues: null,
-					concertTimes: concertStartTimes.data,
+					concertTimes: concertStartTimes,
 					performance_id: performerSearchResults.performance_id,
 					performance_duration: performerSearchResults.performance_duration,
 					performance_comment: performerSearchResults.performance_comment
@@ -346,7 +369,7 @@ export async function load({ url }) {
 		lottery_code: performerSearchResults.lottery_code,
 		concert_series: performerSearchResults.concert_series,
 		formValues: formValues,
-		concertTimes: concertStartTimes.data,
+		concertTimes: concertStartTimes,
 		performance_id: performerSearchResults.performance_id,
 		performance_duration: performerSearchResults.performance_duration,
 		performance_comment: performerSearchResults.performance_comment
@@ -385,8 +408,8 @@ export const actions = {
 
 			if (concertSeries.toLowerCase() === 'concerto') {
 				// get concerto start time from cache
-				const concertStartTimes = getCachedTimeStamps();
-				const starttime: string = concertStartTimes.data.find(
+				const concertStartTimes = getSortedConcertTimes();
+				const starttime: string | undefined = concertStartTimes?.find(
 					(concert) => concert.concert_series === 'Concerto'
 				)?.normalizedStartTime;
 				if (starttime === undefined) {
