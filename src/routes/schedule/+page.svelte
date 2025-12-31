@@ -1,8 +1,10 @@
 <script>
-	import { onMount } from 'svelte';
-
 	let disableFormSubmit = true;
 	let firstTimeEntry = true;
+	let viewModel = null;
+	let rankSelections = {};
+	let notAvailableSelections = {};
+	let confirmSelections = {};
 	export let data;
 	// Keep as string so SSR-selected option matches option values
 	let durationSelection = '1';
@@ -13,55 +15,53 @@
 			performanceDuration > 0 ? Math.min(performanceDuration, 8).toString() : '1';
 	}
 
+	const fieldNames = {
+		rank: (slotId) => `slot-${slotId}-rank`,
+		notAvailable: (slotId) => `slot-${slotId}-not-available`,
+		confirm: (slotId) => `slot-${slotId}-confirm`
+	};
+
+	$: if (data?.viewModel && data.viewModel !== viewModel) {
+		viewModel = data.viewModel;
+		firstTimeEntry = true;
+		if (viewModel.mode === 'rank-choice') {
+			rankSelections = {};
+			notAvailableSelections = {};
+			viewModel.slots.forEach((slot) => {
+				rankSelections[slot.slotId] = slot.rank ? slot.rank.toString() : '';
+				notAvailableSelections[slot.slotId] = slot.notAvailable;
+			});
+		} else {
+			confirmSelections = {};
+			notAvailableSelections = {};
+			viewModel.slots.forEach((slot) => {
+				confirmSelections[slot.slotId] = slot.confirmed;
+				notAvailableSelections[slot.slotId] = slot.notAvailable;
+			});
+		}
+	}
+
+	function selectedRanks() {
+		return Object.entries(rankSelections)
+			.filter(([slotId, rank]) => !notAvailableSelections[slotId] && rank.trim() !== '')
+			.map(([, rank]) => Number(rank))
+			.filter((rank) => Number.isInteger(rank));
+	}
+
 	function lacksGoodRankChoices() {
-		// return true if there are dupes or no choices made
-		// Get the form element
-		const form = document.getElementById('ranked-choice-form');
-
-		if (!form) {
-			console.error("Form with id 'ranked-choice-form' not found.");
-			return false;
+		const ranks = selectedRanks();
+		if (ranks.length === 0) {
+			return true;
 		}
-
-		// Get all select elements within the form
-		const selectElements = form.querySelectorAll('select:not(#duration)');
-
-		// Extract values from the select elements
-		const values = Array.from(selectElements)
-			.map((select) => select.value)
-			.filter((value) => value.trim() !== ''); // Ignore blank values
-
-		// Check for duplicates
-		const uniqueValues = new Set(values);
-
-		// Need to have at least on value choice
-		return !(uniqueValues.size > 0);
-	}
-
-	function handleCheckboxChange(event) {
-		// Find the checkbox's sibling elements
-		const checkbox = event.target;
-		updateCheckBoxDisplay(checkbox);
-	}
-
-	function updateCheckBoxDisplay(checkbox) {
-		const siblingSelect = checkbox.previousElementSibling; // The next sibling (assumes the <select> is directly after the checkbox)
-		const siblingP = checkbox.nextElementSibling; // The sibling <p> element after the <select>
-
-		// Disable the <select> element if checkbox is checked
-		if (siblingSelect.tagName === 'SELECT') {
-			siblingSelect.disabled = checkbox.checked;
+		const uniqueRanks = new Set(ranks);
+		if (uniqueRanks.size !== ranks.length) {
+			return true;
 		}
-
-		// Change the color of the <p> element if checkbox is checked
-		if (siblingP.tagName === 'P') {
-			siblingP.style.color = checkbox.checked ? 'black' : ''; // Reset color when uncheck
-			siblingP.style.fontWeight = checkbox.checked ? 'bold' : '';
-		}
+		return !uniqueRanks.has(1);
 	}
 
 	function appear_then_fade(element) {
-		if (element.classList.contains('hidden')) {
+		if (element?.classList?.contains('hidden')) {
 			// Make it visible again
 			element.classList.remove('hidden');
 			element.style.display = 'inline-block';
@@ -88,30 +88,18 @@
 		disableFormSubmit = lacksGoodChoices;
 	}
 
-	onMount(() => {
-		if (data.formValues && data.formValues.length > 0) {
-			const form = document.getElementById('ranked-choice-form');
-			if (form) {
-				// Gat all checkboxes within the form
-				const selectCheckboxes = form.querySelectorAll('input[type="checkbox"]');
-				// Get all select elements within the form
-				const selectElements = form.querySelectorAll('select');
-				data.formValues.forEach((value, index) => {
-					// re-hydrating we can allow submits
-					disableFormSubmit = false;
-					// update checkboxes and styling to respect non-available
-					if (value.notSelected && selectCheckboxes.length >= index) {
-						selectCheckboxes[index].checked = true;
-						updateCheckBoxDisplay(selectCheckboxes[index]);
-					}
-					// update ranked choices in drop down box
-					if (value.rank && selectElements.length >= index) {
-						selectElements[index].value = value.rank.toString();
-					}
-				});
-			}
+	$: if (viewModel?.mode === 'rank-choice') {
+		disableFormSubmit = lacksGoodRankChoices();
+	}
+
+	$: if (viewModel?.mode === 'confirm-only') {
+		const slot = viewModel.slots[0];
+		if (slot) {
+			const confirmed = confirmSelections[slot.slotId];
+			const notAvailable = notAvailableSelections[slot.slotId];
+			disableFormSubmit = !(confirmed || notAvailable);
 		}
-	});
+	}
 </script>
 
 <svelte:head>
@@ -120,8 +108,8 @@
 
 <h2>Concert Scheduling</h2>
 <div class="schedule-form">
-	{#if data.status === 'OK'}
-		{#if data.concert_series === 'Concerto'}
+	{#if data.status === 'OK' && data.viewModel}
+		{#if data.viewModel.mode === 'confirm-only'}
 			<h3 class="schedule">Confirmation of Concerto Performance</h3>
 			<p class="top-message">Scheduling for {data.performer_name}</p>
 			<br />
@@ -129,10 +117,10 @@
 			<br />
 			<p class="top-message">Lookup code {data.lottery_code}</p>
 			<br /><br /><br />
-			{#if data.formValues !== null && data.formValues[0].confirmed}
+			{#if data.viewModel.slots[0].confirmed}
 				<h3>
-					You are all set, thank you for confirming you attendance {data.concertTimes[0]
-						.displayStartTime}
+					You are all set, thank you for confirming you attendance {data.viewModel.slots[0]
+						.displayTime}
 				</h3>
 				<p>Please contact concertchair@pafenorthwest.com with any questions</p>
 				<br /><br />
@@ -149,11 +137,20 @@
 						<input type="hidden" name="performanceId" value={data.performance_id} />
 						<input
 							type="checkbox"
-							name="concert-confirm"
+							name={fieldNames.confirm(data.viewModel.slots[0].slotId)}
 							class="concerto-confirm"
 							id="concert-confirm"
+							bind:checked={confirmSelections[data.viewModel.slots[0].slotId]}
 						/>
 						<p class="concerto-confirm">Confirm Attendance</p>
+						<input
+							type="checkbox"
+							name={fieldNames.notAvailable(data.viewModel.slots[0].slotId)}
+							class="concerto-confirm"
+							id="concert-not-available"
+							bind:checked={notAvailableSelections[data.viewModel.slots[0].slotId]}
+						/>
+						<p class="concerto-confirm">Not Available</p>
 						<br /><br />
 						<label for="duration"
 							><span class="concerto-confirm">Duration: </span><br /><span>
@@ -179,7 +176,7 @@
 						/><br /><br />
 					</div>
 					<div class="form-group">
-						<button type="submit">Submit</button>
+						<button type="submit" disabled={disableFormSubmit}>Submit</button>
 					</div>
 				</form>
 			{/if}
@@ -199,92 +196,39 @@
 					<input type="hidden" name="concertSeries" value={data.concert_series} />
 					<input type="hidden" name="performanceId" value={data.performance_id} />
 					<span class="concerto-confirm">Rank Choice: </span><br />
-					<p>Please rank the following options (1 = most preferred, 4 = least preferred).</p>
+					<p>
+						Please rank the following options (1 = most preferred, {data.viewModel.slotCount} =
+						least preferred).
+					</p>
 					<br /><br />
 
-					<!-- Option 1 -->
-					<div class="inline-form">
-						<label for="rank-sat-first" style="width:180px"
-							>{data.concertTimes[1].displayStartTime}:</label
-						>
-						<select name="rank-sat-first" id="rank-sat-first" on:change={enforceValidSelect}>
-							<option value="" selected disabled>Rank</option>
-							<option value="1">1</option>
-							<option value="2">2</option>
-							<option value="3">3</option>
-							<option value="4">4</option>
-						</select>
-						<input
-							type="checkbox"
-							name="nonviable-sat-first"
-							id="nonviable-sat-first"
-							on:change={handleCheckboxChange}
-						/>
-						<p>Not Available</p>
-					</div>
-
-					<!-- Option 2 -->
-					<div class="inline-form">
-						<label for="rank-sat-second" style="width:180px"
-							>{data.concertTimes[2].displayStartTime}:</label
-						>
-						<select name="rank-sat-second" id="rank-sat-second" on:change={enforceValidSelect}>
-							<option value="" selected disabled>Rank</option>
-							<option value="1">1</option>
-							<option value="2">2</option>
-							<option value="3">3</option>
-							<option value="4">4</option>
-						</select>
-						<input
-							type="checkbox"
-							name="nonviable-sat-second"
-							id="nonviable-sat-second"
-							on:change={handleCheckboxChange}
-						/>
-						<p>Not Available</p>
-					</div>
-
-					<!-- Option 3 -->
-					<div class="inline-form">
-						<label for="rank-sun-third" style="width:180px"
-							>{data.concertTimes[3].displayStartTime}:</label
-						>
-						<select name="rank-sun-third" id="rank-sun-third" on:change={enforceValidSelect}>
-							<option value="" selected disabled>Rank</option>
-							<option value="1">1</option>
-							<option value="2">2</option>
-							<option value="3">3</option>
-							<option value="4">4</option>
-						</select>
-						<input
-							type="checkbox"
-							name="nonviable-sun-third"
-							id="nonviable-sun-third"
-							on:change={handleCheckboxChange}
-						/>
-						<p>Not Available</p>
-					</div>
-
-					<!-- Option 4 -->
-					<div class="inline-form">
-						<label for="rank-sun-fourth" style="width:180px"
-							>{data.concertTimes[4].displayStartTime}:</label
-						>
-						<select name="rank-sun-fourth" id="rank-sun-fourth" on:change={enforceValidSelect}>
-							<option value="" selected disabled>Rank</option>
-							<option value="1">1</option>
-							<option value="2">2</option>
-							<option value="3">3</option>
-							<option value="4">4</option>
-						</select>
-						<input
-							type="checkbox"
-							name="nonviable-sun-fourth"
-							id="nonviable-sun-forth"
-							on:change={handleCheckboxChange}
-						/>
-						<p>Not Available</p>
-					</div>
+					{#each data.viewModel.slots as slot (slot.slotId)}
+						<div class="inline-form">
+							<label for={fieldNames.rank(slot.slotId)} style="width:180px"
+								>{slot.displayTime}:</label
+							>
+							<select
+								name={fieldNames.rank(slot.slotId)}
+								id={fieldNames.rank(slot.slotId)}
+								on:change={enforceValidSelect}
+								bind:value={rankSelections[slot.slotId]}
+								disabled={notAvailableSelections[slot.slotId]}
+							>
+								<option value="">Rank</option>
+								{#each data.viewModel.rankOptions as option}
+									<option value={option}>{option}</option>
+								{/each}
+							</select>
+							<input
+								type="checkbox"
+								name={fieldNames.notAvailable(slot.slotId)}
+								id={fieldNames.notAvailable(slot.slotId)}
+								bind:checked={notAvailableSelections[slot.slotId]}
+								on:change={enforceValidSelect}
+							/>
+							<p>Not Available</p>
+						</div>
+					{/each}
 					<br /><br />
 					<label for="duration"
 						><span class="concerto-confirm">Duration: </span><br /><span>
