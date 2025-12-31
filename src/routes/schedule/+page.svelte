@@ -100,6 +100,18 @@
 			disableFormSubmit = !(confirmed || notAvailable);
 		}
 	}
+
+	function handleConfirmChange(slotId) {
+		if (confirmSelections[slotId]) {
+			notAvailableSelections = { ...notAvailableSelections, [slotId]: false };
+		}
+	}
+
+	function handleNotAvailableChange(slotId) {
+		if (notAvailableSelections[slotId]) {
+			confirmSelections = { ...confirmSelections, [slotId]: false };
+		}
+	}
 </script>
 
 <svelte:head>
@@ -141,6 +153,7 @@
 							class="concerto-confirm"
 							id="concert-confirm"
 							bind:checked={confirmSelections[data.viewModel.slots[0].slotId]}
+							on:change={() => handleConfirmChange(data.viewModel.slots[0].slotId)}
 						/>
 						<p class="concerto-confirm">Confirm Attendance</p>
 						<input
@@ -149,6 +162,7 @@
 							class="concerto-confirm"
 							id="concert-not-available"
 							bind:checked={notAvailableSelections[data.viewModel.slots[0].slotId]}
+							on:change={() => handleNotAvailableChange(data.viewModel.slots[0].slotId)}
 						/>
 						<p class="concerto-confirm">Not Available</p>
 						<br /><br />
