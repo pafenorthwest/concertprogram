@@ -5,12 +5,14 @@
 ## Schedule Flow (Refactor)
 
 ### Schema
+
 - `database/init.sql` now includes the merged schedule migrations.
 - New row-per-slot table: `schedule_slot_choice` stores `(performer_id, concert_series, year, slot_id, rank, not_available, created_at, updated_at)`.
 - Legacy schedule table `performer_ranked_choice` has been removed from `database/init.sql`.
 - Use `database/drop_legacy.sql` to drop legacy schedule objects in existing databases.
 
 ### Validation rules
+
 - Confirm-only mode (single slot): submission must include either a confirmation check or a not-available check.
 - Rank-choice mode (2–10 slots):
   - Ranks are optional, but if any are present there must be at least one rank `1`.
@@ -18,6 +20,7 @@
   - `not_available` slots cannot include a rank.
 
 ### Form field semantics
+
 - Rank choice fields: `slot-<slotId>-rank`
 - Not available checkbox: `slot-<slotId>-not-available`
 - Confirm checkbox (single-slot mode): `slot-<slotId>-confirm`

@@ -1,9 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import {
-	type PerformerSearchResultsInterface,
-	isNonEmptyString,
-	year
-} from '$lib/server/common';
+import { type PerformerSearchResultsInterface, isNonEmptyString, year } from '$lib/server/common';
 import { updateConcertPerformance } from '$lib/server/db';
 import { PerformerLookup } from '$lib/server/performerLookup';
 import { ScheduleMapper } from '$lib/server/scheduleMapper';

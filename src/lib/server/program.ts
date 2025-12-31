@@ -178,7 +178,7 @@ export class Program {
 		}
 		return choiceSlots
 			.map((slot) => Number(slot))
-			.filter((slot) => Number.isInteger(slot) && slot > 0);
+			.filter((slot) => Number.isInteger(slot) && slot >= 0);
 	}
 
 	isFull(concertSeries: string, concertNum: number): boolean {

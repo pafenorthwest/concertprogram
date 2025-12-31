@@ -60,10 +60,10 @@ function makePerformanceJson({
 async function seedConcertTimes(series: string, seedYear: number, slotCount: number) {
 	const connection = await pool.connect();
 	try {
-		await connection.query(
-			'DELETE FROM concert_times WHERE concert_series = $1 AND year = $2',
-			[series, seedYear]
-		);
+		await connection.query('DELETE FROM concert_times WHERE concert_series = $1 AND year = $2', [
+			series,
+			seedYear
+		]);
 
 		for (let index = 1; index <= slotCount; index += 1) {
 			const startTime = `05/${String(index).padStart(2, '0')}/${seedYear}T10:00:00`;
@@ -81,16 +81,20 @@ async function seedConcertTimes(series: string, seedYear: number, slotCount: num
 async function cleanupConcertTimes(series: string, cleanupYear: number) {
 	const connection = await pool.connect();
 	try {
-		await connection.query(
-			'DELETE FROM concert_times WHERE concert_series = $1 AND year = $2',
-			[series, cleanupYear]
-		);
+		await connection.query('DELETE FROM concert_times WHERE concert_series = $1 AND year = $2', [
+			series,
+			cleanupYear
+		]);
 	} finally {
 		connection.release();
 	}
 }
 
-async function deleteScheduleChoices(performerId: number, concertSeries: string, scheduleYear: number) {
+async function deleteScheduleChoices(
+	performerId: number,
+	concertSeries: string,
+	scheduleYear: number
+) {
 	const connection = await pool.connect();
 	try {
 		await connection.query(
@@ -391,10 +395,7 @@ describe('Rank-choice variants', () => {
 			const rankSelects = page.locator('select[id$="-rank"]');
 			const rankSelectCount = await rankSelects.count();
 			expect(rankSelectCount).toBe(10);
-			const optionCount = await rankSelects
-				.first()
-				.locator('option')
-				.count();
+			const optionCount = await rankSelects.first().locator('option').count();
 			expect(optionCount).toBe(11);
 		} finally {
 			await deleteScheduleChoices(importResults.performerId, tenSlotSeries, scheduleYear);
@@ -459,9 +460,11 @@ describe('Rank-choice variants', () => {
 		const page = await browser.newPage();
 		try {
 			await page.goto('http://localhost:8888/schedule?code=3458');
+			console.log(`Waiting for #slot-${firstSlot.id}-rank and #slot-${secondSlot.id}-rank`);
 			await page.selectOption(`#slot-${firstSlot.id}-rank`, '2');
 			await page.selectOption(`#slot-${secondSlot.id}-rank`, '');
 
+			console.log('Wait for All');
 			const [response] = await Promise.all([
 				page.waitForResponse(
 					(resp) => resp.url().includes('/schedule?/add') && resp.request().method() === 'POST'

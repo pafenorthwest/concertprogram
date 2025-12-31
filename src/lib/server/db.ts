@@ -1144,10 +1144,7 @@ export async function updateProgramOrder(id: number, concertSeries: string, orde
 	}
 }
 
-export async function movePerformanceByChair(
-	id: number,
-	concertSeries: string
-) {
+export async function movePerformanceByChair(id: number, concertSeries: string) {
 	// moving in and out of waitlist
 	try {
 		const connection = await pool.connect();
