@@ -30,8 +30,8 @@ export class ScheduleRepository {
 				concertSeries,
 				year,
 				slots: result.rows.map((row) => ({
-					slotId: row.slot_id,
-					rank: row.rank,
+					slotId: Number(row.slot_id),
+					rank: row.rank == null ? null : Number(row.rank),
 					notAvailable: row.not_available
 				}))
 			};

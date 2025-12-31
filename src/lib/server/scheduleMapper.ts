@@ -35,7 +35,11 @@ function buildSlotLookup(
 		return lookup;
 	}
 	for (const slot of choice.slots) {
-		lookup.set(slot.slotId, slot);
+		const slotId = Number(slot.slotId);
+		if (!Number.isInteger(slotId)) {
+			continue;
+		}
+		lookup.set(slotId, { ...slot, slotId });
 	}
 	return lookup;
 }
@@ -50,10 +54,11 @@ export class ScheduleMapper {
 				mode: 'confirm-only',
 				slotCount: 1,
 				slots: slots.map((slot) => {
-					const saved = slotLookup.get(slot.id);
+					const slotId = Number(slot.id);
+					const saved = slotLookup.get(slotId);
 					const notAvailable = saved?.notAvailable ?? false;
 					const confirmed = !notAvailable && (saved?.rank ?? null) === 1;
-					return { slotId: slot.id, displayTime: slot.displayTime, confirmed, notAvailable };
+					return { slotId, displayTime: slot.displayTime, confirmed, notAvailable };
 				})
 			};
 		}
@@ -64,10 +69,11 @@ export class ScheduleMapper {
 			mode: 'rank-choice',
 			slotCount,
 			slots: slots.map((slot) => {
-				const saved = slotLookup.get(slot.id);
+				const slotId = Number(slot.id);
+				const saved = slotLookup.get(slotId);
 				const notAvailable = saved?.notAvailable ?? false;
 				return {
-					slotId: slot.id,
+					slotId,
 					displayTime: slot.displayTime,
 					rank: notAvailable ? null : (saved?.rank ?? null),
 					notAvailable
@@ -86,14 +92,15 @@ export class ScheduleMapper {
 			concertSeries: context.concertSeries,
 			year: context.year,
 			slots: context.slots.map((slot) => {
-				const notAvailable = formData.get(fieldNames.notAvailable(slot.id)) !== null;
+				const slotId = Number(slot.id);
+				const notAvailable = formData.get(fieldNames.notAvailable(slotId)) !== null;
 				if (confirmOnly) {
-					const confirmed = formData.get(fieldNames.confirm(slot.id)) !== null;
-					return { slotId: slot.id, rank: !notAvailable && confirmed ? 1 : null, notAvailable };
+					const confirmed = formData.get(fieldNames.confirm(slotId)) !== null;
+					return { slotId, rank: !notAvailable && confirmed ? 1 : null, notAvailable };
 				}
 
-				const rankValue = coerceRank(formData.get(fieldNames.rank(slot.id)), slotCount);
-				return { slotId: slot.id, rank: notAvailable ? null : rankValue, notAvailable };
+				const rankValue = coerceRank(formData.get(fieldNames.rank(slotId)), slotCount);
+				return { slotId, rank: notAvailable ? null : rankValue, notAvailable };
 			})
 		};
 	}

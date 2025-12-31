@@ -35,9 +35,10 @@ async function fetchTimeStamps(): Promise<ConcertRow[]> {
 	return res.rows
 		.filter((row) => row.year === year())
 		.map((row) => {
+			const slotId = Number(row.id);
 			const startTime = String(row.start_time);
 			return {
-				id: row.id,
+				id: Number.isInteger(slotId) ? slotId : row.id,
 				concert_series: row.concert_series,
 				year: row.year,
 				concert_number_in_series: row.concert_number_in_series,

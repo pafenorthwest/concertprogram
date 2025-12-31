@@ -4,7 +4,7 @@ import { queryTable } from '$lib/server/db';
 import type { Slot } from '$lib/types/schedule';
 
 export type SlotSourceRow = {
-	id: number;
+	id: number | string;
 	concert_series: string;
 	year: number;
 	concert_number_in_series: number;
@@ -30,12 +30,16 @@ const defaultSlotLoader: SlotLoader = async () => {
 };
 
 function normalizeSlot(row: SlotSourceRow): Slot {
+	const slotId = Number(row.id);
+	if (!Number.isInteger(slotId)) {
+		throw new Error('Invalid slot id received during slot catalog load.');
+	}
 	const normalizedStartTime =
 		row.normalizedStartTime ?? compareReformatISODate(String(row.start_time));
 	const displayStartTime = row.displayStartTime ?? displayReformatISODate(String(row.start_time));
 
 	return {
-		id: row.id,
+		id: slotId,
 		concertSeries: row.concert_series,
 		year: row.year,
 		concertNumberInSeries: row.concert_number_in_series,

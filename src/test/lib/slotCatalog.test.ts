@@ -32,6 +32,23 @@ describe('SlotCatalog', () => {
 		});
 	});
 
+	it('coerces slot ids provided as strings', async () => {
+		const startTime = '05/03/2026T16:00:00';
+		const catalog = await SlotCatalog.load(series, baseYear, {
+			loader: async () => [
+				{
+					id: '15' as unknown as number,
+					concert_series: series,
+					year: baseYear,
+					concert_number_in_series: 1,
+					start_time: startTime
+				}
+			]
+		});
+
+		expect(catalog.slots[0].id).toBe(15);
+	});
+
 	it('loads multiple slots sorted by concert number', async () => {
 		const rows = [
 			makeRow(3, 3, '05/04/2026T14:00:00'),

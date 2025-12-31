@@ -62,6 +62,40 @@ describe('ScheduleMapper', () => {
 		});
 	});
 
+	it('hydrates saved choices when slot ids are returned as numeric strings', () => {
+		const slots: Slot[] = [
+			{
+				id: '11' as unknown as number,
+				concertSeries: 'TestSeries',
+				year: 2030,
+				concertNumberInSeries: 1,
+				startTime: '2030-05-01T10:00:00',
+				displayTime: 'Slot 1'
+			}
+		];
+		const choice: ScheduleChoice = {
+			performerId: 42,
+			concertSeries: 'TestSeries',
+			year: 2030,
+			slots: [{ slotId: 11, rank: 1, notAvailable: false }]
+		};
+
+		const viewModel = ScheduleMapper.toViewModel(slots, choice);
+
+		expect(viewModel).toEqual({
+			mode: 'confirm-only',
+			slotCount: 1,
+			slots: [
+				{
+					slotId: 11,
+					displayTime: 'Slot 1',
+					confirmed: true,
+					notAvailable: false
+				}
+			]
+		});
+	});
+
 	it('maps rank-choice view model with mixed availability', () => {
 		const slots = makeSlots(2);
 		const choice: ScheduleChoice = {
