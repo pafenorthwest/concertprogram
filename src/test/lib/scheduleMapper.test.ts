@@ -78,7 +78,7 @@ describe('ScheduleMapper', () => {
 
 		expect(viewModel.mode).toBe('rank-choice');
 		expect(viewModel.slotCount).toBe(2);
-		expect(viewModel.rankOptions).toEqual([1, 2]);
+		expect(viewModel.rankOptions).toEqual(['1', '2']);
 		expect(viewModel.slots).toEqual([
 			{ slotId: 1, displayTime: 'Slot 1', rank: 1, notAvailable: false },
 			{ slotId: 2, displayTime: 'Slot 2', rank: null, notAvailable: true }
@@ -91,7 +91,7 @@ describe('ScheduleMapper', () => {
 
 		expect(viewModel.mode).toBe('rank-choice');
 		expect(viewModel.slotCount).toBe(4);
-		expect(viewModel.rankOptions).toEqual([1, 2, 3, 4]);
+		expect(viewModel.rankOptions).toEqual(['1', '2', '3', '4']);
 		expect(viewModel.slots).toHaveLength(4);
 	});
 
@@ -101,7 +101,7 @@ describe('ScheduleMapper', () => {
 
 		expect(viewModel.mode).toBe('rank-choice');
 		expect(viewModel.slotCount).toBe(10);
-		expect(viewModel.rankOptions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+		expect(viewModel.rankOptions).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']);
 		expect(viewModel.slots).toHaveLength(10);
 	});
 

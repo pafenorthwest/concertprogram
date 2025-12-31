@@ -34,7 +34,7 @@ export type ScheduleViewModel =
 				rank: number | null;
 				notAvailable: boolean;
 			}>;
-			rankOptions: number[];
+			rankOptions: string[];
 	  };
 
 export interface ScheduleSubmission {
