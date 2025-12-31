@@ -16,7 +16,7 @@ import {
 } from '$lib/server/common';
 import { isNonEmptyString } from '$lib/server/common';
 
-const pool = new Pool({
+export const pool = new Pool({
 	connectionString: DATABASE_URL,
 	ssl: DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
 });
