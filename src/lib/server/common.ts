@@ -126,17 +126,6 @@ export interface PerformerSearchResultsInterface {
 	performance_comment: null | string;
 }
 
-export interface EastSideFormInterface {
-	rank: number | null;
-	notSelected: boolean;
-}
-
-export interface ConcertoFormInterface {
-	confirmed: boolean;
-}
-
-export type ScheduleFormInterface = EastSideFormInterface | ConcertoFormInterface;
-
 export function formatFieldNames(input: string): string {
 	return input
 		.split('_') // Split the string by underscores

@@ -1,5 +1,24 @@
 # Design and Task
 
+## Schedule Refactor Notes
+
+### Schema
+
+- The schedule flow uses `schedule_slot_choice` (row-per-slot choices) instead of `performer_ranked_choice`.
+- `database/init.sql` includes the merged schedule migrations and no longer creates legacy tables.
+- Existing environments should run `database/drop_legacy.sql` to remove unused schedule objects.
+
+### Validation rules
+
+- Confirm-only (single slot): requires either confirmation or not-available selection.
+- Rank-choice (2–10 slots): allow partial ranks, require at least one rank 1, enforce unique ranks in `1..slotCount`, and disallow ranks on `not_available` slots.
+
+### Form field semantics
+
+- Rank: `slot-<slotId>-rank`
+- Not available: `slot-<slotId>-not-available`
+- Confirm (single slot): `slot-<slotId>-confirm`
+
 ## Login Page
 
 - Sign-In Top Bar

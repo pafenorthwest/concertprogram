@@ -2,12 +2,11 @@ import { fail, redirect } from '@sveltejs/kit';
 import {
 	type PerformerSearchResultsInterface,
 	isNonEmptyString,
-	year,
-	type ScheduleFormInterface
+	year
 } from '$lib/server/common';
 import { updateConcertPerformance } from '$lib/server/db';
 import { PerformerLookup } from '$lib/server/performerLookup';
-import { ScheduleMapper, scheduleFieldNames } from '$lib/server/scheduleMapper';
+import { ScheduleMapper } from '$lib/server/scheduleMapper';
 import { ScheduleRepository } from '$lib/server/scheduleRepository';
 import { ScheduleValidator } from '$lib/server/scheduleValidator';
 import { SlotCatalog } from '$lib/server/slotCatalog';
@@ -29,78 +28,6 @@ function getSortedConcertTimes(): ConcertRow[] | null {
 	});
 }
 
-const legacyRankFields = ['rank-sat-first', 'rank-sat-second', 'rank-sun-third', 'rank-sun-fourth'];
-const legacyNotAvailableFields = [
-	'nonviable-sat-first',
-	'nonviable-sat-second',
-	'nonviable-sun-third',
-	'nonviable-sun-fourth'
-];
-
-function hasLegacyScheduleFields(formData: FormData): boolean {
-	return (
-		formData.has('concert-confirm') ||
-		legacyRankFields.some((field) => formData.has(field)) ||
-		legacyNotAvailableFields.some((field) => formData.has(field))
-	);
-}
-
-function hasModernScheduleFields(formData: FormData, slots: Slot[]): boolean {
-	return slots.some(
-		(slot) =>
-			formData.has(scheduleFieldNames.rank(slot.id)) ||
-			formData.has(scheduleFieldNames.notAvailable(slot.id)) ||
-			formData.has(scheduleFieldNames.confirm(slot.id))
-	);
-}
-
-function normalizeLegacyScheduleForm(formData: FormData, slots: Slot[]): FormData {
-	const normalized = new FormData();
-	if (slots.length === 1) {
-		if (formData.get('concert-confirm') !== null) {
-			normalized.set(scheduleFieldNames.confirm(slots[0].id), 'on');
-		}
-		return normalized;
-	}
-
-	slots.forEach((slot, index) => {
-		const rankField = legacyRankFields[index];
-		const notAvailableField = legacyNotAvailableFields[index];
-		if (rankField) {
-			const value = formData.get(rankField);
-			if (typeof value === 'string') {
-				normalized.set(scheduleFieldNames.rank(slot.id), value);
-			}
-		}
-		if (notAvailableField && formData.get(notAvailableField) !== null) {
-			normalized.set(scheduleFieldNames.notAvailable(slot.id), 'on');
-		}
-	});
-
-	return normalized;
-}
-
-function resolveScheduleFormData(formData: FormData, slots: Slot[]): FormData {
-	if (hasModernScheduleFields(formData, slots)) {
-		return formData;
-	}
-	if (hasLegacyScheduleFields(formData)) {
-		return normalizeLegacyScheduleForm(formData, slots);
-	}
-	return formData;
-}
-
-function toLegacyFormValues(viewModel: ScheduleViewModel): ScheduleFormInterface[] {
-	if (viewModel.mode === 'confirm-only') {
-		const confirmed = viewModel.slots[0]?.confirmed ?? false;
-		return [{ confirmed }];
-	}
-	return viewModel.slots.map((slot) => ({
-		rank: slot.rank ?? null,
-		notSelected: slot.notAvailable
-	}));
-}
-
 export async function load({ url }) {
 	const performerLookup = PerformerLookup.create();
 	let performerSearchResults: PerformerSearchResultsInterface = {
@@ -114,7 +41,6 @@ export async function load({ url }) {
 		performance_duration: 0,
 		performance_comment: null
 	};
-	let formValues: ScheduleFormInterface[] | null = null;
 	let viewModel: ScheduleViewModel | null = null;
 	let slotCount = 0;
 	let slots: Slot[] = [];
@@ -151,7 +77,6 @@ export async function load({ url }) {
 					year()
 				);
 				viewModel = ScheduleMapper.toViewModel(slotCatalog.slots, scheduleChoice);
-				formValues = toLegacyFormValues(viewModel);
 			} catch {
 				console.error('Error performing fetchSchedule');
 			}
@@ -164,7 +89,6 @@ export async function load({ url }) {
 		musical_piece: performerSearchResults.musical_piece,
 		lottery_code: performerSearchResults.lottery_code,
 		concert_series: performerSearchResults.concert_series,
-		formValues,
 		concertTimes: concertStartTimes,
 		performance_id: performerSearchResults.performance_id,
 		performance_duration: performerSearchResults.performance_duration,
@@ -211,8 +135,7 @@ export const actions = {
 			}
 
 			const scheduleRepository = new ScheduleRepository();
-			const resolvedFormData = resolveScheduleFormData(formData, slotCatalog.slots);
-			const submission = ScheduleMapper.fromFormData(resolvedFormData, {
+			const submission = ScheduleMapper.fromFormData(formData, {
 				performerId: performerIdAsNumber,
 				concertSeries,
 				year: year(),
