@@ -111,6 +111,7 @@ export class Program {
 					let numberInSeries = 1;
 					for (const concertNum of rankedChoiceConcerts) {
 						// Not Full Set to This Concert
+						// should factor in ChairOverride
 						if (!this.isFull(performance.concert_series, concertNum)) {
 							this.incrementConcertCount(performance.concert_series, concertNum);
 							numberInSeries = concertNum;
@@ -187,6 +188,8 @@ export class Program {
 			.filter((slot) => Number.isInteger(slot) && slot >= 0);
 	}
 
+	// chairOverride boolean should be passed as a param
+	// if (chairOverride) return false;
 	isFull(concertSeries: string, concertNum: number): boolean {
 		return (
 			concertSeries.toLowerCase() === 'eastside' &&
