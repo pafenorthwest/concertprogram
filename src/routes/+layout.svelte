@@ -1,7 +1,5 @@
 <script lang="ts">
 	export let data;
-	// eslint-disable-next-line svelte/valid-compile
-	export let params;
 </script>
 
 {#if !data.isAuthenticated}

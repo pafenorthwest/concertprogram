@@ -131,6 +131,17 @@ CREATE UNIQUE INDEX schedule_slot_choice_unique_idx
 CREATE INDEX schedule_slot_choice_lookup_idx
     ON schedule_slot_choice(performer_id, concert_series, year);
 
+CREATE TABLE login_user (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    code INTEGER NOT NULL,
+    first_login_at TIMESTAMP NULL,
+    last_login_at TIMESTAMP NULL,
+    last_code_sent_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX login_user_code_idx ON login_user(code);
+
 INSERT INTO concert_times (concert_series, year, concert_number_in_series, start_time)
 VALUES
   ('Concerto', 2026, 0, '2026-04-27 15:00:00'),

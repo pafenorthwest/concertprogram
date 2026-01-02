@@ -1,17 +1,53 @@
-<script>
+<script lang="ts">
 	import { enhance } from '$app/forms';
+
+	let statusMessage = '';
+	let submissionSucceeded = false;
+
+	const enhanceLogin =
+		() =>
+		async ({ result }: { result: any }) => {
+			statusMessage = '';
+
+			if (result?.type === 'success') {
+				submissionSucceeded = true;
+				statusMessage = result.data?.message ?? 'Check your email for the verification link.';
+			} else if (result?.type === 'failure') {
+				submissionSucceeded = false;
+				const errorMessage = typeof result.data?.error === 'string' ? result.data.error : undefined;
+				statusMessage = errorMessage ?? 'Unable to send the verification email. Please try again.';
+			}
+		};
 </script>
 
 <svelte:head>
-	<title>Sign in</title>
+	<title>Email Login</title>
 </svelte:head>
 
 <div class="login-container popover">
-	<form use:enhance method="POST" action="?/login">
-		<label for="username">Username</label>
-		<input name="user" type="text" required placeholder="User" />
-		<label for="password">Password</label>
-		<input name="password" type="password" required placeholder="Password" />
-		<button type="submit">Sign in</button>
+	<h2>Email Login</h2>
+	<p class="lowemphasis">Enter your email to receive a one-time login link.</p>
+	<form method="POST" action="?/login" use:enhance={enhanceLogin}>
+		<label for="email">Email Address</label>
+		<input name="email" id="email" type="email" required placeholder="you@example.com" />
+
+		{#if statusMessage}
+			<p class={`login-status ${submissionSucceeded ? 'success' : 'error'}`}>{statusMessage}</p>
+		{/if}
+
+		<button type="submit">Send Login Link</button>
 	</form>
 </div>
+
+<style>
+	.login-status {
+		display: block;
+		margin-top: var(--gutter);
+	}
+	.login-status.success {
+		color: var(--allok-color);
+	}
+	.login-status.error {
+		color: var(--error-color);
+	}
+</style>
