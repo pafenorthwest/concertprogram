@@ -4,6 +4,7 @@ import {
 	retrievePerformanceByLottery
 } from '$lib/server/db';
 import { calcEpochAge } from '$lib/server/common';
+import { SlotCatalog } from '$lib/server/slotCatalog';
 
 export interface ProgramComposerInterface {
 	printedName: string;
@@ -102,11 +103,29 @@ export class Program {
 			//  - concerto concerts show up first and takes precedent
 			const performancesWithLottery = await retrievePerformanceByLottery(this.year);
 			if (performancesWithLottery.rowCount != null && performancesWithLottery.rowCount > 0) {
-				const performances = performancesWithLottery.rows.map((performance) => ({
+				const rawPerformances = performancesWithLottery.rows.map((performance) => ({
 					...performance,
 					chairOverride: performance.chair_override === true,
-					rankedChoiceConcerts: this.normalizeRankedChoices(performance.ranked_slots)
+					rankedSlotIds: this.normalizeRankedSlotIds(performance.ranked_slot_ids)
 				}));
+				const slotIdToConcertNumberBySeries = new Map<string, Map<number, number>>();
+				for (const concertSeries of new Set(rawPerformances.map((performance) => performance.concert_series))) {
+					const slotCatalog = await SlotCatalog.load(concertSeries, this.year);
+					slotIdToConcertNumberBySeries.set(
+						concertSeries,
+						new Map(slotCatalog.slots.map((slot) => [slot.id, slot.concertNumberInSeries]))
+					);
+				}
+
+				const performances = rawPerformances.map((performance) => {
+					const slotIdMap = slotIdToConcertNumberBySeries.get(performance.concert_series);
+					return {
+						...performance,
+						rankedChoiceConcerts: slotIdMap
+							? this.mapSlotIdsToConcertNumbers(performance.rankedSlotIds, slotIdMap)
+							: []
+					};
+				});
 
 				const placementMap = new Map<
 					number,
@@ -291,13 +310,22 @@ export class Program {
 		}
 	}
 
-	normalizeRankedChoices(choiceSlots: unknown): number[] {
+	normalizeRankedSlotIds(choiceSlots: unknown): number[] {
 		if (!Array.isArray(choiceSlots)) {
 			return [];
 		}
 		return choiceSlots
 			.map((slot) => Number(slot))
 			.filter((slot) => Number.isInteger(slot) && slot >= 0);
+	}
+
+	mapSlotIdsToConcertNumbers(
+		slotIds: number[],
+		slotIdToConcertNumber: Map<number, number>
+	): number[] {
+		return slotIds
+			.map((slotId) => slotIdToConcertNumber.get(slotId))
+			.filter((concertNumber): concertNumber is number => Number.isInteger(concertNumber));
 	}
 
 	// chairOverride bypass is handled explicitly when building placements.

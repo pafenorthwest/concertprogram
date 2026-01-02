@@ -1101,8 +1101,8 @@ export async function retrievePerformanceByLottery(year: number) {
 			'performance.concert_series, performance.year, performance.chair_override, \n' +
 			'class_lottery.lottery as lookup_code, \n' +
 			'class_lottery.lottery, \n' +
-			'ARRAY_AGG(concert_times.concert_number_in_series ORDER BY schedule_slot_choice.rank) \n' +
-			'    FILTER (WHERE schedule_slot_choice.rank IS NOT NULL AND schedule_slot_choice.not_available = false) as ranked_slots \n' +
+			'ARRAY_AGG(concert_times.id ORDER BY schedule_slot_choice.rank) \n' +
+			'    FILTER (WHERE schedule_slot_choice.rank IS NOT NULL AND schedule_slot_choice.not_available = false) as ranked_slot_ids \n' +
 			'FROM performance \n' +
 			'JOIN class_lottery ON class_lottery.class_name = performance.class_name \n' +
 			'LEFT JOIN schedule_slot_choice \n' +
