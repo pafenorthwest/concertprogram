@@ -116,7 +116,9 @@ export class Program {
 				// Build a lookup per concert series from slot id -> concert number in series
 				// so we can translate ranked slot ids into their concert numbers later.
 				const slotIdToConcertNumberBySeries = new Map<string, Map<number, number>>();
-				for (const concertSeries of new Set(rawPerformances.map((performance) => performance.concert_series))) {
+				for (const concertSeries of new Set(
+					rawPerformances.map((performance) => performance.concert_series)
+				)) {
 					const slotCatalog = await SlotCatalog.load(concertSeries, this.year);
 					slotIdToConcertNumberBySeries.set(
 						concertSeries,
@@ -159,9 +161,7 @@ export class Program {
 				// Determine all Eastside concert numbers that appear in the ranked choices,
 				// and compute the maximum number of ranked choices any performer submitted.
 				const eastsideConcertNumbers = Array.from(
-					new Set(
-						eastsidePerformances.flatMap((performance) => performance.rankedChoiceConcerts)
-					)
+					new Set(eastsidePerformances.flatMap((performance) => performance.rankedChoiceConcerts))
 				).sort((a, b) => a - b);
 				const maxRank = eastsidePerformances.reduce(
 					(max, performance) => Math.max(max, performance.rankedChoiceConcerts.length),
@@ -191,7 +191,9 @@ export class Program {
 
 				// Helper to apply a stable sort by lottery number, then performance order,
 				// then performer id to resolve any remaining ties.
-				const sortByLottery = <T extends { lottery: string; performance_order: number; performer_id: number }>(
+				const sortByLottery = <
+					T extends { lottery: string; performance_order: number; performer_id: number }
+				>(
 					items: T[]
 				): T[] =>
 					items.sort((a, b) => {
