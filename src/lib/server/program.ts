@@ -102,29 +102,131 @@ export class Program {
 			//  - concerto concerts show up first and takes precedent
 			const performancesWithLottery = await retrievePerformanceByLottery(this.year);
 			if (performancesWithLottery.rowCount != null && performancesWithLottery.rowCount > 0) {
-				// iterate over the list in order, add the performances
-				//  - track seat limit per EastSide concert (#1,#2,#3,#4), and stop adding when limit reached
-				//  - choncertChairChoice overrides and ignores any limits
-				for (const performance of performancesWithLottery.rows) {
-					const chairOverride = performance.chair_override === true;
-					const rankedChoiceConcerts = this.normalizeRankedChoices(performance.ranked_slots);
+				const performances = performancesWithLottery.rows.map((performance) => ({
+					...performance,
+					chairOverride: performance.chair_override === true,
+					rankedChoiceConcerts: this.normalizeRankedChoices(performance.ranked_slots)
+				}));
 
+				const placementMap = new Map<
+					number,
+					{
+						concertSeries: string;
+						concertNumberInSeries: number;
+						chairOverride: boolean;
+					}
+				>();
+
+				const eastsidePerformances = performances.filter(
+					(performance) => performance.concert_series.toLowerCase() === 'eastside'
+				);
+				const otherPerformances = performances.filter(
+					(performance) => performance.concert_series.toLowerCase() !== 'eastside'
+				);
+
+				const eastsideConcertNumbers = Array.from(
+					new Set(
+						eastsidePerformances.flatMap((performance) => performance.rankedChoiceConcerts)
+					)
+				).sort((a, b) => a - b);
+				const maxRank = eastsidePerformances.reduce(
+					(max, performance) => Math.max(max, performance.rankedChoiceConcerts.length),
+					0
+				);
+
+				// concertChairOverride placements come first and do not consume Eastside capacity.
+				for (const performance of eastsidePerformances.filter(
+					(performance) => performance.chairOverride
+				)) {
+					const preferredConcert = performance.rankedChoiceConcerts[0];
+					if (preferredConcert != null) {
+						placementMap.set(performance.id, {
+							concertSeries: performance.concert_series,
+							concertNumberInSeries: preferredConcert,
+							chairOverride: true
+						});
+					} else {
+						placementMap.set(performance.id, {
+							concertSeries: 'Waitlist',
+							concertNumberInSeries: 1,
+							chairOverride: true
+						});
+					}
+				}
+
+				const sortByLottery = <T extends { lottery: string; performance_order: number; performer_id: number }>(
+					items: T[]
+				): T[] =>
+					items.sort((a, b) => {
+						const lotteryDiff = Number(a.lottery) - Number(b.lottery);
+						if (lotteryDiff !== 0) {
+							return lotteryDiff;
+						}
+						const orderDiff = a.performance_order - b.performance_order;
+						if (orderDiff !== 0) {
+							return orderDiff;
+						}
+						return a.performer_id - b.performer_id;
+					});
+
+				for (let rankIndex = 0; rankIndex < maxRank; rankIndex += 1) {
+					for (const concertNum of eastsideConcertNumbers) {
+						const candidates = eastsidePerformances.filter(
+							(performance) =>
+								!performance.chairOverride &&
+								!placementMap.has(performance.id) &&
+								performance.rankedChoiceConcerts[rankIndex] === concertNum
+						);
+
+						for (const candidate of sortByLottery(candidates)) {
+							if (!this.isFull(candidate.concert_series, concertNum)) {
+								this.incrementConcertCount(candidate.concert_series, concertNum);
+								placementMap.set(candidate.id, {
+									concertSeries: candidate.concert_series,
+									concertNumberInSeries: concertNum,
+									chairOverride: candidate.chairOverride
+								});
+							}
+						}
+					}
+				}
+
+				for (const performance of eastsidePerformances) {
+					if (placementMap.has(performance.id)) {
+						continue;
+					}
+					placementMap.set(performance.id, {
+						concertSeries: 'Waitlist',
+						concertNumberInSeries: 1,
+						chairOverride: performance.chairOverride
+					});
+				}
+
+				for (const performance of otherPerformances) {
 					let hasPlacement = false;
 					let numberInSeries = 1;
-					for (const concertNum of rankedChoiceConcerts) {
-						// Not Full Set to This Concert
-						if (!this.isFull(performance.concert_series, concertNum, chairOverride)) {
+					for (const concertNum of performance.rankedChoiceConcerts) {
+						if (!this.isFull(performance.concert_series, concertNum, performance.chairOverride)) {
 							this.incrementConcertCount(performance.concert_series, concertNum);
 							numberInSeries = concertNum;
 							hasPlacement = true;
 							break;
 						}
-						// Last Concert Was Full Move to Next
+					}
+					placementMap.set(performance.id, {
+						concertSeries: hasPlacement ? performance.concert_series : 'Waitlist',
+						concertNumberInSeries: numberInSeries,
+						chairOverride: performance.chairOverride
+					});
+				}
+
+				for (const performance of performances) {
+					const placement = placementMap.get(performance.id);
+					if (!placement) {
+						continue;
 					}
 
-					// build array of musical title
 					const musicalTitles = await this.queryMusicalPiece(performance.id);
-					// get performance details
 					const performanceDetails = await this.queryPerformanceDetails(performance.id);
 					if (!performanceDetails) {
 						console.warn(
@@ -133,7 +235,6 @@ export class Program {
 						continue;
 					}
 
-					// add performance
 					this.orderedPerformance.push({
 						id: performance.id,
 						performerId: performance.performer_id,
@@ -143,12 +244,11 @@ export class Program {
 						age: performanceDetails.age,
 						accompanist: performanceDetails.accompanist,
 						lottery: performance.lottery,
-						// put Remaining performers, whose desired schedule can not be met  into "Waitlist" concert series
-						concertSeries: hasPlacement ? performance.concert_series : 'Waitlist',
-						concertNumberInSeries: numberInSeries,
+						concertSeries: placement.concertSeries,
+						concertNumberInSeries: placement.concertNumberInSeries,
 						order: performance.performance_order,
-						chairOverride,
-						musicalTitles: musicalTitles,
+						chairOverride: placement.chairOverride,
+						musicalTitles,
 						comment: performanceDetails.comment
 					});
 				}
@@ -167,6 +267,16 @@ export class Program {
 			}
 			if (a.concertNumberInSeries !== b.concertNumberInSeries) {
 				return a.concertNumberInSeries - b.concertNumberInSeries;
+			}
+			if (a.concertSeries === 'Waitlist') {
+				const lotteryDiff = Number(a.lottery) - Number(b.lottery);
+				if (lotteryDiff !== 0) {
+					return lotteryDiff;
+				}
+				if (a.order !== b.order) {
+					return a.order - b.order;
+				}
+				return a.performerId - b.performerId;
 			}
 			return a.order - b.order;
 		});
@@ -190,8 +300,7 @@ export class Program {
 			.filter((slot) => Number.isInteger(slot) && slot >= 0);
 	}
 
-	// chairOverride boolean should be passed as a param
-	// if (chairOverride) return false;
+	// chairOverride bypass is handled explicitly when building placements.
 	isFull(concertSeries: string, concertNum: number, chairOverride = false): boolean {
 		if (chairOverride) {
 			return false;
