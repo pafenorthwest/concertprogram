@@ -97,17 +97,24 @@ export class Program {
 
 	async build() {
 		try {
-			// fetch performances order by concert_series & lottery
-			//  - performer id, lottery num, concert_series, array of ranked slot numbers
-			//  - filter by year
-			//  - concerto concerts show up first and takes precedent
+			// Fetch all performances for this season, already ordered by series/lottery
+			// and filtered to the configured year. The result rows include:
+			//  - performer id, lottery number, concert series
+			//  - ranked slot ids that encode the performer's ranked concert preferences
+			//  - concerto concerts (if any) appear first and take precedence
 			const performancesWithLottery = await retrievePerformanceByLottery(this.year);
+			// Only proceed if we received any rows (guard against empty seasons).
 			if (performancesWithLottery.rowCount != null && performancesWithLottery.rowCount > 0) {
+				// Normalize raw DB rows into a shape that is easier to work with:
+				//  - chairOverride: explicit boolean for placement bypass
+				//  - rankedSlotIds: numeric slot ids parsed from the DB payload
 				const rawPerformances = performancesWithLottery.rows.map((performance) => ({
 					...performance,
 					chairOverride: performance.chair_override === true,
 					rankedSlotIds: this.normalizeRankedSlotIds(performance.ranked_slot_ids)
 				}));
+				// Build a lookup per concert series from slot id -> concert number in series
+				// so we can translate ranked slot ids into their concert numbers later.
 				const slotIdToConcertNumberBySeries = new Map<string, Map<number, number>>();
 				for (const concertSeries of new Set(rawPerformances.map((performance) => performance.concert_series))) {
 					const slotCatalog = await SlotCatalog.load(concertSeries, this.year);
@@ -117,6 +124,8 @@ export class Program {
 					);
 				}
 
+				// Attach rankedChoiceConcerts to each performance, mapping slot ids to
+				// actual concert numbers that we can use for placement.
 				const performances = rawPerformances.map((performance) => {
 					const slotIdMap = slotIdToConcertNumberBySeries.get(performance.concert_series);
 					return {
@@ -127,6 +136,8 @@ export class Program {
 					};
 				});
 
+				// placementMap tracks each performance's assigned concert (or waitlist).
+				// We will fill this map in stages while respecting capacity rules.
 				const placementMap = new Map<
 					number,
 					{
@@ -136,6 +147,8 @@ export class Program {
 					}
 				>();
 
+				// Eastside concerts have capacity and special handling for chair overrides;
+				// other series are placed using ranked choices without the Eastside limits.
 				const eastsidePerformances = performances.filter(
 					(performance) => performance.concert_series.toLowerCase() === 'eastside'
 				);
@@ -143,6 +156,8 @@ export class Program {
 					(performance) => performance.concert_series.toLowerCase() !== 'eastside'
 				);
 
+				// Determine all Eastside concert numbers that appear in the ranked choices,
+				// and compute the maximum number of ranked choices any performer submitted.
 				const eastsideConcertNumbers = Array.from(
 					new Set(
 						eastsidePerformances.flatMap((performance) => performance.rankedChoiceConcerts)
@@ -154,6 +169,7 @@ export class Program {
 				);
 
 				// concertChairOverride placements come first and do not consume Eastside capacity.
+				// If no preferred concert exists, the performance is placed on the waitlist.
 				for (const performance of eastsidePerformances.filter(
 					(performance) => performance.chairOverride
 				)) {
@@ -173,6 +189,8 @@ export class Program {
 					}
 				}
 
+				// Helper to apply a stable sort by lottery number, then performance order,
+				// then performer id to resolve any remaining ties.
 				const sortByLottery = <T extends { lottery: string; performance_order: number; performer_id: number }>(
 					items: T[]
 				): T[] =>
@@ -188,6 +206,9 @@ export class Program {
 						return a.performer_id - b.performer_id;
 					});
 
+				// Fill Eastside seats by iterating through ranked choices (rank 1, rank 2, ...),
+				// and then through each concert number. Candidates are sorted by lottery so
+				// lower lottery numbers get priority at the current rank.
 				for (let rankIndex = 0; rankIndex < maxRank; rankIndex += 1) {
 					for (const concertNum of eastsideConcertNumbers) {
 						const candidates = eastsidePerformances.filter(
@@ -198,6 +219,7 @@ export class Program {
 						);
 
 						for (const candidate of sortByLottery(candidates)) {
+							// Only place the candidate if the concert still has capacity.
 							if (!this.isFull(candidate.concert_series, concertNum)) {
 								this.incrementConcertCount(candidate.concert_series, concertNum);
 								placementMap.set(candidate.id, {
@@ -210,6 +232,8 @@ export class Program {
 					}
 				}
 
+				// Any Eastside performance left unassigned after filling capacity
+				// is placed on the waitlist (still preserving chairOverride if set).
 				for (const performance of eastsidePerformances) {
 					if (placementMap.has(performance.id)) {
 						continue;
@@ -221,6 +245,8 @@ export class Program {
 					});
 				}
 
+				// For non-Eastside series, choose the first ranked concert that is not full.
+				// If none are available, place the performance on the waitlist.
 				for (const performance of otherPerformances) {
 					let hasPlacement = false;
 					let numberInSeries = 1;
@@ -239,12 +265,16 @@ export class Program {
 					});
 				}
 
+				// Build the final ordered performance entries by enriching each placement
+				// with musical titles and performance details.
 				for (const performance of performances) {
 					const placement = placementMap.get(performance.id);
 					if (!placement) {
 						continue;
 					}
 
+					// Query titles and details for each performance. Missing details
+					// are treated as a signal to skip the entry.
 					const musicalTitles = await this.queryMusicalPiece(performance.id);
 					const performanceDetails = await this.queryPerformanceDetails(performance.id);
 					if (!performanceDetails) {
@@ -254,6 +284,7 @@ export class Program {
 						continue;
 					}
 
+					// Assemble the fully-hydrated ordered performance record.
 					this.orderedPerformance.push({
 						id: performance.id,
 						performerId: performance.performer_id,
@@ -273,6 +304,7 @@ export class Program {
 				}
 			}
 		} catch (error) {
+			// Wrap errors to provide a more specific failure context to callers.
 			throw new Error(`Failed to build program ${(error as Error).message}`);
 		}
 	}
@@ -280,6 +312,8 @@ export class Program {
 	// when retrieving sort by Concert Series, Concert Number in Series, and Performance Order
 	//   - late arrivals get default order of 100, and likely will fall to bottom
 	retrieveAllConcertPrograms(): OrderedPerformanceInterface[] {
+		// Sort by series then concert number. Waitlist entries are sorted
+		// by lottery/order/performer to keep a stable, fair ordering.
 		return this.orderedPerformance.sort((a, b) => {
 			if (a.concertSeries !== b.concertSeries) {
 				return a.concertSeries.localeCompare(b.concertSeries);
