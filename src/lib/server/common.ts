@@ -63,6 +63,7 @@ export interface PerformanceInterface {
 	performer_name: string;
 	class: string;
 	duration: number | null;
+	chair_override?: boolean;
 	accompanist_id: number | null;
 	concert_series: string;
 	year: number;

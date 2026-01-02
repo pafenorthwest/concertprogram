@@ -32,6 +32,7 @@ export async function POST({ url, request, cookies }) {
 			concert_series,
 			year,
 			instrument,
+			chair_override,
 			order,
 			comment,
 			warm_up_room_name,
@@ -45,11 +46,13 @@ export async function POST({ url, request, cookies }) {
 
 		const instrumentEnum = selectInstrument(instrument);
 		const cleaned_pafe_series = year || pafeYear();
+		const chairOverride = chair_override === true;
 		const performance: PerformanceInterface = {
 			id: null,
 			class: class_name,
 			performer_name: performer_name,
 			duration: duration,
+			chair_override: chairOverride,
 			accompanist_id: accompanist_id,
 			concert_series: concert_series,
 			year: cleaned_pafe_series,

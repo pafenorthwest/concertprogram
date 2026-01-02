@@ -30,6 +30,7 @@ export interface OrderedPerformanceInterface extends PerformanceDetailsInterface
 	concertSeries: string;
 	concertNumberInSeries: number;
 	order: number;
+	chairOverride: boolean;
 	musicalTitles: MusicalTitleInterface[];
 }
 
@@ -105,14 +106,14 @@ export class Program {
 				//  - track seat limit per EastSide concert (#1,#2,#3,#4), and stop adding when limit reached
 				//  - choncertChairChoice overrides and ignores any limits
 				for (const performance of performancesWithLottery.rows) {
+					const chairOverride = performance.chair_override === true;
 					const rankedChoiceConcerts = this.normalizeRankedChoices(performance.ranked_slots);
 
 					let hasPlacement = false;
 					let numberInSeries = 1;
 					for (const concertNum of rankedChoiceConcerts) {
 						// Not Full Set to This Concert
-						// should factor in ChairOverride
-						if (!this.isFull(performance.concert_series, concertNum)) {
+						if (!this.isFull(performance.concert_series, concertNum, chairOverride)) {
 							this.incrementConcertCount(performance.concert_series, concertNum);
 							numberInSeries = concertNum;
 							hasPlacement = true;
@@ -146,6 +147,7 @@ export class Program {
 						concertSeries: hasPlacement ? performance.concert_series : 'Waitlist',
 						concertNumberInSeries: numberInSeries,
 						order: performance.performance_order,
+						chairOverride,
 						musicalTitles: musicalTitles,
 						comment: performanceDetails.comment
 					});
@@ -190,7 +192,10 @@ export class Program {
 
 	// chairOverride boolean should be passed as a param
 	// if (chairOverride) return false;
-	isFull(concertSeries: string, concertNum: number): boolean {
+	isFull(concertSeries: string, concertNum: number, chairOverride = false): boolean {
+		if (chairOverride) {
+			return false;
+		}
 		return (
 			concertSeries.toLowerCase() === 'eastside' &&
 			this.count.get(concertSeries, concertNum) >= this.eastSideSeats
@@ -220,7 +225,7 @@ export class Program {
 			if (piece.composer_three_name != null) {
 				contributors.push({
 					printedName: piece.composer_three_name,
-					yearsActive: piece.composer_two_years
+					yearsActive: piece.composer_three_years
 				});
 			}
 			if (piece.printed_name != null) {

@@ -356,8 +356,9 @@ export async function insertPerformance(
 ) {
 	try {
 		const connection = await pool.connect();
+		const chairOverride = data.chair_override === true;
 
-		let cols = 'performer_id, concert_series, class_name, year, instrument';
+		let cols = 'performer_id, concert_series, class_name, year, instrument, chair_override';
 		let vals =
 			performer_id +
 			", '" +
@@ -368,7 +369,8 @@ export async function insertPerformance(
 			data.year +
 			", '" +
 			data.instrument +
-			"'";
+			"', " +
+			chairOverride;
 
 		if (order != null) {
 			cols = cols + ', order';
@@ -452,18 +454,21 @@ export async function updatePerformance(
 ) {
 	try {
 		const connection = await pool.connect();
+		const chairOverride = data.chair_override === true;
+		const hasChairOverride = typeof data.chair_override === 'boolean';
 
 		let setCols =
 			'performer_id = ' +
 			performer_id +
 			", concert_series = '" +
 			data.concert_series +
-			", class_name = '" +
+			"', class_name = '" +
 			data.class +
-			', year = ' +
+			"', year = " +
 			data.year +
 			", instrument = '" +
-			data.instrument;
+			data.instrument +
+			"'";
 
 		if (order != null) {
 			setCols = setCols + ', order = ' + order;
@@ -485,6 +490,9 @@ export async function updatePerformance(
 		}
 		if (warm_up_room_end != null) {
 			setCols = setCols + ", warm_up_room_end = '" + warm_up_room_end.toTimeString() + "'";
+		}
+		if (hasChairOverride) {
+			setCols = setCols + ', chair_override = ' + chairOverride;
 		}
 
 		const updateSQL = 'UPDATE PERFORMANCE SET ' + setCols + ' WHERE performance.id = ' + data.id;
@@ -1090,10 +1098,11 @@ export async function retrievePerformanceByLottery(year: number) {
 
 		const querySQL =
 			'SELECT performance.id, performance.performer_id, performance.performance_order, \n' +
-			'performance.concert_series, performance.year, class_lottery.lottery as lookup_code, \n' +
+			'performance.concert_series, performance.year, performance.chair_override, \n' +
+			'class_lottery.lottery as lookup_code, \n' +
 			'class_lottery.lottery, \n' +
 			'ARRAY_AGG(concert_times.concert_number_in_series ORDER BY schedule_slot_choice.rank) \n' +
-			'    FILTER (WHERE schedule_slot_choice.rank IS NOT NULL) as ranked_slots \n' +
+			'    FILTER (WHERE schedule_slot_choice.rank IS NOT NULL AND schedule_slot_choice.not_available = false) as ranked_slots \n' +
 			'FROM performance \n' +
 			'JOIN class_lottery ON class_lottery.class_name = performance.class_name \n' +
 			'LEFT JOIN schedule_slot_choice \n' +
@@ -1101,14 +1110,12 @@ export async function retrievePerformanceByLottery(year: number) {
 			' AND schedule_slot_choice.year = performance.year\n' +
 			' AND schedule_slot_choice.concert_series = performance.concert_series\n' +
 			'LEFT JOIN concert_times ON concert_times.id = schedule_slot_choice.slot_id \n' +
-			'WHERE performance.year = ' +
-			year +
-			'\n' +
+			'WHERE performance.year = $1 \n' +
 			'GROUP BY performance.id, performance.performer_id, performance.performance_order, \n' +
-			'performance.concert_series, performance.year, class_lottery.lottery \n' +
+			'performance.concert_series, performance.year, performance.chair_override, class_lottery.lottery \n' +
 			'ORDER BY performance.concert_series, class_lottery.lottery';
 
-		const result = await connection.query(querySQL);
+		const result = await connection.query(querySQL, [year]);
 
 		connection.release();
 		return result;
