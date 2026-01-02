@@ -16,7 +16,7 @@ import {
 } from '$lib/server/common';
 import { isNonEmptyString } from '$lib/server/common';
 
-const pool = new Pool({
+export const pool = new Pool({
 	connectionString: DATABASE_URL,
 	ssl: DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
 });
@@ -28,9 +28,8 @@ function normalizeTableName(table: string): string {
 	return table;
 }
 export async function queryTable(table: string, id?: number) {
+	const connection = await pool.connect();
 	try {
-		const connection = await pool.connect();
-
 		let fields = '';
 		let filter = '';
 		let sort = '';
@@ -51,7 +50,7 @@ export async function queryTable(table: string, id?: number) {
 					'id, printed_name, first_contributor_id, all_movements, second_contributor_id, third_contributor_id';
 				break;
 			case 'concert_times':
-				fields = 'concert_series, year,concert_number_in_series,start_time';
+				fields = 'id, concert_series, year, concert_number_in_series, start_time';
 				break;
 			case 'class_lottery':
 				fields = 'class_name, lottery';
@@ -65,23 +64,17 @@ export async function queryTable(table: string, id?: number) {
 
 		// tables with no id field
 		switch (tableName) {
-			case 'concert_times':
-				sort = '';
-				break;
 			case 'class_lottery':
 				sort = '';
 				break;
 		}
 
-		const result = connection.query('SELECT ' + fields + ' FROM ' + tableName + filter + sort);
-
-		// Release the connection back to the pool
-		connection.release();
-
-		return result;
+		return await connection.query('SELECT ' + fields + ' FROM ' + tableName + filter + sort);
 	} catch (error) {
 		console.error('Error executing query:', error);
 		throw error;
+	} finally {
+		connection.release();
 	}
 }
 
@@ -363,8 +356,9 @@ export async function insertPerformance(
 ) {
 	try {
 		const connection = await pool.connect();
+		const chairOverride = data.chair_override === true;
 
-		let cols = 'performer_id, concert_series, class_name, year, instrument';
+		let cols = 'performer_id, concert_series, class_name, year, instrument, chair_override';
 		let vals =
 			performer_id +
 			", '" +
@@ -375,7 +369,8 @@ export async function insertPerformance(
 			data.year +
 			", '" +
 			data.instrument +
-			"'";
+			"', " +
+			chairOverride;
 
 		if (order != null) {
 			cols = cols + ', order';
@@ -459,18 +454,21 @@ export async function updatePerformance(
 ) {
 	try {
 		const connection = await pool.connect();
+		const chairOverride = data.chair_override === true;
+		const hasChairOverride = typeof data.chair_override === 'boolean';
 
 		let setCols =
 			'performer_id = ' +
 			performer_id +
 			", concert_series = '" +
 			data.concert_series +
-			", class_name = '" +
+			"', class_name = '" +
 			data.class +
-			', year = ' +
+			"', year = " +
 			data.year +
 			", instrument = '" +
-			data.instrument;
+			data.instrument +
+			"'";
 
 		if (order != null) {
 			setCols = setCols + ', order = ' + order;
@@ -492,6 +490,9 @@ export async function updatePerformance(
 		}
 		if (warm_up_room_end != null) {
 			setCols = setCols + ", warm_up_room_end = '" + warm_up_room_end.toTimeString() + "'";
+		}
+		if (hasChairOverride) {
+			setCols = setCols + ', chair_override = ' + chairOverride;
 		}
 
 		const updateSQL = 'UPDATE PERFORMANCE SET ' + setCols + ' WHERE performance.id = ' + data.id;
@@ -646,7 +647,7 @@ export async function insertPerformancePieceMap(performancePieceMap: Performance
 				performancePieceMap.musical_piece_id +
 				' )';
 		}
-		const result = connection.query(insertSQL);
+		const result = await connection.query(insertSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -672,7 +673,7 @@ export async function deletePerformancePieceMap(
 			deleteSQL = deleteSQL + ' AND musical_piece_id = ' + performancePieceMap.musical_piece_id;
 		}
 
-		const result = connection.query(deleteSQL);
+		const result = await connection.query(deleteSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -689,7 +690,7 @@ export async function deletePerformancePieceByPerformanceId(performance_id: numb
 		const connection = await pool.connect();
 
 		const deleteSQL = 'DELETE FROM performance_pieces where performance_id = ' + performance_id;
-		const result = connection.query(deleteSQL);
+		const result = await connection.query(deleteSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -711,7 +712,7 @@ export async function getClassLottery(class_name: string) {
 	try {
 		const connection = await pool.connect();
 
-		const result = connection.query(
+		const result = await connection.query(
 			'SELECT class_name, lottery' +
 				'       FROM class_lottery' +
 				"      WHERE class_name = '" +
@@ -850,7 +851,7 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
 		}
 		queryFilter = queryFilter + '\n';
 
-		const result = connection.query(
+		const result = await connection.query(
 			'SELECT ' + fields + ' FROM performance' + joins + queryFilter + order
 		);
 
@@ -875,13 +876,13 @@ export async function queryMusicalPieceByPerformanceId(id: number) {
 			'FROM musical_piece\n' +
 			'JOIN performance_pieces ON musical_piece.id = performance_pieces.musical_piece_id\n' +
 			'JOIN contributor one ON one.id = musical_piece.first_contributor_id\n' +
-			'LEFT JOIN contributor two ON two.id = musical_piece. second_contributor_id\n' +
-			'LEFT JOIN contributor three ON three.id = musical_piece. third_contributor_id\n' +
+			'LEFT JOIN contributor two ON two.id = musical_piece.second_contributor_id\n' +
+			'LEFT JOIN contributor three ON three.id = musical_piece.third_contributor_id\n' +
 			'JOIN performance ON performance_pieces.performance_id = performance.id\n' +
 			'AND performance.id = ' +
 			id;
 
-		const result = connection.query(querySQL);
+		const result = await connection.query(querySQL);
 		connection.release();
 		return result;
 	} catch (error) {
@@ -902,7 +903,7 @@ export async function queryPerformanceDetailsById(id: number) {
 			'LEFT JOIN accompanist ON performance.accompanist_id = accompanist.id \n' +
 			'WHERE performance.id = ' +
 			id;
-		const result = connection.query(querySQL);
+		const result = await connection.query(querySQL);
 		connection.release();
 		return result;
 	} catch (error) {
@@ -928,7 +929,7 @@ export async function searchContributor(composer_name: string, role: string) {
 			normalizedRole +
 			"'";
 
-		const result = connection.query(searchSQL);
+		const result = await connection.query(searchSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -951,7 +952,7 @@ export async function searchAccompanist(accompanist: string) {
 			accompanist.toLowerCase() +
 			"'";
 
-		const result = connection.query(searchSQL);
+		const result = await connection.query(searchSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -979,7 +980,7 @@ export async function searchPerformer(full_name: string, email: string | null, i
 			searchSQL = searchSQL + " OR (LOWER(email) = '" + email.toLowerCase() + "')";
 		}
 
-		const result = connection.query(searchSQL);
+		const result = await connection.query(searchSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -1003,7 +1004,7 @@ export async function searchMusicalPiece(printed_name: string, first_contributor
 			"' AND first_contributor_id = " +
 			first_contributor_id;
 
-		const result = connection.query(searchSQL);
+		const result = await connection.query(searchSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -1042,7 +1043,7 @@ export async function searchPerformanceByPerformer(
 			'    AND year = ' +
 			year;
 
-		const result = connection.query(searchSQL);
+		const result = await connection.query(searchSQL);
 
 		// Release the connection back to the pool
 		connection.release();
@@ -1064,163 +1065,25 @@ export async function selectPerformanceLottery(year: number) {
 			'performer.epoch,  \n' +
 			'performer.instrument, \n' +
 			'contributor.full_name as composer, \n' +
-			'performer_ranked_choice.first_choice_time as first_choice_time, \n' +
-			'performer_ranked_choice.concert_chair_choice as concert_chair_choice \n' +
+			'MAX(CASE WHEN schedule_slot_choice.rank = 1 THEN concert_times.start_time END) as first_choice_time \n' +
 			'FROM class_lottery \n' +
 			'JOIN performance ON performance.class_name = class_lottery.class_name \n' +
 			'JOIN performer ON performer.id = performance.performer_id \n' +
 			'JOIN performance_pieces ON performance.id = performance_pieces.performance_id \n' +
 			'JOIN musical_piece ON musical_piece.id = performance_pieces.musical_piece_id \n' +
 			'JOIN contributor ON musical_piece.first_contributor_id = contributor.id \n' +
-			'LEFT JOIN performer_ranked_choice ON performer_ranked_choice.performer_id = performer.id \n' +
+			'LEFT JOIN schedule_slot_choice \n' +
+			'  ON schedule_slot_choice.performer_id = performer.id \n' +
+			' AND schedule_slot_choice.year = performance.year \n' +
+			' AND schedule_slot_choice.concert_series = performance.concert_series \n' +
+			'LEFT JOIN concert_times ON concert_times.id = schedule_slot_choice.slot_id \n' +
 			'WHERE performance.year = ' +
 			year +
 			' \n' +
+			'GROUP BY class_lottery.lottery, performer.full_name, performer.epoch, performer.instrument, contributor.full_name \n' +
 			'ORDER BY class_lottery.lottery';
 
-		const result = connection.query(searchSQL);
-		connection.release();
-		return result;
-	} catch (error) {
-		console.error('Error executing query:', error);
-		throw error;
-	}
-}
-
-export async function selectDBSchedule(performer_id: number, year: number) {
-	try {
-		const connection = await pool.connect();
-
-		const selectSQL =
-			'SELECT performer_id, concert_series, year, \n' +
-			'first_choice_time, second_choice_time, third_choice_time, fourth_choice_time \n' +
-			'FROM public.performer_ranked_choice \n' +
-			'WHERE performer_id = ' +
-			performer_id +
-			' \n' +
-			' AND year = ' +
-			year +
-			' \n' +
-			'ORDER BY concert_series \n';
-
-		const result = connection.query(selectSQL);
-		connection.release();
-		return result;
-	} catch (error) {
-		console.error('Error executing query:', error);
-		throw error;
-	}
-}
-
-export async function getDBSchedule(performer_id: number, concert_series: string, year: number) {
-	try {
-		const connection = await pool.connect();
-
-		const selectSQL =
-			'SELECT performer_id, concert_series, year, \n' +
-			'first_choice_time, second_choice_time, third_choice_time, fourth_choice_time \n' +
-			'FROM public.performer_ranked_choice \n' +
-			'WHERE performer_id = ' +
-			performer_id +
-			' \n' +
-			"  AND concert_series = '" +
-			concert_series +
-			"' \n" +
-			'  AND year = ' +
-			year +
-			' \n' +
-			'ORDER BY concert_series \n';
-
-		const result = connection.query(selectSQL);
-		connection.release();
-		return result;
-	} catch (error) {
-		console.error('Error executing query:', error);
-		throw error;
-	}
-}
-
-export async function createDBSchedule(
-	performer_id: number,
-	concert_series: string,
-	year: number,
-	first_concert_time: string,
-	second_concert_time: string | null,
-	third_concert_time: string | null,
-	fourth_concert_time: string | null
-) {
-	try {
-		const connection = await pool.connect();
-
-		// first delete if exists, then insert, this handles new entries and updates
-		const deleteSQL =
-			'DELETE FROM performer_ranked_choice \n' +
-			'WHERE performer_id = ' +
-			performer_id +
-			'\n' +
-			"  AND concert_series = '" +
-			concert_series +
-			"' \n" +
-			'  AND year = ' +
-			year +
-			' \n';
-
-		await connection.query(deleteSQL);
-
-		let insertSQL = 'INSERT INTO performer_ranked_choice ';
-		let insertCOLS = '(performer_id,concert_series,year,first_choice_time';
-		let insertVALS =
-			'VALUES (' +
-			performer_id +
-			", '" +
-			concert_series +
-			"', " +
-			year +
-			", '" +
-			first_concert_time +
-			"'";
-		if (second_concert_time != null) {
-			insertCOLS += ', second_choice_time';
-			insertVALS += ", '" + second_concert_time + "'";
-		}
-		if (third_concert_time != null) {
-			insertCOLS += ', third_choice_time';
-			insertVALS += ", '" + third_concert_time + "'";
-		}
-		if (fourth_concert_time != null) {
-			insertCOLS += ', fourth_choice_time';
-			insertVALS += ", '" + fourth_concert_time + "'";
-		}
-		insertCOLS += ') \n';
-		insertVALS += ') \n';
-		insertSQL += insertCOLS + insertVALS;
-
-		const result = connection.query(insertSQL);
-		connection.release();
-		return result;
-	} catch (error) {
-		console.error('Error executing query:', error);
-		throw error;
-	}
-}
-
-export async function deleteDBSchedule(performerId: number, concert_series: string, year: number) {
-	try {
-		const connection = await pool.connect();
-
-		const deleteSQL =
-			'DELETE FROM performer_ranked_choice \n' +
-			'WHERE performer_id = ' +
-			performerId +
-			' \n' +
-			"  AND concert_series = '" +
-			concert_series +
-			"' \n" +
-			'  AND year = ' +
-			year +
-			' \n';
-
-		const result = connection.query(deleteSQL);
+		const result = await connection.query(searchSQL);
 		connection.release();
 		return result;
 	} catch (error) {
@@ -1235,23 +1098,24 @@ export async function retrievePerformanceByLottery(year: number) {
 
 		const querySQL =
 			'SELECT performance.id, performance.performer_id, performance.performance_order, \n' +
-			'performance.concert_series, performance.year, class_lottery.lottery as lookup_code, \n' +
+			'performance.concert_series, performance.year, performance.chair_override, \n' +
+			'class_lottery.lottery as lookup_code, \n' +
 			'class_lottery.lottery, \n' +
-			'performer_ranked_choice.concert_chair_choice, performer_ranked_choice.first_choice_time, \n' +
-			'performer_ranked_choice.second_choice_time, performer_ranked_choice.third_choice_time, \n' +
-			'performer_ranked_choice.fourth_choice_time\n' +
+			'ARRAY_AGG(concert_times.id ORDER BY schedule_slot_choice.rank) \n' +
+			'    FILTER (WHERE schedule_slot_choice.rank IS NOT NULL AND schedule_slot_choice.not_available = false) as ranked_slot_ids \n' +
 			'FROM performance \n' +
 			'JOIN class_lottery ON class_lottery.class_name = performance.class_name \n' +
-			'JOIN performer_ranked_choice ON performance.performer_id = performer_ranked_choice.performer_id\n' +
-			'        AND performance.year = performer_ranked_choice.year\n' +
-			'        AND (performance.concert_series = performer_ranked_choice.concert_series\n' +
-			"              OR performance.concert_series = 'Waitlist') \n" +
-			'WHERE performance.year = ' +
-			year +
-			'\n' +
+			'LEFT JOIN schedule_slot_choice \n' +
+			'  ON schedule_slot_choice.performer_id = performance.performer_id\n' +
+			' AND schedule_slot_choice.year = performance.year\n' +
+			' AND schedule_slot_choice.concert_series = performance.concert_series\n' +
+			'LEFT JOIN concert_times ON concert_times.id = schedule_slot_choice.slot_id \n' +
+			'WHERE performance.year = $1 \n' +
+			'GROUP BY performance.id, performance.performer_id, performance.performance_order, \n' +
+			'performance.concert_series, performance.year, performance.chair_override, class_lottery.lottery \n' +
 			'ORDER BY performance.concert_series, class_lottery.lottery';
 
-		const result = await connection.query(querySQL);
+		const result = await connection.query(querySQL, [year]);
 
 		connection.release();
 		return result;
@@ -1287,13 +1151,7 @@ export async function updateProgramOrder(id: number, concertSeries: string, orde
 	}
 }
 
-export async function movePerformanceByChair(
-	id: number,
-	performerId: number,
-	pafeSeries: number,
-	concertSeries: string,
-	concertStart: string | null
-) {
+export async function movePerformanceByChair(id: number, concertSeries: string) {
 	// moving in and out of waitlist
 	try {
 		const connection = await pool.connect();
@@ -1308,29 +1166,6 @@ export async function movePerformanceByChair(
 			' \n';
 
 		await connection.query(updateSQL);
-
-		// waitlist does not have concert start times
-		if (concertSeries.toLowerCase() !== 'waitlist' && concertStart != null) {
-			const updateSQL =
-				'UPDATE performer_ranked_choice \n' +
-				"SET first_choice_time = '" +
-				concertStart +
-				"', \n" +
-				'concert_chair_choice = ' +
-				true +
-				' \n' +
-				'WHERE performer_id = ' +
-				performerId +
-				' \n' +
-				'  AND year = ' +
-				pafeSeries +
-				' \n' +
-				"  AND concert_series = '" +
-				concertSeries +
-				"' \n";
-
-			await connection.query(updateSQL);
-		}
 
 		connection.release();
 		return true;

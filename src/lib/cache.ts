@@ -2,6 +2,7 @@ import { queryTable } from '$lib/server/db';
 import { compareReformatISODate, displayReformatISODate, year } from '$lib/server/common';
 
 export type ConcertRow = {
+	id: number;
 	concert_series: string;
 	year: number;
 	concert_number_in_series: number;
@@ -17,11 +18,19 @@ export type ConcertStartTime = {
 
 let concertStartTimes: ConcertStartTime | null = null;
 
-export async function initializeCache() {
+async function setCacheFromDb() {
 	concertStartTimes = {
 		data: await fetchTimeStamps(),
 		timestamp: new Date().toISOString()
 	};
+}
+
+export async function initializeCache() {
+	await setCacheFromDb();
+}
+
+export async function refreshCachedTimeStamps() {
+	await setCacheFromDb();
 }
 
 export function getCachedTimeStamps(): ConcertStartTime | null {
@@ -34,8 +43,16 @@ async function fetchTimeStamps(): Promise<ConcertRow[]> {
 	return res.rows
 		.filter((row) => row.year === year())
 		.map((row) => {
-			row.normalizedStartTime = compareReformatISODate(row.start_time);
-			row.displayStartTime = displayReformatISODate(row.start_time);
-			return row;
+			const slotId = Number(row.id);
+			const startTime = String(row.start_time);
+			return {
+				id: Number.isInteger(slotId) ? slotId : row.id,
+				concert_series: row.concert_series,
+				year: row.year,
+				concert_number_in_series: row.concert_number_in_series,
+				start_time: startTime,
+				normalizedStartTime: compareReformatISODate(startTime),
+				displayStartTime: displayReformatISODate(startTime)
+			};
 		});
 }

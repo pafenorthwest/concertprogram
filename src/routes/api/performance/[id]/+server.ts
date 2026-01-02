@@ -42,6 +42,7 @@ export async function PUT({ url, cookies, params, request }) {
 			concert_series,
 			year,
 			instrument,
+			chair_override,
 			order,
 			comment,
 			warm_up_room_name,
@@ -61,6 +62,7 @@ export async function PUT({ url, cookies, params, request }) {
 		if (cleaned_pafe_series == null) {
 			cleaned_pafe_series = pafeYear();
 		}
+		const chairOverride = chair_override === undefined ? undefined : chair_override === true;
 
 		const performance: PerformanceInterface = {
 			id: parseInt(params.id, 10),
@@ -70,7 +72,8 @@ export async function PUT({ url, cookies, params, request }) {
 			accompanist_id: accompanist_id,
 			concert_series: concert_series,
 			year: cleaned_pafe_series,
-			instrument: instrumentEnum
+			instrument: instrumentEnum,
+			chair_override: chairOverride
 		};
 
 		if (!performance.performer_name || !performance.concert_series) {

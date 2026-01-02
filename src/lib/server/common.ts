@@ -63,6 +63,7 @@ export interface PerformanceInterface {
 	performer_name: string;
 	class: string;
 	duration: number | null;
+	chair_override?: boolean;
 	accompanist_id: number | null;
 	concert_series: string;
 	year: number;
@@ -125,17 +126,6 @@ export interface PerformerSearchResultsInterface {
 	performance_duration: number;
 	performance_comment: null | string;
 }
-
-export interface EastSideFormInterface {
-	rank: number | null;
-	notSelected: boolean;
-}
-
-export interface ConcertoFormInterface {
-	confirmed: boolean;
-}
-
-export type ScheduleFormInterface = EastSideFormInterface | ConcertoFormInterface;
 
 export function formatFieldNames(input: string): string {
 	return input
