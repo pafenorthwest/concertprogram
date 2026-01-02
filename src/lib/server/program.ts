@@ -134,13 +134,12 @@ export class Program {
 					0
 				);
 
-				// concertChairOverride placements come first and can overbook Eastside concerts.
+				// concertChairOverride placements come first and do not consume Eastside capacity.
 				for (const performance of eastsidePerformances.filter(
 					(performance) => performance.chairOverride
 				)) {
 					const preferredConcert = performance.rankedChoiceConcerts[0];
 					if (preferredConcert != null) {
-						this.incrementConcertCount(performance.concert_series, preferredConcert);
 						placementMap.set(performance.id, {
 							concertSeries: performance.concert_series,
 							concertNumberInSeries: preferredConcert,
