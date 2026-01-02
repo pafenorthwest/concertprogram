@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { Performance } from '$lib/server/import';
 import { type ImportPerformanceInterface, year } from '$lib/server/common';
 import { pool } from '$lib/server/db';
@@ -10,56 +10,6 @@ const concertoSeries = 'Concerto';
 
 const importedPerformances: Performance[] = [];
 let uniqueCounter = 1;
-
-async function seedConcertTimes(series: string, seedYear: number, slotCount: number) {
-	const connection = await pool.connect();
-	try {
-		await connection.query('DELETE FROM concert_times WHERE concert_series = $1 AND year = $2', [
-			series,
-			seedYear
-		]);
-
-		for (let index = 1; index <= slotCount; index += 1) {
-			const startTime = `05/${String(index).padStart(2, '0')}/${seedYear}T10:00:00`;
-			await connection.query(
-				`INSERT INTO concert_times (concert_series, year, concert_number_in_series, start_time)
-         VALUES ($1, $2, $3, $4)`,
-				[series, seedYear, index, startTime]
-			);
-		}
-	} finally {
-		connection.release();
-	}
-}
-
-async function seedConcertoTimes(series: string, seedYear: number) {
-	const connection = await pool.connect();
-	try {
-		await connection.query('DELETE FROM concert_times WHERE concert_series = $1 AND year = $2', [
-			series,
-			seedYear
-		]);
-		await connection.query(
-			`INSERT INTO concert_times (concert_series, year, concert_number_in_series, start_time)
-       VALUES ($1, $2, $3, $4)`,
-			[series, seedYear, 0, `05/01/${seedYear}T18:00:00`]
-		);
-	} finally {
-		connection.release();
-	}
-}
-
-async function cleanupConcertTimes(series: string, cleanupYear: number) {
-	const connection = await pool.connect();
-	try {
-		await connection.query('DELETE FROM concert_times WHERE concert_series = $1 AND year = $2', [
-			series,
-			cleanupYear
-		]);
-	} finally {
-		connection.release();
-	}
-}
 
 async function fetchSlotIdByNumber(series: string, scheduleYear: number): Promise<Map<number, number>> {
 	const connection = await pool.connect();
@@ -158,16 +108,6 @@ async function updatePerformance(performanceId: number, updates: Record<string, 
 	}
 }
 
-beforeAll(async () => {
-	await seedConcertTimes(eastsideSeries, testYear, 4);
-	await seedConcertoTimes(concertoSeries, testYear);
-});
-
-afterAll(async () => {
-	await cleanupConcertTimes(eastsideSeries, testYear);
-	await cleanupConcertTimes(concertoSeries, testYear);
-});
-
 afterEach(async () => {
 	const connection = await pool.connect();
 	try {
@@ -190,6 +130,15 @@ afterEach(async () => {
 });
 
 describe('Program integration scheduling', () => {
+	it('validates concert times exist for Eastside and Concerto', async () => {
+		const eastsideSlots = await fetchSlotIdByNumber(eastsideSeries, testYear);
+		const concertoSlots = await fetchSlotIdByNumber(concertoSeries, testYear);
+
+		expect(eastsideSlots.size).toBeGreaterThan(0);
+		expect(eastsideSlots.get(1)).toBeTypeOf('number');
+		expect(concertoSlots.get(0)).toBeTypeOf('number');
+	});
+
 	it('schedules all concerto performers into the single slot', async () => {
 		const slotMap = await fetchSlotIdByNumber(concertoSeries, testYear);
 		const concertoSlot = slotMap.get(0);
