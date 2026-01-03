@@ -34,6 +34,9 @@
 <style>
 	.landing {
 		padding: var(--gutter);
+		display: flex;
+		flex-direction: column;
+		gap: var(--gutter);
 	}
 	.banner {
 		padding: 12px 14px;

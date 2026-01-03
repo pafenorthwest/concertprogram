@@ -30,15 +30,22 @@ export const NAV_ITEMS: NavItem[] = [
 		requiresAuth: true
 	},
 	{ href: '/admin/program', label: 'Concert Program', icon: 'menu_book', requiresAuth: true },
-	{ href: '/admin/class', label: 'Classes', icon: 'photo_auto_merge', requiresAuth: true }
+	{ href: '/admin/class', label: 'Classes', icon: 'photo_auto_merge', requiresAuth: true },
+	{ href: '/admin/users', label: 'Authorized Users', icon: 'group', requiresAuth: true }
 ];
 
 export function filterNavItemsForRole(role?: AuthRole | null): NavItem[] {
-	if (!role) {
-		return NAV_ITEMS.filter((item) => !item.requiresAuth);
+	const items = NAV_ITEMS.map((item) => ({ ...item }));
+	const homeIndex = items.findIndex((item) => item.href === '/' && !item.requiresAuth);
+	if (homeIndex !== -1 && role) {
+		items[homeIndex] = { ...items[homeIndex], href: '/landing' };
 	}
 
-	return NAV_ITEMS.filter((item) => {
+	if (!role) {
+		return items.filter((item) => !item.requiresAuth);
+	}
+
+	return items.filter((item) => {
 		if (!item.requiresAuth) {
 			return true;
 		}

@@ -1,7 +1,7 @@
 import type { AuthRole } from '$lib/server/session';
 
 export const ROLE_ROUTE_ALLOWLIST: Record<AuthRole, string[]> = {
-	Admin: ['*'],
+	Admin: ['*', '/admin/users'],
 	ConcertMaster: [
 		'/',
 		'/landing',
@@ -12,8 +12,7 @@ export const ROLE_ROUTE_ALLOWLIST: Record<AuthRole, string[]> = {
 		'/schedule',
 		'/admin',
 		'/admin/lottery',
-		'/admin/program',
-		'/admin/users'
+		'/admin/program'
 	],
 	MusicEditor: [
 		'/',

@@ -1,8 +1,12 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import { filterNavItemsForRole } from '$lib/navigation';
 	export let data;
 
 	$: visibleNavItems = filterNavItemsForRole(data.user?.role);
+
+	// adjust as needed (e.g., '/landing' or '/')
+	$: hideBottomNav = $page.url.pathname === '/landing';
 </script>
 
 {#if !data.isAuthenticated}
@@ -23,16 +27,18 @@
 
 <slot></slot>
 
-<div class="navbar">
-	<div class="row">
-		{#each visibleNavItems as item (item.href)}
-			<div class="navbutton">
-				<a href={item.href}>
-					<p class="navicon"><span class="material-symbols-outlined">{item.icon}</span></p>
-					<br />
-					<p class="subtext">{item.label}</p>
-				</a>
-			</div>
-		{/each}
+{#if !hideBottomNav}
+	<div class="navbar">
+		<div class="row">
+			{#each visibleNavItems as item (item.href)}
+				<div class="navbutton">
+					<a href={item.href}>
+						<p class="navicon"><span class="material-symbols-outlined">{item.icon}</span></p>
+						<br />
+						<p class="subtext">{item.label}</p>
+					</a>
+				</div>
+			{/each}
+		</div>
 	</div>
-</div>
+{/if}
