@@ -13,7 +13,7 @@
 				localStorage.setItem('token', data.token);
 			}
 			setTimeout(() => {
-				window.location.href = '/';
+				window.location.href = '/landing';
 			}, 2500);
 		}
 	});
