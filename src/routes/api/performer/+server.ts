@@ -1,19 +1,14 @@
 import { type PerformerInterface, calcEpochAge, selectInstrument } from '$lib/server/common';
 import { json } from '@sveltejs/kit';
 import { createPerformer } from '$lib/server/performer';
-import { isAuthorized } from '$lib/server/apiAuth';
-import { auth_code } from '$env/static/private';
+import { isAuthorizedRequest } from '$lib/server/apiAuth';
 
 export async function POST({ request, cookies }) {
 	// Check Authorization
 	const pafeAuth = cookies.get('pafe_auth');
 
-	if (!request.headers.has('Authorization')) {
+	if (!isAuthorizedRequest(request.headers.get('Authorization'), pafeAuth)) {
 		return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
-	}
-
-	if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-		return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
 	}
 
 	// eslint-disable-next-line prefer-const

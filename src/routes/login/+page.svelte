@@ -6,6 +6,7 @@
 
 	const enhanceLogin =
 		() =>
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		async ({ result }: { result: any }) => {
 			statusMessage = '';
 
@@ -25,7 +26,7 @@
 </svelte:head>
 
 <div class="login-container popover">
-	<h2>Email Login</h2>
+	<h3>Email Login</h3>
 	<p class="lowemphasis">Enter your email to receive a one-time login link.</p>
 	<form method="POST" action="?/login" use:enhance={enhanceLogin}>
 		<label for="email">Email Address</label>

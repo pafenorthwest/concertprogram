@@ -1,4 +1,5 @@
 import { redirect } from '@sveltejs/kit';
+import { SESSION_COOKIE_NAME } from '$lib/server/session';
 
 export async function load({ cookies }) {
 	const pafeAuth = cookies.get('pafe_auth');
@@ -10,7 +11,7 @@ export async function load({ cookies }) {
 /** @type {import('./$types').Actions} */
 export const actions = {
 	logout: async ({ cookies, locals }) => {
-		cookies.delete('pafe_auth', { path: '/' });
-		locals.isAuthenticated = false;
+		cookies.delete(SESSION_COOKIE_NAME, { path: '/' });
+		locals.session = null;
 	}
 };

@@ -1,8 +1,7 @@
 import type { MusicalPieceInterface } from '$lib/server/common';
 import { insertTable } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
-import { isAuthorized } from '$lib/server/apiAuth';
-import { auth_code } from '$env/static/private';
+import { isAuthorizedRequest } from '$lib/server/apiAuth';
 
 export async function POST({ url, request, cookies }) {
 	// Check Authorization
@@ -12,12 +11,8 @@ export async function POST({ url, request, cookies }) {
 
 	// from local app no checks needed
 	if (origin !== appOrigin) {
-		if (!request.headers.has('Authorization')) {
+		if (!isAuthorizedRequest(request.headers.get('Authorization'), pafeAuth)) {
 			return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
-		}
-
-		if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-			return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
 		}
 	}
 

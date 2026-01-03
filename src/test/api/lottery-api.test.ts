@@ -25,7 +25,7 @@ describe('Test Lottery HTTP APIs', () => {
 			body: JSON.stringify({ lottery: 876543 })
 		});
 		expect(getResponseLottery.headers.get('origin')).not.toBe('http://localhost:8888');
-		expect(getResponseLottery.status).toBe(403);
+		expect(getResponseLottery.status).toBe(401);
 	});
 
 	it('It should error when required fields are not present', async () => {

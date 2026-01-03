@@ -20,7 +20,7 @@
 </script>
 
 <div class="login-container popover verify-popover">
-	<h2>Email Verification</h2>
+	<h3>Email Verification</h3>
 	{#if isVerified}
 		<p class="login-status success">
 			Verification successful! Redirecting to the main page...

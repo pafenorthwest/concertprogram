@@ -7,3 +7,4 @@ delete from performer;
 delete from schedule_slot_choice;
 delete from contributor where id > 46;
 delete from login_user;
+delete from authorized_user;

@@ -1,8 +1,7 @@
 import { calcEpochAge, type PerformerInterface, selectInstrument } from '$lib/server/common';
 import { deleteById, queryTable, updateById } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
-import { isAuthorized } from '$lib/server/apiAuth';
-import { auth_code } from '$env/static/private';
+import { isAuthorizedRequest } from '$lib/server/apiAuth';
 import type { QueryResult } from 'pg';
 
 export async function GET({ params }) {
@@ -28,12 +27,8 @@ export async function PUT({ url, params, request, cookies }) {
 
 	// from local app no checks needed
 	if (origin !== appOrigin) {
-		if (!request.headers.has('Authorization')) {
+		if (!isAuthorizedRequest(request.headers.get('Authorization'), pafeAuth)) {
 			return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
-		}
-
-		if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-			return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
 		}
 	}
 
@@ -77,12 +72,8 @@ export async function DELETE({ params, request, cookies }) {
 	// Get the Authorization header
 	const pafeAuth = cookies.get('pafe_auth');
 
-	if (!request.headers.has('Authorization')) {
+	if (!isAuthorizedRequest(request.headers.get('Authorization'), pafeAuth)) {
 		return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
-	}
-
-	if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-		return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
 	}
 	let rowCount: number | null = 0;
 	try {

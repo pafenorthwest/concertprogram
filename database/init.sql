@@ -131,6 +131,18 @@ CREATE UNIQUE INDEX schedule_slot_choice_unique_idx
 CREATE INDEX schedule_slot_choice_lookup_idx
     ON schedule_slot_choice(performer_id, concert_series, year);
 
+CREATE TABLE authorized_user (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    role VARCHAR(32) NOT NULL
+        CHECK (role IN (
+            'Admin',
+            'ConcertMaster',
+            'MusicEditor',
+            'DivisionChair'
+        ))
+);
+
 CREATE TABLE login_user (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,

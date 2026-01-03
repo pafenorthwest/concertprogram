@@ -14,7 +14,7 @@
 </svelte:head>
 
 <div class="login-container popover">
-	<h2>Sign out</h2>
+	<h3>Sign out</h3>
 	<form use:enhance method="POST" action="?/logout">
 		<button type="submit">Sign Out</button>
 	</form>

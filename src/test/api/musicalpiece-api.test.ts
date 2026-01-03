@@ -55,7 +55,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 		};
 		try {
 			const result = await insertTable('musical_piece', musicalPiece);
-			expect(getResponseMusicalPiece.status).toBe(403);
+			expect(getResponseMusicalPiece.status).toBe(401);
 			getResponseMusicalPiece = await fetch(
 				`http://localhost:8888/api/musicalpiece/${result.rows[0].id}`,
 				{
@@ -66,7 +66,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 					}
 				}
 			);
-			expect(getResponseMusicalPiece.status).toBe(403);
+			expect(getResponseMusicalPiece.status).toBe(401);
 		} catch {
 			expect(false).toBe(true);
 		}

@@ -1,5 +1,6 @@
 import { initializeCache } from '$lib/cache';
 import type { Handle } from '@sveltejs/kit';
+import { decodeSession, SESSION_COOKIE_NAME } from '$lib/server/session';
 
 export const handle: Handle = async ({ resolve, event }) => {
 	// Apply CORS header for API routes
@@ -15,6 +16,9 @@ export const handle: Handle = async ({ resolve, event }) => {
 			});
 		}
 	}
+
+	const sessionCookie = event.cookies.get(SESSION_COOKIE_NAME);
+	event.locals.session = decodeSession(sessionCookie);
 
 	const response = await resolve(event);
 	if (event.url.pathname.startsWith('/api')) {

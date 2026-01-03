@@ -50,7 +50,7 @@ describe('Test Accompanist HTTP APIs', () => {
 			},
 			body: JSON.stringify({ full_name: 'John John' })
 		});
-		expect(getResponseAccompanist.status).toBe(403);
+		expect(getResponseAccompanist.status).toBe(401);
 		let getResponsePerformer = await fetch('http://localhost:8888/api/performer/', {
 			method: 'POST',
 			headers: {
@@ -64,7 +64,7 @@ describe('Test Accompanist HTTP APIs', () => {
 				email: 'api-test@delete.me'
 			})
 		});
-		expect(getResponsePerformer.status).toBe(403);
+		expect(getResponsePerformer.status).toBe(401);
 		getResponseAccompanist = await fetch('http://localhost:8888/api/accompanist/1', {
 			method: 'DELETE',
 			headers: {
@@ -72,7 +72,7 @@ describe('Test Accompanist HTTP APIs', () => {
 				Authorization: 'Bearer ffffff'
 			}
 		});
-		expect(getResponseAccompanist.status).toBe(403);
+		expect(getResponseAccompanist.status).toBe(401);
 		getResponsePerformer = await fetch('http://localhost:8888/api/performer/1', {
 			method: 'DELETE',
 			headers: {
@@ -80,7 +80,7 @@ describe('Test Accompanist HTTP APIs', () => {
 				Authorization: 'Bearer ffffff'
 			}
 		});
-		expect(getResponsePerformer.status).toBe(403);
+		expect(getResponsePerformer.status).toBe(401);
 	}, 40000);
 
 	it('It should error when required fields are not present', async () => {

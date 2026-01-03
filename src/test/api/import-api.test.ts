@@ -102,7 +102,7 @@ describe('Test Import HTTP APIs', () => {
 				'"concert_series": "Eastside"' +
 				'}'
 		});
-		expect(getResponse.status).toBe(403);
+		expect(getResponse.status).toBe(401);
 		// parse stream to get body
 		if (getResponse.body != null) {
 			const bodyFromRequest = await unpackBody(getResponse.body);

@@ -1,5 +1,10 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { issueLoginCode, sendVerificationEmail } from '$lib/server/login';
+import {
+	issueLoginCode,
+	sendVerificationEmail,
+	RateLimitError,
+	UnauthorizedEmailError
+} from '$lib/server/login';
 
 export async function load({ cookies }) {
 	const pafeAuth = cookies.get('pafe_auth');
@@ -28,6 +33,20 @@ export const actions = {
 			await sendVerificationEmail(normalizedEmail, code, url.origin);
 			return { success: true, message: 'Check your email for the verification link.' };
 		} catch (err) {
+			if (err instanceof UnauthorizedEmailError) {
+				return fail(401, {
+					success: false,
+					error: 'This email is not authorized to access the system.'
+				});
+			}
+
+			if (err instanceof RateLimitError) {
+				return fail(429, {
+					success: false,
+					error: 'Too many login attempts. Please wait a moment and try again.'
+				});
+			}
+
 			console.error('Error sending verification email', err);
 			return fail(500, {
 				success: false,

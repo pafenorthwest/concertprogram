@@ -1,14 +1,29 @@
 import { auth_code } from '$env/static/private';
+import { decodeSession } from '$lib/server/session';
+import type { AuthSession } from '$lib/server/session';
 
-export function isAuthorized(authHeader: string): boolean {
-	// Check if the Authorization header is present
+export function isAuthorized(authHeader: string | null | undefined): boolean {
 	if (!authHeader || !authHeader.startsWith('Bearer ')) {
 		return false;
 	}
 
-	// Extract the token from the header
 	const token = authHeader.slice(7); // Remove "Bearer "
 
-	// Validate the token (you can replace this with your actual token validation logic)
 	return token === auth_code;
+}
+
+export function getSessionFromCookie(pafeAuth?: string | null): AuthSession | null {
+	return decodeSession(pafeAuth);
+}
+
+export function isAuthorizedRequest(
+	authHeader: string | null | undefined,
+	pafeAuth?: string | null
+): boolean {
+	const session = getSessionFromCookie(pafeAuth);
+	if (session) {
+		return true;
+	}
+
+	return isAuthorized(authHeader);
 }
