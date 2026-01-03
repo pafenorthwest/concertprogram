@@ -1,5 +1,51 @@
 <script lang="ts">
+	import { normalizeRouteId, roleAllowsRoute } from '$lib/authz';
+
+	type NavItem = {
+		href: string;
+		label: string;
+		icon: string;
+		requiresAuth?: boolean;
+		routeId?: string;
+	};
+
 	export let data;
+
+	const navItems: NavItem[] = [
+		{ href: '/', label: 'Home', icon: 'home' },
+		{ href: '/about', label: 'About', icon: 'info' },
+		{ href: '/admin', label: 'Admin', icon: 'shield_person', requiresAuth: true },
+		{ href: '/admin/list', label: 'Performances', icon: 'queue_music', requiresAuth: true },
+		{
+			href: '/admin/musicalpiece',
+			label: 'Musical Pieces',
+			icon: 'library_music',
+			requiresAuth: true
+		},
+		{ href: '/admin/performer', label: 'Performer', icon: 'artist', requiresAuth: true },
+		{ href: '/admin/composer', label: 'Contributors', icon: 'face', requiresAuth: true },
+		{ href: '/admin/accompanist', label: 'Accompanist', icon: 'guardian', requiresAuth: true },
+		{
+			href: '/admin/lottery',
+			label: 'Lottery Results',
+			icon: 'confirmation_number',
+			requiresAuth: true
+		},
+		{ href: '/admin/program', label: 'Concert Program', icon: 'menu_book', requiresAuth: true },
+		{ href: '/admin/class', label: 'Classes', icon: 'photo_auto_merge', requiresAuth: true }
+	];
+
+	function canDisplay(item: NavItem): boolean {
+		if (!item.requiresAuth) {
+			return true;
+		}
+		const userRole = data.user?.role;
+		if (!userRole) {
+			return false;
+		}
+		const routeId = normalizeRouteId(item.routeId ?? item.href);
+		return routeId ? roleAllowsRoute(userRole, routeId) : false;
+	}
 </script>
 
 {#if !data.isAuthenticated}
@@ -22,84 +68,16 @@
 
 <div class="navbar">
 	<div class="row">
-		<div class="navbutton">
-			<a href="/">
-				<p class="navicon"><span class="material-symbols-outlined">home</span></p>
-				<br />
-				<p class="subtext">Home</p>
-			</a>
-		</div>
-		<div class="navbutton">
-			<a href="/about">
-				<p class="navicon"><span class="material-symbols-outlined">info</span></p>
-				<br />
-				<p class="subtext">About</p>
-			</a>
-		</div>
-		{#if data.isAuthenticated}
-			<div class="navbutton">
-				<a href="/admin/">
-					<p class="navicon"><span class="material-symbols-outlined">shield_person</span></p>
-					<br />
-					<p class="subtext">Admin</p>
-				</a>
-			</div>
-			<div class="navbutton">
-				<a href="/admin/list">
-					<p class="navicon"><span class="material-symbols-outlined">queue_music</span></p>
-					<br />
-					<p class="subtext">Performances</p>
-				</a>
-			</div>
-			<div class="navbutton">
-				<a href="/admin/musicalpiece">
-					<p class="navicon"><span class="material-symbols-outlined">library_music</span></p>
-					<br />
-					<p class="subtext">Muiscal Pieces</p>
-				</a>
-			</div>
-			<div class="navbutton">
-				<a href="/admin/performer">
-					<p class="navicon"><span class="material-symbols-outlined">artist</span></p>
-					<br />
-					<p class="subtext">Performer</p>
-				</a>
-			</div>
-			<div class="navbutton">
-				<a href="/admin/composer">
-					<p class="navicon"><span class="material-symbols-outlined">face</span></p>
-					<br />
-					<p class="subtext">Contributors</p>
-				</a>
-			</div>
-			<div class="navbutton">
-				<a href="/admin/accompanist">
-					<p class="navicon"><span class="material-symbols-outlined">guardian</span></p>
-					<br />
-					<p class="subtext">Accompanist</p>
-				</a>
-			</div>
-			<div class="navbutton">
-				<a href="/admin/lottery">
-					<p class="navicon"><span class="material-symbols-outlined">confirmation_number</span></p>
-					<br />
-					<p class="subtext">Lottery Results</p>
-				</a>
-			</div>
-			<div class="navbutton">
-				<a href="/admin/program">
-					<p class="navicon"><span class="material-symbols-outlined">menu_book</span></p>
-					<br />
-					<p class="subtext">Concert Program</p>
-				</a>
-			</div>
-			<div class="navbutton">
-				<a href="/admin/class">
-					<p class="navicon"><span class="material-symbols-outlined">photo_auto_merge</span></p>
-					<br />
-					<p class="subtext">Classes</p>
-				</a>
-			</div>
-		{/if}
+		{#each navItems as item (item.href)}
+			{#if canDisplay(item)}
+				<div class="navbutton">
+					<a href={item.href}>
+						<p class="navicon"><span class="material-symbols-outlined">{item.icon}</span></p>
+						<br />
+						<p class="subtext">{item.label}</p>
+					</a>
+				</div>
+			{/if}
+		{/each}
 	</div>
 </div>

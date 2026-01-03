@@ -1,5 +1,6 @@
 import { initializeCache } from '$lib/cache';
-import type { Handle } from '@sveltejs/kit';
+import { normalizeRouteId, PROTECTED_ROUTE_PATTERNS, roleAllowsRoute } from '$lib/authz';
+import { redirect, type Handle } from '@sveltejs/kit';
 import { decodeSession, SESSION_COOKIE_NAME } from '$lib/server/session';
 
 export const handle: Handle = async ({ resolve, event }) => {
@@ -18,7 +19,16 @@ export const handle: Handle = async ({ resolve, event }) => {
 	}
 
 	const sessionCookie = event.cookies.get(SESSION_COOKIE_NAME);
-	event.locals.session = decodeSession(sessionCookie);
+	const session = decodeSession(sessionCookie);
+	event.locals.session = session;
+	event.locals.user = session ? { email: session.email, role: session.role } : null;
+
+	const routeId = normalizeRouteId(event.route.id);
+	if (routeId && PROTECTED_ROUTE_PATTERNS.has(routeId) && session?.role) {
+		if (session.role !== 'Admin' && !roleAllowsRoute(session.role, routeId)) {
+			throw redirect(303, '/landing?unauthorized=1');
+		}
+	}
 
 	const response = await resolve(event);
 	if (event.url.pathname.startsWith('/api')) {
