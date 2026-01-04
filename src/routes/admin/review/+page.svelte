@@ -45,6 +45,13 @@
 	let discussionNotes = '';
 	let selectedCategories: PieceCategory[] = [];
 	let selectedDivisionTags: DivisionTag[] = [];
+	let isDetailsModalOpen = false;
+	let isDivisionModalOpen = false;
+	let isDiscussionOpen = false;
+	let categorySaveStatus: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
+	let categorySaveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	const categorySaveDelay = 500;
 
 	$: filteredItems = queueItems.filter((item) => {
 		if (flaggedOnly && !item.flag_for_discussion) {
@@ -58,6 +65,22 @@
 	});
 
 	$: selectedItem = queueItems.find((item) => item.id === selectedId) ?? null;
+	$: composerName =
+		selectedItem?.first_contributor_name ?? (firstContributorId ? `Composer #${firstContributorId}` : '');
+
+	$: updatedAtLabel = selectedItem ? formatUpdatedAt(selectedItem.updated_at) : '';
+
+	function formatUpdatedAt(value: string): string {
+		const parsed = new Date(value);
+		if (Number.isNaN(parsed.getTime())) {
+			return 'Unknown';
+		}
+		return parsed.toLocaleDateString(undefined, {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric'
+		});
+	}
 
 	function setFormFromItem(item: ReviewQueueItem) {
 		printedName = item.printed_name;
@@ -71,6 +94,14 @@
 		discussionNotes = item.discussion_notes ?? '';
 		selectedCategories = item.categories ?? [];
 		selectedDivisionTags = item.division_tags ?? [];
+		isDetailsModalOpen = false;
+		isDivisionModalOpen = false;
+		isDiscussionOpen = false;
+		categorySaveStatus = 'idle';
+		if (categorySaveTimeout) {
+			clearTimeout(categorySaveTimeout);
+			categorySaveTimeout = null;
+		}
 	}
 
 	function toNullableNumber(value: string): number | null {
@@ -122,6 +153,7 @@
 			selectedCategories = selectedCategories.includes('Not Appropriate')
 				? []
 				: ['Not Appropriate'];
+			scheduleCategorySave();
 			return;
 		}
 		const withoutNotAppropriate = selectedCategories.filter((value) => value !== 'Not Appropriate');
@@ -130,6 +162,26 @@
 		} else {
 			selectedCategories = [...withoutNotAppropriate, category];
 		}
+		scheduleCategorySave();
+	}
+
+	function scheduleCategorySave() {
+		if (!selectedId) {
+			return;
+		}
+		categorySaveStatus = 'saving';
+		if (categorySaveTimeout) {
+			clearTimeout(categorySaveTimeout);
+		}
+		categorySaveTimeout = setTimeout(async () => {
+			const success = await saveCategories();
+			categorySaveStatus = success ? 'saved' : 'error';
+			if (success) {
+				setTimeout(() => {
+					categorySaveStatus = 'idle';
+				}, 1500);
+			}
+		}, categorySaveDelay);
 	}
 
 	function toggleDivisionTag(tag: DivisionTag) {
@@ -140,14 +192,14 @@
 		}
 	}
 
-	async function saveDetails() {
+	async function saveDetails(): Promise<boolean> {
 		if (!selectedId) {
-			return;
+			return false;
 		}
 		const parsedFirstContributorId = toNullableNumber(firstContributorId);
 		if (!parsedFirstContributorId) {
 			errorMessage = 'First contributor ID is required.';
-			return;
+			return false;
 		}
 		const payload = {
 			printed_name: printedName,
@@ -170,7 +222,7 @@
 		if (!response.ok) {
 			const payload = await response.json();
 			errorMessage = payload?.reason ?? 'Failed to update piece';
-			return;
+			return false;
 		}
 
 		updateQueueItem(selectedId, {
@@ -184,11 +236,12 @@
 			flag_for_discussion: flagForDiscussion,
 			discussion_notes: discussionNotes
 		});
+		return true;
 	}
 
-	async function saveCategories() {
+	async function saveCategories(): Promise<boolean> {
 		if (!selectedId) {
-			return;
+			return false;
 		}
 		const response = await fetch(`/api/review/pieces/${selectedId}/categories`, {
 			method: 'PUT',
@@ -198,14 +251,15 @@
 		if (!response.ok) {
 			const payload = await response.json();
 			errorMessage = payload?.reason ?? 'Failed to update categories';
-			return;
+			return false;
 		}
 		updateQueueItem(selectedId, { categories: selectedCategories });
+		return true;
 	}
 
-	async function saveDivisionTags() {
+	async function saveDivisionTags(): Promise<boolean> {
 		if (!selectedId) {
-			return;
+			return false;
 		}
 		const response = await fetch(`/api/review/pieces/${selectedId}/division-tags`, {
 			method: 'PUT',
@@ -215,12 +269,34 @@
 		if (!response.ok) {
 			const payload = await response.json();
 			errorMessage = payload?.reason ?? 'Failed to update division tags';
-			return;
+			return false;
 		}
 		updateQueueItem(selectedId, {
 			division_tags: selectedDivisionTags,
 			is_untagged: selectedDivisionTags.length === 0
 		});
+		return true;
+	}
+
+	async function handleSaveDetails() {
+		errorMessage = '';
+		const success = await saveDetails();
+		if (success) {
+			isDetailsModalOpen = false;
+		}
+	}
+
+	async function handleSaveDivisionTags() {
+		errorMessage = '';
+		const success = await saveDivisionTags();
+		if (success) {
+			isDivisionModalOpen = false;
+		}
+	}
+
+	async function toggleFlagForDiscussion() {
+		flagForDiscussion = !flagForDiscussion;
+		await saveDetails();
 	}
 
 	async function markComplete() {
@@ -309,47 +385,56 @@
 			{#if !selectedItem}
 				<p>Select a piece to review.</p>
 			{:else}
-				<div class="editor-header">
-					<h2>Review: {selectedItem.printed_name}</h2>
-					<button type="button" class="complete" on:click={markComplete}>Mark Complete</button>
-				</div>
+				<div class="review-pane">
+					<header class="pane-header">
+						<p class="eyebrow">Reviewing</p>
+						<h2>
+							<button
+								type="button"
+								class="title-button"
+								on:click={() => (isDetailsModalOpen = true)}
+							>
+								{selectedItem.printed_name}
+							</button>
+						</h2>
+						<div class="meta-line">
+							<button
+								type="button"
+								class="composer-button"
+								on:click={() => (isDetailsModalOpen = true)}
+							>
+								{composerName || 'Unknown composer'}
+							</button>
+							<span>•</span>
+							<span>{selectedItem.imslp_url ? 'IMSLP ✓' : 'IMSLP: —'}</span>
+							<span>•</span>
+							<span>Updated {updatedAtLabel}</span>
+						</div>
+					</header>
 
-				<div class="editor-grid">
-					<div class="card">
-						<h3>Piece Details</h3>
-						<label>
-							Printed name
-							<input type="text" bind:value={printedName} />
-						</label>
-						<label>
-							Movements
-							<input type="text" bind:value={allMovements} />
-						</label>
-						<label>
-							First contributor ID
-							<input type="number" min="1" bind:value={firstContributorId} />
-						</label>
-						<label>
-							Second contributor ID
-							<input type="number" min="1" bind:value={secondContributorId} />
-						</label>
-						<label>
-							Third contributor ID
-							<input type="number" min="1" bind:value={thirdContributorId} />
-						</label>
-						<label>
-							IMSLP URL
-							<input type="url" bind:value={imslpUrl} />
-						</label>
-						<label>
-							Comments
-							<textarea rows="3" bind:value={comments}></textarea>
-						</label>
-						<button type="button" on:click={saveDetails}>Save details</button>
+					<div class="action-bar">
+						<button type="button" class="complete" on:click={markComplete}>Mark Complete</button>
+						<button
+							type="button"
+							class="ghost-button"
+							class:active={flagForDiscussion}
+							on:click={toggleFlagForDiscussion}
+						>
+							{flagForDiscussion ? 'Flagged for discussion' : 'Flag for discussion'}
+						</button>
 					</div>
 
-					<div class="card">
-						<h3>Categories</h3>
+					<section class="pane-card">
+						<div class="card-header">
+							<h3>Classification</h3>
+							{#if categorySaveStatus === 'saving'}
+								<span class="status">Saving…</span>
+							{:else if categorySaveStatus === 'saved'}
+								<span class="status saved">Saved ✓</span>
+							{:else if categorySaveStatus === 'error'}
+								<span class="status error">Save failed</span>
+							{/if}
+						</div>
 						<div class="checkbox-grid">
 							{#each pieceCategories as category}
 								<label class="checkbox">
@@ -362,41 +447,194 @@
 								</label>
 							{/each}
 						</div>
-						<p class="hint">Selecting “Not Appropriate” clears other categories.</p>
-						<button type="button" on:click={saveCategories}>Save categories</button>
-					</div>
+						{#if selectedCategories.includes('Not Appropriate')}
+							<p class="hint">Selecting “Not Appropriate” removes the piece from registration.</p>
+						{/if}
+					</section>
 
-					<div class="card">
-						<h3>Division Tags</h3>
-						<div class="checkbox-grid">
-							{#each divisionTags as tag}
-								<label class="checkbox">
-									<input
-										type="checkbox"
-										checked={selectedDivisionTags.includes(tag)}
-										on:change={() => toggleDivisionTag(tag)}
-									/>
-									{tag}
-								</label>
-							{/each}
+					<section class="pane-card">
+						<div class="card-header">
+							<h3>Details</h3>
+							<button type="button" class="ghost-button" on:click={() => (isDetailsModalOpen = true)}>
+								Edit details
+							</button>
 						</div>
-						<p class="hint">Leaving tags empty shows the piece in all divisions (marked with *).</p>
-						<button type="button" on:click={saveDivisionTags}>Save division tags</button>
-					</div>
+						<dl class="summary-list">
+							<div class="summary-row">
+								<dt>Printed name</dt>
+								<dd>{printedName || '—'}</dd>
+								<button
+									type="button"
+									class="inline-edit"
+									on:click={() => (isDetailsModalOpen = true)}
+								>
+									✏️ Edit
+								</button>
+							</div>
+							<div class="summary-row">
+								<dt>Movements</dt>
+								<dd>{allMovements || '—'}</dd>
+								<button
+									type="button"
+									class="inline-edit"
+									on:click={() => (isDetailsModalOpen = true)}
+								>
+									✏️ Edit
+								</button>
+							</div>
+							<div class="summary-row">
+								<dt>Composer ID</dt>
+								<dd>{firstContributorId || '—'}</dd>
+								<button
+									type="button"
+									class="inline-edit"
+									on:click={() => (isDetailsModalOpen = true)}
+								>
+									✏️ Edit
+								</button>
+							</div>
+							<div class="summary-row">
+								<dt>Division tags</dt>
+								<dd>
+									{selectedDivisionTags.length > 0 ? selectedDivisionTags.join(', ') : 'All divisions'}
+								</dd>
+								<button
+									type="button"
+									class="inline-edit"
+									on:click={() => (isDivisionModalOpen = true)}
+								>
+									✏️ Edit
+								</button>
+							</div>
+							<div class="summary-row">
+								<dt>Comments</dt>
+								<dd>{comments || '—'}</dd>
+								<button
+									type="button"
+									class="inline-edit"
+									on:click={() => (isDetailsModalOpen = true)}
+								>
+									✏️ Edit
+								</button>
+							</div>
+						</dl>
+					</section>
 
-					<div class="card">
-						<h3>Discussion</h3>
-						<label class="checkbox">
-							<input type="checkbox" bind:checked={flagForDiscussion} />
-							Flag for discussion
-						</label>
-						<label>
-							Discussion notes
-							<textarea rows="4" bind:value={discussionNotes}></textarea>
-						</label>
-						<button type="button" on:click={saveDetails}>Save discussion</button>
-					</div>
+					<details class="pane-card" bind:open={isDiscussionOpen}>
+						<summary class="discussion-summary">
+							<span>Discussion</span>
+							<span class="summary-status">
+								{flagForDiscussion ? 'Flagged' : 'Not flagged'}
+							</span>
+						</summary>
+						<div class="discussion-body">
+							<label class="checkbox">
+								<input type="checkbox" bind:checked={flagForDiscussion} />
+								Flag for discussion
+							</label>
+							<label>
+								Notes
+								<textarea rows="4" bind:value={discussionNotes}></textarea>
+							</label>
+							<button type="button" class="ghost-button" on:click={saveDetails}>
+								Save discussion
+							</button>
+						</div>
+					</details>
 				</div>
+
+				{#if isDetailsModalOpen}
+					<div class="modal-backdrop" on:click={() => (isDetailsModalOpen = false)}>
+						<div class="modal" role="dialog" aria-modal="true" on:click|stopPropagation>
+							<header class="modal-header">
+								<h3>Edit Piece Details</h3>
+								<button type="button" class="ghost-button" on:click={() => (isDetailsModalOpen = false)}>
+									✕
+								</button>
+							</header>
+							<div class="modal-content">
+								<label>
+									Printed name
+									<input type="text" bind:value={printedName} />
+								</label>
+								<label>
+									Movements
+									<input type="text" bind:value={allMovements} />
+								</label>
+								<label>
+									First contributor ID
+									<input type="number" min="1" bind:value={firstContributorId} />
+								</label>
+								<label>
+									Second contributor ID
+									<input type="number" min="1" bind:value={secondContributorId} />
+								</label>
+								<label>
+									Third contributor ID
+									<input type="number" min="1" bind:value={thirdContributorId} />
+								</label>
+								<label>
+									IMSLP URL
+									<input type="url" bind:value={imslpUrl} />
+								</label>
+								<label>
+									Comments
+									<textarea rows="3" bind:value={comments}></textarea>
+								</label>
+							</div>
+							<footer class="modal-footer">
+								<button type="button" class="ghost-button" on:click={() => (isDetailsModalOpen = false)}>
+									Cancel
+								</button>
+								<button type="button" class="complete" on:click={handleSaveDetails}>Save</button>
+							</footer>
+						</div>
+					</div>
+				{/if}
+
+				{#if isDivisionModalOpen}
+					<div class="modal-backdrop" on:click={() => (isDivisionModalOpen = false)}>
+						<div class="modal" role="dialog" aria-modal="true" on:click|stopPropagation>
+							<header class="modal-header">
+								<h3>Division Tags</h3>
+								<button
+									type="button"
+									class="ghost-button"
+									on:click={() => (isDivisionModalOpen = false)}
+								>
+									✕
+								</button>
+							</header>
+							<div class="modal-content">
+								<div class="checkbox-grid">
+									{#each divisionTags as tag}
+										<label class="checkbox">
+											<input
+												type="checkbox"
+												checked={selectedDivisionTags.includes(tag)}
+												on:change={() => toggleDivisionTag(tag)}
+											/>
+											{tag}
+										</label>
+									{/each}
+								</div>
+								<p class="hint">Leaving empty shows in all divisions.</p>
+							</div>
+							<footer class="modal-footer">
+								<button
+									type="button"
+									class="ghost-button"
+									on:click={() => (isDivisionModalOpen = false)}
+								>
+									Cancel
+								</button>
+								<button type="button" class="complete" on:click={handleSaveDivisionTags}>
+									Save
+								</button>
+							</footer>
+						</div>
+					</div>
+				{/if}
 			{/if}
 		</section>
 	</div>
@@ -510,10 +748,64 @@
 		gap: 16px;
 	}
 
-	.editor-header {
+	.review-pane {
 		display: flex;
-		justify-content: space-between;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.pane-header {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.eyebrow {
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		font-size: 12px;
+		color: #64748b;
+		font-weight: 700;
+		margin: 0;
+	}
+
+	.title-button,
+	.composer-button {
+		background: none;
+		border: none;
+		padding: 0;
+		font: inherit;
+		color: #1e293b;
+		cursor: pointer;
+		text-align: left;
+	}
+
+	.title-button {
+		font-size: 24px;
+		font-weight: 700;
+	}
+
+	.meta-line {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		font-size: 14px;
+		color: #475569;
+	}
+
+	.action-bar {
+		display: flex;
+		gap: 12px;
+		flex-wrap: wrap;
 		align-items: center;
+		position: sticky;
+		top: 12px;
+		background: #fff;
+		padding: 12px;
+		border: 1px solid #e0e4f4;
+		border-radius: 10px;
+		z-index: 2;
+		box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
 	}
 
 	.complete {
@@ -525,13 +817,23 @@
 		cursor: pointer;
 	}
 
-	.editor-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-		gap: 16px;
+	.ghost-button {
+		background: #eef2ff;
+		border: 1px solid #c7d2fe;
+		color: #4338ca;
+		border-radius: 6px;
+		padding: 8px 14px;
+		cursor: pointer;
+		font-weight: 600;
 	}
 
-	.card {
+	.ghost-button.active {
+		background: #ede9fe;
+		border-color: #818cf8;
+		color: #312e81;
+	}
+
+	.pane-card {
 		border: 1px solid #e0e4f4;
 		border-radius: 10px;
 		padding: 16px;
@@ -539,6 +841,27 @@
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
+	}
+
+	.card-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.status {
+		font-size: 12px;
+		color: #64748b;
+		font-weight: 600;
+	}
+
+	.status.saved {
+		color: #15803d;
+	}
+
+	.status.error {
+		color: #b91c1c;
 	}
 
 	.checkbox-grid {
@@ -554,9 +877,105 @@
 		font-weight: 500;
 	}
 
+	.summary-list {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		margin: 0;
+	}
+
+	.summary-row {
+		display: grid;
+		grid-template-columns: minmax(140px, 200px) 1fr auto;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.summary-row dt {
+		font-weight: 600;
+		color: #1e293b;
+	}
+
+	.summary-row dd {
+		margin: 0;
+		color: #475569;
+	}
+
+	.inline-edit {
+		background: none;
+		border: none;
+		color: #4338ca;
+		cursor: pointer;
+		font-weight: 600;
+	}
+
+	.discussion-summary {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		cursor: pointer;
+		font-weight: 600;
+		color: #1e293b;
+	}
+
+	.summary-status {
+		font-size: 12px;
+		color: #64748b;
+		font-weight: 600;
+	}
+
+	.discussion-body {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding-top: 12px;
+	}
+
 	.hint {
 		font-size: 12px;
 		color: #64748b;
+	}
+
+	.modal-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(15, 23, 42, 0.4);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 24px;
+		z-index: 10;
+	}
+
+	.modal {
+		background: #fff;
+		border-radius: 12px;
+		width: min(640px, 100%);
+		max-height: 90vh;
+		overflow: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 20px;
+		box-shadow: 0 24px 40px rgba(15, 23, 42, 0.2);
+	}
+
+	.modal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.modal-content {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.modal-footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 12px;
 	}
 
 	.error {
@@ -571,6 +990,15 @@
 	@media (max-width: 900px) {
 		.review-body {
 			grid-template-columns: 1fr;
+		}
+
+		.summary-row {
+			grid-template-columns: 1fr;
+			align-items: flex-start;
+		}
+
+		.inline-edit {
+			justify-self: flex-start;
 		}
 	}
 </style>
