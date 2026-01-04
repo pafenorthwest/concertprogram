@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { getReviewSession } from '$lib/server/apiAuth';
+import { isAuthorizedRequest } from '$lib/server/apiAuth';
 import { isValidDivisionTag, setPieceDivisionTags } from '$lib/server/review';
 
 function parseId(value: string | undefined): number | null {
@@ -11,8 +11,8 @@ function parseId(value: string | undefined): number | null {
 }
 
 export async function PUT({ params, request, cookies }) {
-	const session = getReviewSession(cookies.get('pafe_auth'));
-	if (!session) {
+	const pafeAuth = cookies.get('pafe_auth');
+	if (!isAuthorizedRequest(request.headers.get('Authorization'), pafeAuth)) {
 		return json({ status: 'error', reason: 'Unauthorized' }, { status: 401 });
 	}
 

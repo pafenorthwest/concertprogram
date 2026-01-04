@@ -381,20 +381,6 @@
 		}
 	}
 
-	async function toggleFlagForDiscussion() {
-		if (!selectedId) return;
-
-		flagForDiscussion = !flagForDiscussion;
-		errorMessage = '';
-		const success = await saveDetails();
-		if (!success) return;
-
-		updateQueueItem(selectedId, {
-			flag_for_discussion: flagForDiscussion,
-			discussion_notes: discussionNotes
-		});
-	}
-
 	async function markComplete() {
 		if (!selectedId) {
 			return;
@@ -1086,7 +1072,7 @@
 		border: 1px dashed #c7d2fe;
 		border-radius: 10px;
 		padding: 12px;
-		background: #f8f9ff;
+		background: #f3f4f6;
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
@@ -1118,14 +1104,16 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 8px;
+		background: #f3f4f6;
+		padding: 8px;
 	}
 
 	.pill {
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
-		padding: 8px 10px;
-		border-radius: 999px;
+		padding: 8px;
+		border-radius: 4px;
 		border: 1px solid #c7d2fe;
 		background: #ffffff;
 		color: #1e293b;

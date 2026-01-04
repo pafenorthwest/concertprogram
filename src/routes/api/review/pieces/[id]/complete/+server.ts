@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { getReviewSession } from '$lib/server/apiAuth';
+import { getSessionFromCookie, isAuthorizedRequest } from '$lib/server/apiAuth';
 import { getAuthorizedUserId, markReviewComplete } from '$lib/server/review';
 
 function parseId(value: string | undefined): number | null {
@@ -10,10 +10,15 @@ function parseId(value: string | undefined): number | null {
 	return Number.isFinite(id) ? id : null;
 }
 
-export async function POST({ params, cookies }) {
-	const session = getReviewSession(cookies.get('pafe_auth'));
-	if (!session) {
+export async function POST({ params, request, cookies }) {
+	const pafeAuth = cookies.get('pafe_auth');
+	if (!isAuthorizedRequest(request.headers.get('Authorization'), pafeAuth)) {
 		return json({ status: 'error', reason: 'Unauthorized' }, { status: 401 });
+	}
+
+	const session = getSessionFromCookie(pafeAuth);
+	if (!session) {
+		return json({ status: 'error', reason: 'Reviewer not found' }, { status: 403 });
 	}
 
 	const musicalPieceId = parseId(params.id);
