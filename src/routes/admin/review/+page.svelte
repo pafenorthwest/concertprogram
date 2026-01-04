@@ -66,7 +66,8 @@
 
 	$: selectedItem = queueItems.find((item) => item.id === selectedId) ?? null;
 	$: composerName =
-		selectedItem?.first_contributor_name ?? (firstContributorId ? `Composer #${firstContributorId}` : '');
+		selectedItem?.first_contributor_name ??
+		(firstContributorId ? `Composer #${firstContributorId}` : '');
 
 	$: updatedAtLabel = selectedItem ? formatUpdatedAt(selectedItem.updated_at) : '';
 
@@ -104,6 +105,34 @@
 		}
 	}
 
+	function normalizeCategories(value: unknown): PieceCategory[] {
+		if (!Array.isArray(value)) {
+			return [];
+		}
+		return value.filter(
+			(category): category is PieceCategory =>
+				typeof category === 'string' && pieceCategories.includes(category as PieceCategory)
+		);
+	}
+
+	function normalizeDivisionTags(value: unknown): DivisionTag[] {
+		if (!Array.isArray(value)) {
+			return [];
+		}
+		return value.filter(
+			(tag): tag is DivisionTag =>
+				typeof tag === 'string' && divisionTags.includes(tag as DivisionTag)
+		);
+	}
+
+	function normalizeQueueItem(item: ReviewQueueItem): ReviewQueueItem {
+		return {
+			...item,
+			categories: normalizeCategories(item.categories),
+			division_tags: normalizeDivisionTags(item.division_tags)
+		};
+	}
+
 	function toNullableNumber(value: string): number | null {
 		if (!value) {
 			return null;
@@ -122,7 +151,7 @@
 				throw new Error(payload?.reason ?? 'Failed to load queue');
 			}
 			const payload = await response.json();
-			queueItems = payload.items ?? [];
+			queueItems = (payload.items ?? []).map((item: ReviewQueueItem) => normalizeQueueItem(item));
 			if (queueItems.length > 0) {
 				selectItem(queueItems[0].id);
 			} else {
@@ -455,7 +484,11 @@
 					<section class="pane-card">
 						<div class="card-header">
 							<h3>Details</h3>
-							<button type="button" class="ghost-button" on:click={() => (isDetailsModalOpen = true)}>
+							<button
+								type="button"
+								class="ghost-button"
+								on:click={() => (isDetailsModalOpen = true)}
+							>
 								Edit details
 							</button>
 						</div>
@@ -463,59 +496,26 @@
 							<div class="summary-row">
 								<dt>Printed name</dt>
 								<dd>{printedName || '—'}</dd>
-								<button
-									type="button"
-									class="inline-edit"
-									on:click={() => (isDetailsModalOpen = true)}
-								>
-									✏️ Edit
-								</button>
 							</div>
 							<div class="summary-row">
 								<dt>Movements</dt>
 								<dd>{allMovements || '—'}</dd>
-								<button
-									type="button"
-									class="inline-edit"
-									on:click={() => (isDetailsModalOpen = true)}
-								>
-									✏️ Edit
-								</button>
 							</div>
 							<div class="summary-row">
 								<dt>Composer ID</dt>
 								<dd>{firstContributorId || '—'}</dd>
-								<button
-									type="button"
-									class="inline-edit"
-									on:click={() => (isDetailsModalOpen = true)}
-								>
-									✏️ Edit
-								</button>
 							</div>
 							<div class="summary-row">
 								<dt>Division tags</dt>
 								<dd>
-									{selectedDivisionTags.length > 0 ? selectedDivisionTags.join(', ') : 'All divisions'}
+									{selectedDivisionTags.length > 0
+										? selectedDivisionTags.join(', ')
+										: 'All divisions'}
 								</dd>
-								<button
-									type="button"
-									class="inline-edit"
-									on:click={() => (isDivisionModalOpen = true)}
-								>
-									✏️ Edit
-								</button>
 							</div>
 							<div class="summary-row">
 								<dt>Comments</dt>
 								<dd>{comments || '—'}</dd>
-								<button
-									type="button"
-									class="inline-edit"
-									on:click={() => (isDetailsModalOpen = true)}
-								>
-									✏️ Edit
-								</button>
 							</div>
 						</dl>
 					</section>
@@ -548,7 +548,11 @@
 						<div class="modal" role="dialog" aria-modal="true" on:click|stopPropagation>
 							<header class="modal-header">
 								<h3>Edit Piece Details</h3>
-								<button type="button" class="ghost-button" on:click={() => (isDetailsModalOpen = false)}>
+								<button
+									type="button"
+									class="ghost-button"
+									on:click={() => (isDetailsModalOpen = false)}
+								>
 									✕
 								</button>
 							</header>
@@ -583,7 +587,11 @@
 								</label>
 							</div>
 							<footer class="modal-footer">
-								<button type="button" class="ghost-button" on:click={() => (isDetailsModalOpen = false)}>
+								<button
+									type="button"
+									class="ghost-button"
+									on:click={() => (isDetailsModalOpen = false)}
+								>
 									Cancel
 								</button>
 								<button type="button" class="complete" on:click={handleSaveDetails}>Save</button>
