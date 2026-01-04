@@ -1,6 +1,6 @@
 import type { ContributorInterface } from '$lib/server/common';
 import { normalizeContributorRole } from '$lib/server/common';
-import { deleteById, queryTable, updateById } from '$lib/server/db';
+import { deleteById, isContributorReferenced, queryTable, updateById } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
 import { isAuthorizedRequest } from '$lib/server/apiAuth';
 import type { QueryResult } from 'pg';
@@ -72,6 +72,9 @@ export async function DELETE({ params, request, cookies }) {
 	let rowCount: number | null = 0;
 	try {
 		const identity: number = Number(params.id);
+		if (await isContributorReferenced(identity)) {
+			return json({ result: 'error', reason: 'Contributor is referenced by a musical piece.' }, { status: 400 });
+		}
 		rowCount = await deleteById('contributor', identity);
 	} catch (err) {
 		return json({ result: 'error', reason: `${(err as Error).message}` }, { status: 500 });

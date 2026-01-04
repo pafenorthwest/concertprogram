@@ -38,6 +38,25 @@ CREATE TYPE contributor_role AS ENUM (
     'Orchestrator'
 );
 
+CREATE TYPE piece_category AS ENUM (
+    'Concerto',
+    'Solo',
+    'Ensemble',
+    'Not Appropriate'
+);
+
+CREATE TYPE division_tag AS ENUM (
+    'High-Strings',
+    'Low-Strings',
+    'Piano',
+    'Woodwinds',
+    'Ensembles'
+);
+
+CREATE TYPE review_status AS ENUM (
+    'Complete'
+);
+
 CREATE TABLE performer (
     id SERIAL PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
@@ -59,7 +78,9 @@ CREATE TABLE contributor (
     full_name VARCHAR(255) NOT NULL,
     years_active VARCHAR(25) NOT NULL,
     role contributor_role NOT NULL DEFAULT 'Composer',
-    notes VARCHAR(255) NULL
+    notes VARCHAR(255) NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_by INTEGER NULL
 );
 CREATE INDEX contributor_name_idx ON contributor(full_name);
 
@@ -69,9 +90,130 @@ CREATE TABLE musical_piece (
     first_contributor_id INTEGER NOT NULL,
     all_movements VARCHAR(512) NULL,
     second_contributor_id INTEGER NULL,
-    third_contributor_id INTEGER NULL
+    third_contributor_id INTEGER NULL,
+    imslp_url VARCHAR(512) NULL,
+    comments VARCHAR(1000) NULL,
+    flag_for_discussion BOOLEAN NOT NULL DEFAULT FALSE,
+    discussion_notes VARCHAR(1000) NULL,
+    is_not_appropriate BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 CREATE INDEX musical_piece_name_idx ON musical_piece(printed_name);
+
+CREATE TABLE musical_piece_category_map (
+    musical_piece_id INTEGER NOT NULL,
+    category piece_category NOT NULL
+);
+CREATE UNIQUE INDEX musical_piece_category_map_unique_idx
+    ON musical_piece_category_map(musical_piece_id, category);
+CREATE INDEX musical_piece_category_map_category_idx
+    ON musical_piece_category_map(category, musical_piece_id);
+
+CREATE TABLE musical_piece_division_tag (
+    musical_piece_id INTEGER NOT NULL,
+    division_tag division_tag NOT NULL
+);
+CREATE UNIQUE INDEX musical_piece_division_tag_unique_idx
+    ON musical_piece_division_tag(musical_piece_id, division_tag);
+CREATE INDEX musical_piece_division_tag_lookup_idx
+    ON musical_piece_division_tag(division_tag, musical_piece_id);
+
+CREATE TABLE musical_piece_review (
+    musical_piece_id INTEGER NOT NULL,
+    reviewer_id INTEGER NOT NULL,
+    status review_status NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX musical_piece_review_unique_idx
+    ON musical_piece_review(musical_piece_id, reviewer_id);
+CREATE INDEX musical_piece_review_queue_idx
+    ON musical_piece_review(reviewer_id, status, musical_piece_id);
+
+CREATE OR REPLACE FUNCTION enforce_not_appropriate_category()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.category = 'Not Appropriate' THEN
+        DELETE FROM musical_piece_category_map
+        WHERE musical_piece_id = NEW.musical_piece_id
+          AND category <> 'Not Appropriate';
+
+        UPDATE musical_piece
+        SET is_not_appropriate = TRUE
+        WHERE id = NEW.musical_piece_id;
+    ELSE
+        IF EXISTS (
+            SELECT 1 FROM musical_piece
+            WHERE id = NEW.musical_piece_id
+              AND is_not_appropriate = TRUE
+        ) THEN
+            UPDATE musical_piece
+            SET is_not_appropriate = FALSE
+            WHERE id = NEW.musical_piece_id;
+
+            DELETE FROM musical_piece_category_map
+            WHERE musical_piece_id = NEW.musical_piece_id
+              AND category = 'Not Appropriate';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION sync_not_appropriate_category_on_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.category = 'Not Appropriate' THEN
+        UPDATE musical_piece
+        SET is_not_appropriate = FALSE
+        WHERE id = OLD.musical_piece_id;
+    END IF;
+
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION sync_not_appropriate_flag()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.is_not_appropriate = TRUE THEN
+        DELETE FROM musical_piece_category_map
+        WHERE musical_piece_id = NEW.id
+          AND category <> 'Not Appropriate';
+
+        IF NOT EXISTS (
+            SELECT 1 FROM musical_piece_category_map
+            WHERE musical_piece_id = NEW.id
+              AND category = 'Not Appropriate'
+        ) THEN
+            INSERT INTO musical_piece_category_map (musical_piece_id, category)
+            VALUES (NEW.id, 'Not Appropriate');
+        END IF;
+    ELSE
+        DELETE FROM musical_piece_category_map
+        WHERE musical_piece_id = NEW.id
+          AND category = 'Not Appropriate';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER musical_piece_category_enforce_not_appropriate
+AFTER INSERT OR UPDATE ON musical_piece_category_map
+FOR EACH ROW
+EXECUTE FUNCTION enforce_not_appropriate_category();
+
+CREATE TRIGGER musical_piece_category_sync_not_appropriate_delete
+AFTER DELETE ON musical_piece_category_map
+FOR EACH ROW
+EXECUTE FUNCTION sync_not_appropriate_category_on_delete();
+
+CREATE TRIGGER musical_piece_sync_not_appropriate_flag
+AFTER UPDATE OF is_not_appropriate ON musical_piece
+FOR EACH ROW
+EXECUTE FUNCTION sync_not_appropriate_flag();
 
 CREATE TABLE performance_pieces (
     performance_id INTEGER NOT NULL,

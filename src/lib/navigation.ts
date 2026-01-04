@@ -20,6 +20,12 @@ export const NAV_ITEMS: NavItem[] = [
 		icon: 'library_music',
 		requiresAuth: true
 	},
+	{
+		href: '/admin/review',
+		label: 'Piece Review',
+		icon: 'rate_review',
+		requiresAuth: true
+	},
 	{ href: '/admin/performer', label: 'Performer', icon: 'artist', requiresAuth: true },
 	{ href: '/admin/composer', label: 'Contributors', icon: 'face', requiresAuth: true },
 	{ href: '/admin/accompanist', label: 'Accompanist', icon: 'guardian', requiresAuth: true },
