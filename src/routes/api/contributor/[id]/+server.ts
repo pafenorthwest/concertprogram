@@ -73,7 +73,10 @@ export async function DELETE({ params, request, cookies }) {
 	try {
 		const identity: number = Number(params.id);
 		if (await isContributorReferenced(identity)) {
-			return json({ result: 'error', reason: 'Contributor is referenced by a musical piece.' }, { status: 400 });
+			return json(
+				{ result: 'error', reason: 'Contributor is referenced by a musical piece.' },
+				{ status: 400 }
+			);
 		}
 		rowCount = await deleteById('contributor', identity);
 	} catch (err) {

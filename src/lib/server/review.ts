@@ -1,5 +1,10 @@
 import { pool } from '$lib/server/db';
-import { divisionTags, pieceCategories, type DivisionTag, type PieceCategory } from '$lib/constants/review';
+import {
+	divisionTags,
+	pieceCategories,
+	type DivisionTag,
+	type PieceCategory
+} from '$lib/constants/review';
 import { isNonEmptyString } from '$lib/server/common';
 
 export interface ReviewQueueItem {
@@ -176,8 +181,7 @@ export async function updateMusicalPieceReviewMetadata(
 	}
 
 	values.push(musicalPieceId);
-	const updateSql =
-		`UPDATE musical_piece SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${values.length}`;
+	const updateSql = `UPDATE musical_piece SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${values.length}`;
 
 	const client = await pool.connect();
 	try {

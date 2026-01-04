@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { divisionTags, pieceCategories, type DivisionTag, type PieceCategory } from '$lib/constants/review';
+	import {
+		divisionTags,
+		pieceCategories,
+		type DivisionTag,
+		type PieceCategory
+	} from '$lib/constants/review';
 
 	type ReviewQueueItem = {
 		id: number;
@@ -114,7 +119,9 @@
 
 	function toggleCategory(category: PieceCategory) {
 		if (category === 'Not Appropriate') {
-			selectedCategories = selectedCategories.includes('Not Appropriate') ? [] : ['Not Appropriate'];
+			selectedCategories = selectedCategories.includes('Not Appropriate')
+				? []
+				: ['Not Appropriate'];
 			return;
 		}
 		const withoutNotAppropriate = selectedCategories.filter((value) => value !== 'Not Appropriate');
@@ -210,7 +217,10 @@
 			errorMessage = payload?.reason ?? 'Failed to update division tags';
 			return;
 		}
-		updateQueueItem(selectedId, { division_tags: selectedDivisionTags, is_untagged: selectedDivisionTags.length === 0 });
+		updateQueueItem(selectedId, {
+			division_tags: selectedDivisionTags,
+			is_untagged: selectedDivisionTags.length === 0
+		});
 	}
 
 	async function markComplete() {
