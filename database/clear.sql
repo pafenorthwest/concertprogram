@@ -1,5 +1,8 @@
 delete from accompanist;
 delete from class_lottery;
+delete from musical_piece_category_map;
+delete from musical_piece_division_tag;
+delete from musical_piece_review;
 delete from musical_piece;
 delete from performance;
 delete from performance_pieces;

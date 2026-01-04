@@ -1,4 +1,4 @@
-import { queryTable, deleteById, insertTable } from '$lib/server/db';
+import { queryTable, deleteById, insertTable, isContributorReferenced } from '$lib/server/db';
 import {
 	type ContributorInterface,
 	formatFieldNames,
@@ -18,6 +18,9 @@ export const actions = {
 	delete: async ({ request }) => {
 		const formData = await request.formData();
 		const id = formData.get('composerId') ? parseInt(formData.get('composerId') as string, 10) : -1;
+		if (id > 0 && (await isContributorReferenced(id))) {
+			return { status: 400, body: { message: 'Contributor is referenced by a musical piece.' } };
+		}
 		const rowCount = await deleteById('contributor', id);
 
 		if (rowCount != null && rowCount > 0) {

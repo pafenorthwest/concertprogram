@@ -37,7 +37,7 @@ export async function queryTable(table: string, id?: number) {
 
 		switch (tableName) {
 			case 'contributor':
-				fields = 'id, full_name, years_active, role, notes';
+				fields = 'id, full_name, years_active, role, notes, updated_at, updated_by';
 				break;
 			case 'accompanist':
 				fields = 'id, full_name';
@@ -206,6 +206,24 @@ export async function deleteById(table: string, id: number): Promise<number | nu
 	} catch (error) {
 		console.error('Error executing query:', error);
 		throw error;
+	}
+}
+
+export async function isContributorReferenced(contributorId: number): Promise<boolean> {
+	const connection = await pool.connect();
+	try {
+		const result = await connection.query(
+			`SELECT 1
+			 FROM musical_piece
+			 WHERE first_contributor_id = $1
+			    OR second_contributor_id = $1
+			    OR third_contributor_id = $1
+			 LIMIT 1`,
+			[contributorId]
+		);
+		return (result.rowCount ?? 0) > 0;
+	} finally {
+		connection.release();
 	}
 }
 
@@ -537,6 +555,7 @@ export async function updateById(
 				if (isNonEmptyString((data as ContributorInterface).notes)) {
 					setCols = setCols + ", notes = '" + (data as ContributorInterface).notes + "' ";
 				}
+				setCols = setCols + ', updated_at = NOW()';
 				break;
 			}
 			case 'accompanist':
