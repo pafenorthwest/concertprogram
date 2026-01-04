@@ -99,17 +99,18 @@ export async function issueLoginCode(email: string): Promise<{ code: number; ema
 	}
 }
 
-export async function verifyLoginCode(code: number): Promise<LoginUser | null> {
+export async function verifyLoginCode(code: number, email: string): Promise<LoginUser | null> {
 	const client = await pool.connect();
+	const normalizedEmail = normalizeEmail(email);
 
 	try {
 		const result = await client.query<LoginUser & { role: AuthRole }>(
 			`SELECT lu.id, lu.email, lu.first_login_at, lu.last_login_at, au.role
 			 FROM login_user lu
 			 JOIN authorized_user au ON au.email = lu.email
-			 WHERE lu.code = $1
+			 WHERE lu.code = $1 AND lu.email = $2
 			 LIMIT 1`,
-			[code]
+			[code, normalizedEmail]
 		);
 
 		if (result.rowCount == null || result.rowCount === 0) {
@@ -140,7 +141,7 @@ export async function sendVerificationEmail(
 	const apiKey = env.BREVO_API_KEY;
 	const senderEmail = env.BREVO_SENDER_EMAIL || DEFAULT_SENDER_EMAIL;
 	const senderName = env.BREVO_SENDER_NAME || DEFAULT_SENDER_NAME;
-	const verificationUrl = `${origin}/verify/email/${code}`;
+	const verificationUrl = `${origin}/verify/email/${code}?email=${encodeURIComponent(email)}`;
 
 	// If no API key is present, log and continue so local dev isn't blocked.
 	if (!apiKey) {

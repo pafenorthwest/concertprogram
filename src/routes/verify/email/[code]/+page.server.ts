@@ -12,13 +12,18 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 		return { codeOk: false, status: 400, error: 'No verification code provided' };
 	}
 
+	const email = url.searchParams.get('email');
+	if (!email) {
+		return { codeOk: false, status: 400, error: 'No email provided for verification.' };
+	}
+
 	const code = parseInt(params.code, 10);
 	if (Number.isNaN(code)) {
 		return { codeOk: false, status: 400, error: 'Invalid verification code.' };
 	}
 
 	try {
-		const user = await verifyLoginCode(code);
+		const user = await verifyLoginCode(code, email);
 		if (!user) {
 			return { codeOk: false, status: 400, error: 'Your code was not found. Please try again.' };
 		}

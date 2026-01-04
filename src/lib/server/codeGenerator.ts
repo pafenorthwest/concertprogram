@@ -1,9 +1,9 @@
 export class CodeGenerator {
 	/**
-	 * Returns a random 6-digit numerical code as a number (e.g., 483920).
+	 * Returns a random 8-digit numerical code as a number (e.g., 48392018).
 	 */
 	public static getCode(): number {
-		return Math.floor(100000 + Math.random() * 900000);
+		return Math.floor(10_000_000 + Math.random() * 90_000_000);
 	}
 
 	/**

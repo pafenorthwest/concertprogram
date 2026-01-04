@@ -29,7 +29,9 @@ const testEmails = {
 	loginUser: 'auth-login-user@test.concertprogram',
 	managedUser: 'auth-managed-user@test.concertprogram',
 	normalizationUser: 'NormalizeMe@Test.ConcertProgram',
-	duplicateUser: 'duplicate-check@test.concertprogram'
+	duplicateUser: 'duplicate-check@test.concertprogram',
+	collisionUserA: 'collision-a@test.concertprogram',
+	collisionUserB: 'collision-b@test.concertprogram'
 };
 
 let currentTime = new Date('2026-01-01T00:00:00Z').getTime();
@@ -231,7 +233,9 @@ describe.sequential('Auth and authorization hardening', () => {
 			const result = await verifyEmailLoad({
 				params: { code: String(existing?.code) },
 				cookies,
-				url: new URL('https://example.com/verify')
+				url: new URL(
+					`https://example.com/verify/email/${existing?.code}?email=${encodeURIComponent(testEmails.loginUser)}`
+				)
 			});
 
 			expect(result.codeOk).toBe(true);
@@ -245,6 +249,34 @@ describe.sequential('Auth and authorization hardening', () => {
 			const afterVerify = await findLoginUser(testEmails.loginUser);
 			expect(afterVerify?.first_login_at).toBeInstanceOf(Date);
 			expect(afterVerify?.last_login_at).toBeInstanceOf(Date);
+		});
+
+		it('requires the email to match when verifying a login code', async () => {
+			const emailA = testEmails.collisionUserA;
+			const emailB = testEmails.collisionUserB;
+
+			await upsertAuthorizedUser(emailA, 'MusicEditor');
+			await upsertAuthorizedUser(emailB, 'MusicEditor');
+
+			advanceTime();
+			const codeA = (await loginModule.issueLoginCode(emailA)).code;
+
+			advanceTime();
+			let codeB = (await loginModule.issueLoginCode(emailB)).code;
+			if (codeB === codeA) {
+				// Extremely unlikely with 8-digit codes; retry once to ensure distinct values.
+				advanceTime();
+				codeB = (await loginModule.issueLoginCode(emailB)).code;
+			}
+
+			const verifiedA = await loginModule.verifyLoginCode(codeA, emailA);
+			expect(verifiedA?.email).toBe(emailA);
+
+			const mismatched = await loginModule.verifyLoginCode(codeA, emailB);
+			expect(mismatched).toBeNull();
+
+			await removeLoginUsers([emailA, emailB]);
+			await removeAuthorizedUsers([emailA, emailB]);
 		});
 	});
 
@@ -429,8 +461,10 @@ describe.sequential('Auth and authorization hardening', () => {
 
 			advanceTime();
 			await loginModule.issueLoginCode(testEmails.managedUser);
+			const managedUserRow = await findLoginUser(testEmails.managedUser);
 			const verifiedUser = await loginModule.verifyLoginCode(
-				(await findLoginUser(testEmails.managedUser))!.code
+				managedUserRow!.code,
+				testEmails.managedUser
 			);
 			expect(verifiedUser?.role).toBe('DivisionChair');
 
