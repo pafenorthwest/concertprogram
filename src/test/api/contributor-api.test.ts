@@ -39,7 +39,7 @@ describe('Test Composer HTTP APIs', () => {
 			},
 			body: JSON.stringify({ full_name: 'John John', years_active: '1980 - 2000' })
 		});
-		expect(getResponse.status).toBe(403);
+		expect(getResponse.status).toBe(401);
 	});
 	it('It should return insert with POST', async () => {
 		const getResponse = await fetch('http://localhost:8888/api/contributor', {
@@ -73,7 +73,7 @@ describe('Test Composer HTTP APIs', () => {
 				Authorization: `Bearer ffffffff`
 			}
 		});
-		expect(getResponse.status).toBe(403);
+		expect(getResponse.status).toBe(401);
 	});
 	it('It should return not-authorized for PUT', async () => {
 		const getResponse = await fetch('http://localhost:8888/api/contributor/999999', {
@@ -84,7 +84,7 @@ describe('Test Composer HTTP APIs', () => {
 			},
 			body: JSON.stringify({ full_name: 'John John', years_active: '1980 - 2000' })
 		});
-		expect(getResponse.status).toBe(403);
+		expect(getResponse.status).toBe(401);
 	});
 	it('It should return not-found for GET', async () => {
 		const getResponse = await fetch('http://localhost:8888/api/contributor/999999', {

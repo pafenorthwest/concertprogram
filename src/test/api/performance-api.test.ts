@@ -37,7 +37,7 @@ describe('Test Performance HTTP APIs', () => {
 				concert_series: 'Concerto'
 			})
 		});
-		expect(getResponsePerformance.status).toBe(403);
+		expect(getResponsePerformance.status).toBe(401);
 		getResponsePerformance = await fetch('http://localhost:8888/api/performance/1', {
 			method: 'DELETE',
 			headers: {
@@ -45,7 +45,7 @@ describe('Test Performance HTTP APIs', () => {
 				Authorization: 'Bearer ffffff'
 			}
 		});
-		expect(getResponsePerformance.status).toBe(403);
+		expect(getResponsePerformance.status).toBe(401);
 	});
 
 	it('It should error when required fields are not present', async () => {

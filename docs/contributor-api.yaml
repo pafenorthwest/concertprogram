@@ -51,8 +51,6 @@ paths:
                 reason: 'Missing Field'
         401:
           description: unauthorized, lacking authorization header
-        403:
-          description: unauthorized, bad token
         500:
           description: service error
           content:
@@ -145,8 +143,6 @@ paths:
                 reason: 'Missing Fields'
         401:
           description: unauthorized, lacking authorization header
-        403:
-          description: unauthorized, bad token
         404:
           description: not found
           content:
@@ -179,8 +175,6 @@ paths:
                 result: 'success'
         401:
           description: unauthorized, lacking authorization header
-        403:
-          description: unauthorized, bad token
         404:
           description: not found
           content:

@@ -1,8 +1,7 @@
 import { deleteClassLottery, getClassLottery, updateClassLottery } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
 import { createLottery } from '$lib/server/lottery';
-import { auth_code } from '$env/static/private';
-import { isAuthorized } from '$lib/server/apiAuth';
+import { isAuthorizedRequest } from '$lib/server/apiAuth';
 
 export async function GET({ params }) {
 	try {
@@ -23,12 +22,8 @@ export async function PUT({ url, cookies, params, request }) {
 
 	// from local app no checks needed
 	if (origin !== appOrigin) {
-		if (!request.headers.has('Authorization')) {
+		if (!isAuthorizedRequest(request.headers.get('Authorization'), pafeAuth)) {
 			return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
-		}
-
-		if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-			return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
 		}
 	}
 
@@ -62,12 +57,8 @@ export async function POST({ url, cookies, params, request }) {
 
 	// from local app no checks needed
 	if (origin !== appOrigin) {
-		if (!request.headers.has('Authorization')) {
+		if (!isAuthorizedRequest(request.headers.get('Authorization'), pafeAuth)) {
 			return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
-		}
-
-		if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-			return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
 		}
 	}
 
@@ -99,12 +90,8 @@ export async function DELETE({ url, cookies, params, request }) {
 
 	// from local app no checks needed
 	if (origin !== appOrigin) {
-		if (!request.headers.has('Authorization')) {
+		if (!isAuthorizedRequest(request.headers.get('Authorization'), pafeAuth)) {
 			return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
-		}
-
-		if (pafeAuth != auth_code && !isAuthorized(request.headers.get('Authorization'))) {
-			return json({ result: 'error', reason: 'Unauthorized' }, { status: 403 });
 		}
 	}
 
