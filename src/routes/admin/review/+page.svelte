@@ -46,10 +46,13 @@
 	let selectedCategories: PieceCategory[] = [];
 	let selectedDivisionTags: DivisionTag[] = [];
 	let isDetailsModalOpen = false;
-	let isDivisionModalOpen = false;
 	let isDiscussionOpen = false;
 	let categorySaveStatus: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
 	let categorySaveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	let divisionSaveStatus: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
+	let divisionSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+	const divisionSaveDelay = 500; // optional for autosave
 
 	const categorySaveDelay = 500;
 
@@ -96,19 +99,27 @@
 		selectedCategories = item.categories ?? [];
 		selectedDivisionTags = item.division_tags ?? [];
 		isDetailsModalOpen = false;
-		isDivisionModalOpen = false;
 		isDiscussionOpen = false;
 		categorySaveStatus = 'idle';
 		if (categorySaveTimeout) {
 			clearTimeout(categorySaveTimeout);
 			categorySaveTimeout = null;
 		}
+		divisionSaveStatus = 'idle';
+		if (divisionSaveTimeout) {
+			clearTimeout(divisionSaveTimeout);
+			divisionSaveTimeout = null;
+		}
 	}
 
 	function normalizeCategories(value: unknown): PieceCategory[] {
 		if (!Array.isArray(value)) {
+			if (import.meta.env.DEV && value != null) {
+				console.warn('Expected categories to be an array; received:', value);
+			}
 			return [];
 		}
+
 		return value.filter(
 			(category): category is PieceCategory =>
 				typeof category === 'string' && pieceCategories.includes(category as PieceCategory)
@@ -117,8 +128,12 @@
 
 	function normalizeDivisionTags(value: unknown): DivisionTag[] {
 		if (!Array.isArray(value)) {
+			if (import.meta.env.DEV && value != null) {
+				console.warn('Expected division_tags to be an array; received:', value);
+			}
 			return [];
 		}
+
 		return value.filter(
 			(tag): tag is DivisionTag =>
 				typeof tag === 'string' && divisionTags.includes(tag as DivisionTag)
@@ -126,10 +141,20 @@
 	}
 
 	function normalizeQueueItem(item: ReviewQueueItem): ReviewQueueItem {
+		const normalizedCategories = normalizeCategories(item.categories);
+		const normalizedDivisionTags = normalizeDivisionTags(item.division_tags);
+
+		// Guardrail: keep is_untagged logically consistent if payload is off.
+		const isUntagged =
+			typeof item.is_untagged === 'boolean'
+				? item.is_untagged
+				: normalizedDivisionTags.length === 0;
+
 		return {
 			...item,
-			categories: normalizeCategories(item.categories),
-			division_tags: normalizeDivisionTags(item.division_tags)
+			categories: normalizedCategories,
+			division_tags: normalizedDivisionTags,
+			is_untagged: isUntagged
 		};
 	}
 
@@ -219,6 +244,23 @@
 		} else {
 			selectedDivisionTags = [...selectedDivisionTags, tag];
 		}
+		// Optional autosave:
+		scheduleDivisionSave();
+	}
+
+	function scheduleDivisionSave() {
+		if (!selectedId) return;
+
+		divisionSaveStatus = 'saving';
+		if (divisionSaveTimeout) clearTimeout(divisionSaveTimeout);
+
+		divisionSaveTimeout = setTimeout(async () => {
+			const success = await saveDivisionTags();
+			divisionSaveStatus = success ? 'saved' : 'error';
+			if (success) {
+				setTimeout(() => (divisionSaveStatus = 'idle'), 1500);
+			}
+		}, divisionSaveDelay);
 	}
 
 	async function saveDetails(): Promise<boolean> {
@@ -286,6 +328,30 @@
 		return true;
 	}
 
+	async function handleSaveDivisionTagsInline() {
+		errorMessage = '';
+		divisionSaveStatus = 'saving';
+		const success = await saveDivisionTags();
+		divisionSaveStatus = success ? 'saved' : 'error';
+		if (success) {
+			setTimeout(() => (divisionSaveStatus = 'idle'), 1500);
+		}
+	}
+
+	async function handleSaveDiscussion() {
+		errorMessage = '';
+		const success = await saveDetails();
+		if (!success) return;
+
+		// Keep queue in sync
+		if (selectedId) {
+			updateQueueItem(selectedId, {
+				flag_for_discussion: flagForDiscussion,
+				discussion_notes: discussionNotes
+			});
+		}
+	}
+
 	async function saveDivisionTags(): Promise<boolean> {
 		if (!selectedId) {
 			return false;
@@ -315,17 +381,18 @@
 		}
 	}
 
-	async function handleSaveDivisionTags() {
-		errorMessage = '';
-		const success = await saveDivisionTags();
-		if (success) {
-			isDivisionModalOpen = false;
-		}
-	}
-
 	async function toggleFlagForDiscussion() {
+		if (!selectedId) return;
+
 		flagForDiscussion = !flagForDiscussion;
-		await saveDetails();
+		errorMessage = '';
+		const success = await saveDetails();
+		if (!success) return;
+
+		updateQueueItem(selectedId, {
+			flag_for_discussion: flagForDiscussion,
+			discussion_notes: discussionNotes
+		});
 	}
 
 	async function markComplete() {
@@ -447,7 +514,7 @@
 							type="button"
 							class="ghost-button"
 							class:active={flagForDiscussion}
-							on:click={toggleFlagForDiscussion}
+							on:click={() => (flagForDiscussion = !flagForDiscussion)}
 						>
 							{flagForDiscussion ? 'Flagged for discussion' : 'Flag for discussion'}
 						</button>
@@ -513,6 +580,52 @@
 										: 'All divisions'}
 								</dd>
 							</div>
+
+							<!-- Inline Division Tags editor (no popup) -->
+							<div class="divider"></div>
+
+							<div class="division-editor" aria-label="Division Tags Editor">
+								<div class="division-editor-header">
+									<div>
+										<h4>Division Tags</h4>
+										<p class="hint">
+											Select one or more divisions. Leaving empty shows in all divisions.
+										</p>
+									</div>
+
+									<div class="division-actions">
+										{#if divisionSaveStatus === 'saving'}
+											<span class="status">Saving…</span>
+										{:else if divisionSaveStatus === 'saved'}
+											<span class="status saved">Saved ✓</span>
+										{:else if divisionSaveStatus === 'error'}
+											<span class="status error">Save failed</span>
+										{/if}
+
+										<button
+											type="button"
+											class="ghost-button"
+											on:click={handleSaveDivisionTagsInline}
+										>
+											Save divisions
+										</button>
+									</div>
+								</div>
+
+								<div class="pill-grid">
+									{#each divisionTags as tag}
+										<label class="pill" class:active={selectedDivisionTags.includes(tag)}>
+											<input
+												type="checkbox"
+												checked={selectedDivisionTags.includes(tag)}
+												on:change={() => toggleDivisionTag(tag)}
+											/>
+											<span>{tag}</span>
+										</label>
+									{/each}
+								</div>
+							</div>
+
 							<div class="summary-row">
 								<dt>Comments</dt>
 								<dd>{comments || '—'}</dd>
@@ -536,7 +649,7 @@
 								Notes
 								<textarea rows="4" bind:value={discussionNotes}></textarea>
 							</label>
-							<button type="button" class="ghost-button" on:click={saveDetails}>
+							<button type="button" class="ghost-button" on:click={handleSaveDiscussion}>
 								Save discussion
 							</button>
 						</div>
@@ -544,8 +657,14 @@
 				</div>
 
 				{#if isDetailsModalOpen}
-					<div class="modal-backdrop" on:click={() => (isDetailsModalOpen = false)}>
-						<div class="modal" role="dialog" aria-modal="true" on:click|stopPropagation>
+					<div class="modal-layer" role="presentation">
+						<button
+							type="button"
+							class="modal-backdrop"
+							aria-label="Close dialog"
+							on:click={() => (isDetailsModalOpen = false)}
+						/>
+						<div class="modal" role="dialog" aria-modal="true" aria-label="Edit Piece Details">
 							<header class="modal-header">
 								<h3>Edit Piece Details</h3>
 								<button
@@ -595,50 +714,6 @@
 									Cancel
 								</button>
 								<button type="button" class="complete" on:click={handleSaveDetails}>Save</button>
-							</footer>
-						</div>
-					</div>
-				{/if}
-
-				{#if isDivisionModalOpen}
-					<div class="modal-backdrop" on:click={() => (isDivisionModalOpen = false)}>
-						<div class="modal" role="dialog" aria-modal="true" on:click|stopPropagation>
-							<header class="modal-header">
-								<h3>Division Tags</h3>
-								<button
-									type="button"
-									class="ghost-button"
-									on:click={() => (isDivisionModalOpen = false)}
-								>
-									✕
-								</button>
-							</header>
-							<div class="modal-content">
-								<div class="checkbox-grid">
-									{#each divisionTags as tag}
-										<label class="checkbox">
-											<input
-												type="checkbox"
-												checked={selectedDivisionTags.includes(tag)}
-												on:change={() => toggleDivisionTag(tag)}
-											/>
-											{tag}
-										</label>
-									{/each}
-								</div>
-								<p class="hint">Leaving empty shows in all divisions.</p>
-							</div>
-							<footer class="modal-footer">
-								<button
-									type="button"
-									class="ghost-button"
-									on:click={() => (isDivisionModalOpen = false)}
-								>
-									Cancel
-								</button>
-								<button type="button" class="complete" on:click={handleSaveDivisionTags}>
-									Save
-								</button>
 							</footer>
 						</div>
 					</div>
@@ -909,14 +984,6 @@
 		color: #475569;
 	}
 
-	.inline-edit {
-		background: none;
-		border: none;
-		color: #4338ca;
-		cursor: pointer;
-		font-weight: 600;
-	}
-
 	.discussion-summary {
 		display: flex;
 		justify-content: space-between;
@@ -944,18 +1011,33 @@
 		color: #64748b;
 	}
 
-	.modal-backdrop {
+	.modal-layer {
 		position: fixed;
 		inset: 0;
-		background: rgba(15, 23, 42, 0.4);
+		z-index: 10;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		padding: 24px;
-		z-index: 10;
+	}
+
+	.modal-backdrop {
+		position: absolute;
+		inset: 0;
+		background: rgba(15, 23, 42, 0.4);
+		border: none;
+		padding: 0;
+		margin: 0;
+		cursor: default;
+	}
+
+	.modal-backdrop:focus {
+		outline: none;
 	}
 
 	.modal {
+		position: relative; /* ensures it sits above the backdrop */
+		z-index: 1;
 		background: #fff;
 		border-radius: 12px;
 		width: min(640px, 100%);
@@ -994,6 +1076,74 @@
 	.empty {
 		color: #64748b;
 	}
+	.divider {
+		height: 1px;
+		background: #e0e4f4;
+		margin: 12px 0;
+	}
+
+	.division-editor {
+		border: 1px dashed #c7d2fe;
+		border-radius: 10px;
+		padding: 12px;
+		background: #f8f9ff;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.division-editor-header {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		align-items: flex-start;
+		flex-wrap: wrap;
+	}
+
+	.division-editor h4 {
+		margin: 0;
+		font-size: 14px;
+		font-weight: 700;
+		color: #1e293b;
+	}
+
+	.division-actions {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex-wrap: wrap;
+	}
+
+	.pill-grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 10px;
+		border-radius: 999px;
+		border: 1px solid #c7d2fe;
+		background: #ffffff;
+		color: #1e293b;
+		cursor: pointer;
+		user-select: none;
+		font-weight: 600;
+		font-size: 13px;
+	}
+
+	.pill input {
+		margin: 0;
+	}
+
+	.pill.active {
+		background: #eef2ff;
+		border-color: #818cf8;
+		color: #312e81;
+	}
 
 	@media (max-width: 900px) {
 		.review-body {
@@ -1003,10 +1153,6 @@
 		.summary-row {
 			grid-template-columns: 1fr;
 			align-items: flex-start;
-		}
-
-		.inline-edit {
-			justify-self: flex-start;
 		}
 	}
 </style>

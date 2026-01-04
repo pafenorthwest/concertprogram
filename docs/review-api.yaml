@@ -1,0 +1,415 @@
+openapi: 3.0.3
+info:
+  title: Concert Program Review APIs
+  description: Endpoints used by reviewers to manage musical piece review metadata and queue assignment.
+  version: 0.5.0
+servers:
+  - url: 'https://schedule.pafenorthwest.org/api/'
+
+paths:
+  /review/queue:
+    get:
+      summary: list review queue items for the current reviewer
+      description: >
+        Returns musical pieces assigned to the authenticated reviewer for a specific division.
+        Requires a valid `pafe_auth` session cookie with role `Admin`, `MusicEditor`, or
+        `DivisionChair`.
+      security:
+        - PafeAuthCookie: []
+      parameters:
+        - in: query
+          name: division
+          description: reviewer division filter
+          required: true
+          schema:
+            $ref: '#/components/schemas/DivisionTag'
+      responses:
+        200:
+          description: queue returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReviewQueueItem'
+                required:
+                  - items
+              example:
+                items:
+                  - id: 15
+                    printed_name: 'Concerto in D Major'
+                    all_movements: 'I. Allegro, II. Largo, III. Allegro'
+                    first_contributor_id: 3
+                    first_contributor_name: 'Johann Sebastian Bach'
+                    second_contributor_id: null
+                    third_contributor_id: null
+                    imslp_url: 'https://imslp.org/wiki/Concerto_in_D_major'
+                    comments: 'Primary choice for spring'
+                    flag_for_discussion: false
+                    discussion_notes: null
+                    is_not_appropriate: false
+                    updated_at: '2024-07-15T12:10:05.000Z'
+                    categories: ['Concerto']
+                    division_tags: ['High-Strings']
+                    is_untagged: false
+        400:
+          description: division tag missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: error
+                reason: Invalid division tag
+        401:
+          description: unauthorized (missing or invalid session cookie)
+        403:
+          description: reviewer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: error
+                reason: Reviewer not found
+
+  /review/pieces/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: musical piece identifier
+        schema:
+          type: integer
+    patch:
+      summary: update musical piece review metadata
+      description: >
+        Applies partial updates to review-related fields for a musical piece. Requires a valid
+        reviewer session cookie.
+      security:
+        - PafeAuthCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewPieceUpdate'
+            example:
+              printed_name: 'Concerto in D Major'
+              all_movements: 'I. Allegro, II. Largo, III. Allegro'
+              first_contributor_id: 3
+              imslp_url: 'https://imslp.org/wiki/Concerto_in_D_major'
+              comments: 'Primary choice for spring'
+              flag_for_discussion: true
+              discussion_notes: 'Check alternative editions'
+              is_not_appropriate: false
+      responses:
+        200:
+          description: update applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+              example:
+                id: 15
+        400:
+          description: invalid id, payload shape, or no valid fields provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: error
+                reason: Invalid payload
+        401:
+          description: unauthorized (missing or invalid session cookie)
+
+  /review/pieces/{id}/categories:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: musical piece identifier
+        schema:
+          type: integer
+    put:
+      summary: replace the categories assigned to a musical piece
+      description: >
+        Replaces all category assignments for the musical piece with the supplied set. `Not
+        Appropriate` takes precedence and will replace other categories if provided. Requires a
+        valid reviewer session cookie.
+      security:
+        - PafeAuthCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                categories:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/PieceCategory'
+              required:
+                - categories
+            example:
+              categories: ['Concerto', 'Solo']
+      responses:
+        200:
+          description: categories replaced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+              example:
+                id: 15
+        400:
+          description: invalid id or categories payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: error
+                reason: Invalid categories payload
+        401:
+          description: unauthorized (missing or invalid session cookie)
+
+  /review/pieces/{id}/division-tags:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: musical piece identifier
+        schema:
+          type: integer
+    put:
+      summary: replace division tags for a musical piece
+      description: >
+        Replaces all division tags for the musical piece with the supplied set. Duplicate tags in
+        the request are ignored. Requires a valid reviewer session cookie.
+      security:
+        - PafeAuthCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                division_tags:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DivisionTag'
+              required:
+                - division_tags
+            example:
+              division_tags: ['High-Strings', 'Ensembles']
+      responses:
+        200:
+          description: division tags replaced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+              example:
+                id: 15
+        400:
+          description: invalid id or division tags payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: error
+                reason: Invalid division tags payload
+        401:
+          description: unauthorized (missing or invalid session cookie)
+
+  /review/pieces/{id}/complete:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: musical piece identifier
+        schema:
+          type: integer
+    post:
+      summary: mark a musical piece review complete for the reviewer
+      description: >
+        Records the authenticated reviewer as having completed the review for the piece. Requires a
+        valid reviewer session cookie.
+      security:
+        - PafeAuthCookie: []
+      responses:
+        200:
+          description: review marked complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+              example:
+                id: 15
+        400:
+          description: invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: error
+                reason: Invalid musical piece id
+        401:
+          description: unauthorized (missing or invalid session cookie)
+        403:
+          description: reviewer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: error
+                reason: Reviewer not found
+
+components:
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [error]
+        reason:
+          type: string
+      required:
+        - status
+        - reason
+      example:
+        status: error
+        reason: Invalid payload
+
+    IdResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+      required:
+        - id
+      example:
+        id: 15
+
+    ReviewQueueItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        printed_name:
+          type: string
+        all_movements:
+          type: string
+          nullable: true
+        first_contributor_id:
+          type: integer
+        first_contributor_name:
+          type: string
+          nullable: true
+        second_contributor_id:
+          type: integer
+          nullable: true
+        third_contributor_id:
+          type: integer
+          nullable: true
+        imslp_url:
+          type: string
+          nullable: true
+        comments:
+          type: string
+          nullable: true
+        flag_for_discussion:
+          type: boolean
+        discussion_notes:
+          type: string
+          nullable: true
+        is_not_appropriate:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/PieceCategory'
+        division_tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/DivisionTag'
+        is_untagged:
+          type: boolean
+      required:
+        - id
+        - printed_name
+        - first_contributor_id
+        - flag_for_discussion
+        - is_not_appropriate
+        - updated_at
+        - categories
+        - division_tags
+        - is_untagged
+
+    ReviewPieceUpdate:
+      type: object
+      description: Partial update payload; any combination of fields may be supplied.
+      properties:
+        printed_name:
+          type: string
+        all_movements:
+          type: string
+          nullable: true
+        first_contributor_id:
+          type: integer
+        second_contributor_id:
+          type: integer
+          nullable: true
+        third_contributor_id:
+          type: integer
+          nullable: true
+        imslp_url:
+          type: string
+          nullable: true
+        comments:
+          type: string
+          nullable: true
+        flag_for_discussion:
+          type: boolean
+        discussion_notes:
+          type: string
+          nullable: true
+        is_not_appropriate:
+          type: boolean
+
+    PieceCategory:
+      type: string
+      enum:
+        - Concerto
+        - Solo
+        - Ensemble
+        - Not Appropriate
+
+    DivisionTag:
+      type: string
+      enum:
+        - High-Strings
+        - Low-Strings
+        - Piano
+        - Woodwinds
+        - Ensembles
+
+  securitySchemes:
+    PafeAuthCookie:
+      type: apiKey
+      in: cookie
+      name: pafe_auth
