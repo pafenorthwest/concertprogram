@@ -1110,34 +1110,43 @@ export async function searchMusicalPiece(printed_name: string, first_contributor
 	}
 }
 
-export async function searchPerformanceByPerformer(
+export async function searchPerformanceByPerformerAndClass(
 	performer_id: number,
+	class_name: string,
 	concert_series: string,
 	year: number
 ) {
 	try {
 		const connection = await pool.connect();
 
-		const searchSQL =
-			'SELECT performance.id, performer.full_name as performer_name, \n' +
-			'musical_piece.printed_name as musical_piece_printed_name, \n' +
-			'performance.performer_id, performance.performance_order, \n' +
-			'performance.concert_series, performance.year, performance.duration, performance.accompanist_id, \n' +
-			'performance.comment, performance.instrument, warm_up_room_name, warm_up_room_start, warm_up_room_end \n' +
-			'FROM performance \n' +
-			'JOIN performance_pieces ON performance.id = performance_pieces.performance_id \n' +
-			'JOIN musical_piece ON performance_pieces.musical_piece_id = musical_piece.id \n' +
-			'JOIN performer ON performance.performer_id = performer.id \n' +
-			'WHERE performer_id = ' +
-			performer_id +
-			'\n   ' +
-			"    AND LOWER(concert_series) = '" +
-			concert_series.toLowerCase() +
-			"' \n" +
-			'    AND year = ' +
-			year;
+		const searchSQL = `
+			SELECT
+				p.id,
+				perf.full_name AS performer_name,
+				mp.printed_name AS musical_piece_printed_name,
+				p.performer_id,
+				p.performance_order,
+				p.class_name,
+				p.concert_series,
+				p.year,
+				p.duration,
+				p.accompanist_id,
+				p.comment,
+				p.instrument,
+				p.warm_up_room_name,
+				p.warm_up_room_start,
+				p.warm_up_room_end
+			FROM performance p
+			JOIN performer perf ON p.performer_id = perf.id
+			JOIN performance_pieces pp ON p.id = pp.performance_id
+			JOIN musical_piece mp ON pp.musical_piece_id = mp.id
+			WHERE p.performer_id = $1
+				AND p.class_name = $2
+				AND LOWER(p.concert_series) = LOWER($3)
+				AND p.year = $4;
+			`;
 
-		const result = await connection.query(searchSQL);
+		const result = await connection.query(searchSQL, [performer_id, class_name, concert_series, year]);
 
 		// Release the connection back to the pool
 		connection.release();

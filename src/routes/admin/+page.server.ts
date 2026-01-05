@@ -70,13 +70,49 @@ export const actions = {
 				});
 			}
 
+			const rawClassName = formData.get('class');
+			if (rawClassName == null || rawClassName === '') {
+				throw new Error('Class Name is required');
+			}
+			const className = String(rawClassName).trim();
+
+			const rawPerformer = formData.get('performer-name');
+			if (rawPerformer == null || rawPerformer === '') {
+				throw new Error('Performer  is required');
+			}
+			const performer = String(rawPerformer).trim();
+
+			const rawAge = formData.get('age');
+			if (rawAge == null || rawAge === '') {
+				throw new Error('Age is required');
+			}
+			const age = Number(rawAge);
+
+			const rawLottery = formData.get('lottery');
+			if (rawLottery == null || rawLottery === '') {
+				throw new Error('Lottery is required');
+			}
+			const lottery = Number(rawLottery);
+
+			const rawConcertSeries = formData.get('concert-series');
+			if (rawConcertSeries == null || rawConcertSeries == '') {
+				throw new Error('Concert Series is required');
+			}
+			const concertSeries = String(rawConcertSeries).trim();
+
+			const rawInstrument = formData.get('instrument');
+			if (rawInstrument == null || rawInstrument == '') {
+				throw new Error('Instrument is required');
+			}
+			const instrument = String(rawInstrument).trim();
+
 			const imported: ImportPerformanceInterface = {
-				class_name: formData.get('class'),
-				performer: formData.get('performer-name'),
-				age: formData.get('age'),
-				lottery: formData.get('lottery'),
-				instrument: formData.get('instrument'),
-				concert_series: formData.get('concert-series'),
+				class_name: className,
+				performer: performer,
+				age: age,
+				lottery: lottery,
+				instrument: instrument,
+				concert_series: concertSeries,
 				musical_piece: importMusicalTitle,
 				...(formData.get('accompanist') != null && formData.get('accompanist') !== ''
 					? { accompanist: formData.get('accompanist') }

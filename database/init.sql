@@ -244,8 +244,8 @@ CREATE TABLE performance (
     warm_up_room_end TIMESTAMP NULL
 );
 
-CREATE UNIQUE INDEX performance_performer_series_year_idx
-    ON performance(performer_id, concert_series, year);
+CREATE UNIQUE INDEX performance_performer_series_year_class_idx
+  ON performance (performer_id, concert_series, year, class_name);
 
 CREATE TABLE concert_times (
     id BIGSERIAL PRIMARY KEY,

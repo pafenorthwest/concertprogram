@@ -28,7 +28,7 @@ import {
 	searchContributor,
 	searchMusicalPiece,
 	searchPerformer,
-	searchPerformanceByPerformer,
+	searchPerformanceByPerformerAndClass,
 	insertPerformance,
 	insertPerformancePieceMap,
 	deleteById,
@@ -412,15 +412,22 @@ export class Performance {
 		if (performer?.id == null) {
 			throw new PerformerError("Can't process Performance with null performer");
 		}
-		const res = await searchPerformanceByPerformer(performer.id, concert_series, year());
+		const normalizedClass = class_name.trim();
+		const normalizedSeries = concert_series.trim();
+		const res = await searchPerformanceByPerformerAndClass(
+			performer.id,
+			normalizedClass,
+			normalizedSeries,
+			year()
+		);
 		if (res.rowCount == null || res.rowCount < 1) {
 			const thisPerformance: PerformanceInterfaceTagCreate = {
 				id: null,
-				class: class_name,
+				class: normalizedClass,
 				performer_name: performer.full_name,
 				duration: null,
 				accompanist_id: accompanist_id,
-				concert_series: concert_series,
+				concert_series: normalizedSeries,
 				year: year(),
 				instrument: performer.instrument,
 				created: true
@@ -444,10 +451,10 @@ export class Performance {
 		return {
 			id: res.rows[0].id,
 			performer_name: res.rows[0].performer_name,
-			class: class_name,
+			class: res.rows[0].class_name ?? normalizedClass,
 			duration: res.rows[0].duration,
 			accompanist_id: res.rows[0].accompanist_id,
-			concert_series: res.rows[0].concert_series,
+			concert_series: res.rows[0].concert_series ?? normalizedSeries,
 			year: res.rows[0].year,
 			instrument: res.rows[0].instrument,
 			created: false

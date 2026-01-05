@@ -25,6 +25,8 @@ async function getSortedConcertTimes(): Promise<ConcertRow[] | null> {
 }
 
 export async function load({ url }) {
+	/* console.log('[schedule.load] url=', url.toString()); */
+
 	const performerLookup = PerformerLookup.create();
 	let performerSearchResults: PerformerSearchResultsInterface = {
 		status: 'ERROR',
@@ -42,6 +44,15 @@ export async function load({ url }) {
 	let slots: Slot[] = [];
 
 	const concertStartTimes = await getSortedConcertTimes();
+	/*
+	console.log(
+		'[schedule.load] concertStartTimes?',
+		!!concertStartTimes,
+		'count=',
+		concertStartTimes?.length
+	);
+	*/
+
 	if (concertStartTimes == null) {
 		return {
 			status: 'NOTFOUND',
@@ -59,6 +70,8 @@ export async function load({ url }) {
 	}
 
 	performerSearchResults = await performerLookup.lookupFromUrl(url);
+	/* console.log('[schedule.load] performerSearchResults=', performerSearchResults); */
+
 	if (performerSearchResults.status === 'OK') {
 		const slotCatalog = await SlotCatalog.load(performerSearchResults.concert_series, year());
 		slotCount = slotCatalog.slotCount;
@@ -77,6 +90,14 @@ export async function load({ url }) {
 				console.error('Error performing fetchSchedule');
 			}
 		}
+		/*
+		console.log(
+			'[schedule.load] slotCount=',
+			slotCount,
+			'concert_series=',
+			performerSearchResults.concert_series
+		);
+		*/
 	}
 	return {
 		status: performerSearchResults.status,
