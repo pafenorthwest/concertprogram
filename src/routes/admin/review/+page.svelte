@@ -27,16 +27,25 @@
 		is_untagged: boolean;
 	};
 
-	type ComposerOption = PageData['composers'][number];
+	type FirstContributorOption = PageData['contributors'][number] & { display_label: string };
 
 	export let data: PageData;
 
-	const composerOptions: ComposerOption[] = data?.composers ?? [];
+	const contributorOptions: FirstContributorOption[] = (data?.contributors ?? []).map(
+		(contributor) => ({
+			...contributor,
+			display_label:
+				contributor.display_label ??
+				`${contributor.role ? `${contributor.role}: ` : ''}${contributor.full_name}${
+					contributor.id ? ` (#${contributor.id})` : ''
+				}`
+		})
+	);
 
 	let queueItems: ReviewQueueItem[] = [];
 	let division: DivisionTag = divisionTags[0];
 	let selectedId: number | null = null;
-	let composerFilter = '';
+	let contributorFilter = '';
 	let flaggedOnly = false;
 	let isLoading = false;
 	let errorMessage = '';
@@ -63,26 +72,42 @@
 
 	const categorySaveDelay = 500;
 
-	let selectedComposer: ComposerOption | null = null;
+	let selectedFirstContributor: FirstContributorOption | null = null;
+	let selectedSecondContributor: FirstContributorOption | null = null;
+	let selectedThirdContributor: FirstContributorOption | null = null;
+	let secondContributorName = '';
+	let thirdContributorName = '';
 
 	$: filteredItems = queueItems.filter((item) => {
 		if (flaggedOnly && !item.flag_for_discussion) {
 			return false;
 		}
-		if (composerFilter.trim().length > 0) {
-			const composerName = item.first_contributor_name ?? '';
-			return composerName.toLowerCase().includes(composerFilter.toLowerCase());
+		if (contributorFilter.trim().length > 0) {
+			const contributorName = item.first_contributor_name ?? '';
+			return contributorName.toLowerCase().includes(contributorFilter.toLowerCase());
 		}
 		return true;
 	});
 
 	$: selectedItem = queueItems.find((item) => item.id === selectedId) ?? null;
-	$: selectedComposer =
-		composerOptions.find((composer) => String(composer.id) === firstContributorId) ?? null;
-	$: composerName =
-		selectedComposer?.full_name ??
-		selectedItem?.first_contributor_name ??
-		(firstContributorId ? `Composer #${firstContributorId}` : '');
+	$: selectedFirstContributor =
+		contributorOptions.find((contributor) => String(contributor.id) === firstContributorId) ?? null;
+	$: contributorName =
+		selectedFirstContributor?.display_label ??
+		(selectedItem?.first_contributor_name && firstContributorId
+			? `${selectedItem.first_contributor_name} (#${firstContributorId})`
+			: (selectedItem?.first_contributor_name ??
+				(firstContributorId ? `Contributor #${firstContributorId}` : '')));
+	$: selectedSecondContributor =
+		contributorOptions.find((contributor) => String(contributor.id) === secondContributorId) ??
+		null;
+	$: secondContributorName =
+		selectedSecondContributor?.display_label ??
+		(secondContributorId ? `Contributor #${secondContributorId}` : '');
+	$: selectedThirdContributor =
+		contributorOptions.find((contributor) => String(contributor.id) === thirdContributorId) ?? null;
+	$: thirdContributorName =
+		selectedThirdContributor?.display_label ?? (thirdContributorId ? `Contributor #${thirdContributorId}` : '');
 
 	$: updatedAtLabel = selectedItem ? formatUpdatedAt(selectedItem.updated_at) : '';
 
@@ -278,12 +303,12 @@
 	async function saveDetails(): Promise<boolean> {
 		if (!selectedId) {
 			return false;
-		}
-		const parsedFirstContributorId = toNullableNumber(firstContributorId);
-		if (!parsedFirstContributorId) {
-			errorMessage = 'Composer selection is required.';
-			return false;
-		}
+	}
+	const parsedFirstContributorId = toNullableNumber(firstContributorId);
+	if (!parsedFirstContributorId) {
+		errorMessage = 'First contributor selection is required.';
+		return false;
+	}
 		const payload = {
 			printed_name: printedName,
 			all_movements: allMovements.trim().length > 0 ? allMovements : null,
@@ -308,14 +333,14 @@
 			return false;
 		}
 
-		const updatedComposerName =
-			selectedComposer?.full_name ?? selectedItem?.first_contributor_name ?? null;
+		const updatedFirstContributorName =
+			selectedFirstContributor?.display_label ?? selectedItem?.first_contributor_name ?? null;
 
 		updateQueueItem(selectedId, {
 			printed_name: printedName,
 			all_movements: allMovements,
 			first_contributor_id: parsedFirstContributorId,
-			first_contributor_name: updatedComposerName,
+			first_contributor_name: updatedFirstContributorName,
 			second_contributor_id: toNullableNumber(secondContributorId),
 			third_contributor_id: toNullableNumber(thirdContributorId),
 			imslp_url: imslpUrl,
@@ -436,8 +461,8 @@
 				</select>
 			</label>
 			<label>
-				Composer
-				<input type="text" placeholder="Filter by composer" bind:value={composerFilter} />
+				Contributor
+				<input type="text" placeholder="Filter by contributor" bind:value={contributorFilter} />
 			</label>
 			<label class="checkbox">
 				<input type="checkbox" bind:checked={flaggedOnly} />
@@ -466,7 +491,7 @@
 										<span class="untagged">*</span>
 									{/if}
 								</span>
-								<span class="subtitle">{item.first_contributor_name ?? 'Unknown composer'}</span>
+								<span class="subtitle">{item.first_contributor_name ?? 'Unknown contributor'}</span>
 								<span class="meta">
 									{#if item.flag_for_discussion}
 										<span class="flag">💬 Discussion</span>
@@ -498,10 +523,10 @@
 						<div class="meta-line">
 							<button
 								type="button"
-								class="composer-button"
+								class="contributor-button"
 								on:click={() => (isDetailsModalOpen = true)}
 							>
-								{composerName || 'Unknown composer'}
+								{contributorName || 'Unknown contributor'}
 							</button>
 							<span>•</span>
 							<span>{selectedItem.imslp_url ? 'IMSLP ✓' : 'IMSLP: —'}</span>
@@ -571,12 +596,21 @@
 								<dd>{allMovements || '—'}</dd>
 							</div>
 							<div class="summary-row">
-								<dt>Composer</dt>
-								<dd>
-									{selectedComposer?.full_name ?? selectedItem?.first_contributor_name ?? '—'}
-									{firstContributorId ? ` (#${firstContributorId})` : ''}
-								</dd>
+								<dt>First Contributor</dt>
+								<dd>{contributorName || '—'}</dd>
 							</div>
+							{#if secondContributorId}
+								<div class="summary-row">
+									<dt>Second Contributor</dt>
+									<dd>{secondContributorName || '—'}</dd>
+								</div>
+							{/if}
+							{#if thirdContributorId}
+								<div class="summary-row">
+									<dt>Third Contributor</dt>
+									<dd>{thirdContributorName || '—'}</dd>
+								</div>
+							{/if}
 							<div class="summary-row">
 								<dt>Division tags</dt>
 								<dd>
@@ -690,24 +724,37 @@
 									<input type="text" bind:value={allMovements} />
 								</label>
 								<label>
-									Composer
+									First Contributor
 									<select bind:value={firstContributorId}>
-										<option value="">Select a composer</option>
-										{#each composerOptions as composer}
-											<option value={String(composer.id)}>
-												{composer.full_name}
-												{composer.years_active ? ` (${composer.years_active})` : ''}
+										<option value="">Select a contributor</option>
+										{#each contributorOptions as contributor}
+											<option value={String(contributor.id)}>
+												{contributor.display_label}
 											</option>
 										{/each}
 									</select>
 								</label>
 								<label>
-									Second contributor ID
-									<input type="number" min="1" bind:value={secondContributorId} />
+									Second Contributor
+									<select bind:value={secondContributorId}>
+										<option value="">None</option>
+										{#each contributorOptions as contributor}
+											<option value={String(contributor.id)}>
+												{contributor.display_label}
+											</option>
+										{/each}
+									</select>
 								</label>
 								<label>
-									Third contributor ID
-									<input type="number" min="1" bind:value={thirdContributorId} />
+									Third Contributor
+									<select bind:value={thirdContributorId}>
+										<option value="">None</option>
+										{#each contributorOptions as contributor}
+											<option value={String(contributor.id)}>
+												{contributor.display_label}
+											</option>
+										{/each}
+									</select>
 								</label>
 								<label>
 									IMSLP URL
@@ -866,7 +913,7 @@
 	}
 
 	.title-button,
-	.composer-button {
+	.contributor-button {
 		background: none;
 		border: none;
 		padding: 0;
