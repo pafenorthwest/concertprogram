@@ -11,7 +11,7 @@ function parseId(value: string | undefined): number | null {
 }
 
 export async function PUT({ params, request, cookies }) {
-	const session = getReviewSession(cookies.get('pafe_auth'));
+	const session = getReviewSession(request.headers.get('Authorization'), cookies.get('pafe_auth'));
 	if (!session) {
 		return json({ status: 'error', reason: 'Unauthorized' }, { status: 401 });
 	}

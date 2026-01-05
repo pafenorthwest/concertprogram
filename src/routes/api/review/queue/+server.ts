@@ -2,8 +2,8 @@ import { json } from '@sveltejs/kit';
 import { getReviewSession } from '$lib/server/apiAuth';
 import { fetchReviewQueue, getAuthorizedUserId, isValidDivisionTag } from '$lib/server/review';
 
-export async function GET({ url, cookies }) {
-	const session = getReviewSession(cookies.get('pafe_auth'));
+export async function GET({ url, request, cookies }) {
+	const session = getReviewSession(request.headers.get('Authorization'), cookies.get('pafe_auth'));
 	if (!session) {
 		return json({ status: 'error', reason: 'Unauthorized' }, { status: 401 });
 	}

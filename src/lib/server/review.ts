@@ -57,6 +57,21 @@ export async function getAuthorizedUserId(email: string): Promise<number | null>
 	}
 }
 
+function asStringArray(value: unknown): string[] {
+	if (Array.isArray(value)) {
+		return value.filter((v): v is string => typeof v === 'string');
+	}
+	if (typeof value === 'string') {
+		try {
+			const parsed = JSON.parse(value);
+			return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
+		} catch {
+			return [];
+		}
+	}
+	return [];
+}
+
 export async function fetchReviewQueue(
 	reviewerId: number,
 	divisionTag: DivisionTag
@@ -78,8 +93,14 @@ export async function fetchReviewQueue(
 				mp.discussion_notes,
 				mp.is_not_appropriate,
 				mp.updated_at,
-				COALESCE(ARRAY_AGG(DISTINCT mpcm.category) FILTER (WHERE mpcm.category IS NOT NULL), '{}') AS categories,
-				COALESCE(ARRAY_AGG(DISTINCT mpdt.division_tag) FILTER (WHERE mpdt.division_tag IS NOT NULL), '{}') AS division_tags,
+				COALESCE(
+				jsonb_agg(DISTINCT mpcm.category) FILTER (WHERE mpcm.category IS NOT NULL),
+				'[]'::jsonb
+				) AS categories,
+				COALESCE(
+				jsonb_agg(DISTINCT mpdt.division_tag) FILTER (WHERE mpdt.division_tag IS NOT NULL),
+				'[]'::jsonb
+				) AS division_tags,
 				CASE WHEN tag_count.tag_total IS NULL THEN TRUE ELSE FALSE END AS is_untagged
 			FROM musical_piece mp
 			LEFT JOIN contributor First
@@ -116,7 +137,12 @@ export async function fetchReviewQueue(
 			ORDER BY mp.printed_name ASC`,
 			[reviewerId, divisionTag]
 		);
-		return result.rows;
+		return result.rows.map((row) => ({
+			...row,
+			categories: asStringArray(row.categories).filter(isValidPieceCategory),
+			division_tags: asStringArray(row.division_tags).filter(isValidDivisionTag),
+			is_untagged: Boolean(row.is_untagged)
+		}));
 	} finally {
 		client.release();
 	}
