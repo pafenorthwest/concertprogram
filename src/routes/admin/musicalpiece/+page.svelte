@@ -231,9 +231,7 @@
 						{/if}
 					</td>
 					<td>
-						{musicalPiece.updated_at
-							? new Date(musicalPiece.updated_at).toLocaleString()
-							: ''}
+						{musicalPiece.updated_at ? new Date(musicalPiece.updated_at).toLocaleString() : ''}
 					</td>
 					<td>
 						{#if editing.id === musicalPiece.id}

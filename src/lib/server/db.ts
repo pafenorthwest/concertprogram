@@ -594,14 +594,15 @@ export async function updateById(
 				setCols = setCols + ', updated_at = NOW()';
 				break;
 			}
-			case 'accompanist':
+			case 'accompanist': {
 				// don't wipe out data
 				if (!isNonEmptyString((data as AccompanistInterface).full_name)) {
 					return null;
 				}
 				setCols = "full_name = '" + (data as AccompanistInterface).full_name + "'";
 				break;
-			case 'performer':
+			}
+			case 'performer': {
 				// don't wipe out data
 				if (
 					!(
@@ -622,7 +623,8 @@ export async function updateById(
 					setCols = setCols + ", phone = '" + (data as PerformerInterface).phone + "' ";
 				}
 				break;
-			case 'musical_piece':
+			}
+			case 'musical_piece': {
 				// don't wipe out data
 				if (
 					!isNonEmptyString((data as MusicalPieceInterface).printed_name) ||
@@ -697,6 +699,7 @@ export async function updateById(
 				setCols = setCols + ', is_not_appropriate = ' + isNotAppropriate;
 				setCols = setCols + ', updated_at = NOW()';
 				break;
+			}
 		}
 
 		const updateSQL = 'UPDATE ' + tableName + ' SET ' + setCols + ' WHERE id=' + data.id;

@@ -56,11 +56,7 @@ export async function PUT({ url, params, request, cookies }) {
 			discussion_notes: toNullableString(body.discussion_notes),
 			is_not_appropriate: toBoolean(body.is_not_appropriate)
 		};
-		if (
-			!musicalPiece.printed_name ||
-			Number.isNaN(firstContributorId) ||
-			musicalPiece.id == null
-		) {
+		if (!musicalPiece.printed_name || Number.isNaN(firstContributorId) || musicalPiece.id == null) {
 			return { status: 400, body: { message: 'Missing Field, Try Again' } };
 		} else {
 			const rowCount = await updateById('musical_piece', musicalPiece);
