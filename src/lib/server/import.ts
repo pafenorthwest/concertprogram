@@ -354,7 +354,12 @@ export class Performance {
 				first_contributor_id: contributors[0].id,
 				all_movements: movements,
 				second_contributor_id: second_contributor_id,
-				third_contributor_id: third_contributor_id
+				third_contributor_id: third_contributor_id,
+				imslp_url: null,
+				comments: null,
+				flag_for_discussion: false,
+				discussion_notes: null,
+				is_not_appropriate: false
 			};
 			const result = await insertTable('musical_piece', musical_piece);
 			if (result.rowCount != null && result.rowCount > 0 && result.rows[0].id != null) {
@@ -371,7 +376,13 @@ export class Performance {
 			first_contributor_id: res.rows[0].first_contributor_id,
 			all_movements: res.rows[0].all_movements,
 			second_contributor_id: res.rows[0].second_contributor_id,
-			third_contributor_id: res.rows[0].third_contributor_id
+			third_contributor_id: res.rows[0].third_contributor_id,
+			imslp_url: res.rows[0].imslp_url,
+			comments: res.rows[0].comments,
+			flag_for_discussion: res.rows[0].flag_for_discussion,
+			discussion_notes: res.rows[0].discussion_notes,
+			is_not_appropriate: res.rows[0].is_not_appropriate,
+			updated_at: res.rows[0].updated_at
 		};
 	}
 

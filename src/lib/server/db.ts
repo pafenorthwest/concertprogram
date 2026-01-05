@@ -47,7 +47,7 @@ export async function queryTable(table: string, id?: number) {
 				break;
 			case 'musical_piece':
 				fields =
-					'id, printed_name, first_contributor_id, all_movements, second_contributor_id, third_contributor_id';
+					'id, printed_name, first_contributor_id, all_movements, second_contributor_id, third_contributor_id, imslp_url, comments, flag_for_discussion, discussion_notes, is_not_appropriate, updated_at';
 				break;
 			case 'concert_times':
 				fields = 'id, concert_series, year, concert_number_in_series, start_time';
@@ -306,13 +306,17 @@ export async function insertTable(
 				// return id
 				break;
 			case 'musical_piece':
-				inputCols = '(printed_name, first_contributor_id)';
+				inputCols = '(printed_name, first_contributor_id, flag_for_discussion, is_not_appropriate)';
 				inputVals =
 					"('" +
 					(data as MusicalPieceInterface).printed_name.replaceAll("'", "''").trim() +
 					"', '" +
 					(data as MusicalPieceInterface).first_contributor_id +
-					"')";
+					"', " +
+					((data as MusicalPieceInterface).flag_for_discussion === true) +
+					', ' +
+					((data as MusicalPieceInterface).is_not_appropriate === true) +
+					')';
 				// add movements
 				if (
 					(data as MusicalPieceInterface).all_movements != null &&
@@ -326,7 +330,11 @@ export async function insertTable(
 						"')";
 				}
 				// add another composer
-				if (isNonEmptyString((data as MusicalPieceInterface).second_contributor_id)) {
+				if (
+					(data as MusicalPieceInterface).second_contributor_id !== null &&
+					(data as MusicalPieceInterface).second_contributor_id !== undefined &&
+					(data as MusicalPieceInterface).second_contributor_id !== ''
+				) {
 					inputCols = inputCols.slice(0, -1) + ', second_contributor_id)';
 					inputVals =
 						inputVals.slice(0, -1) +
@@ -334,12 +342,40 @@ export async function insertTable(
 						(data as MusicalPieceInterface).second_contributor_id +
 						"')";
 				}
-				if (isNonEmptyString((data as MusicalPieceInterface).third_contributor_id)) {
+				if (
+					(data as MusicalPieceInterface).third_contributor_id !== null &&
+					(data as MusicalPieceInterface).third_contributor_id !== undefined &&
+					(data as MusicalPieceInterface).third_contributor_id !== ''
+				) {
 					inputCols = inputCols.slice(0, -1) + ', third_contributor_id)';
 					inputVals =
 						inputVals.slice(0, -1) +
 						", '" +
 						(data as MusicalPieceInterface).third_contributor_id +
+						"')";
+				}
+				if (isNonEmptyString((data as MusicalPieceInterface).imslp_url)) {
+					inputCols = inputCols.slice(0, -1) + ', imslp_url)';
+					inputVals =
+						inputVals.slice(0, -1) +
+						", '" +
+						(data as MusicalPieceInterface).imslp_url.replaceAll("'", "''").trim() +
+						"')";
+				}
+				if (isNonEmptyString((data as MusicalPieceInterface).comments)) {
+					inputCols = inputCols.slice(0, -1) + ', comments)';
+					inputVals =
+						inputVals.slice(0, -1) +
+						", '" +
+						(data as MusicalPieceInterface).comments.replaceAll("'", "''").trim() +
+						"')";
+				}
+				if (isNonEmptyString((data as MusicalPieceInterface).discussion_notes)) {
+					inputCols = inputCols.slice(0, -1) + ', discussion_notes)';
+					inputVals =
+						inputVals.slice(0, -1) +
+						", '" +
+						(data as MusicalPieceInterface).discussion_notes.replaceAll("'", "''").trim() +
 						"')";
 				}
 				//return id
@@ -589,8 +625,8 @@ export async function updateById(
 			case 'musical_piece':
 				// don't wipe out data
 				if (
-					!isNonEmptyString((data as MusicalPieceInterface).printed_name) &&
-					!isNonEmptyString((data as MusicalPieceInterface).first_contributor_id)
+					!isNonEmptyString((data as MusicalPieceInterface).printed_name) ||
+					(data as MusicalPieceInterface).first_contributor_id == null
 				) {
 					return null;
 				}
@@ -610,20 +646,56 @@ export async function updateById(
 						(data as MusicalPieceInterface).all_movements.replaceAll("'", "''").trim() +
 						"' ";
 				}
-				if (isNonEmptyString((data as MusicalPieceInterface).second_contributor_id)) {
+				if (
+					(data as MusicalPieceInterface).second_contributor_id !== null &&
+					(data as MusicalPieceInterface).second_contributor_id !== undefined &&
+					(data as MusicalPieceInterface).second_contributor_id !== ''
+				) {
 					setCols =
 						setCols +
 						", second_contributor_id = '" +
 						(data as MusicalPieceInterface).second_contributor_id +
 						"' ";
 				}
-				if (isNonEmptyString((data as MusicalPieceInterface).third_contributor_id)) {
+				if (
+					(data as MusicalPieceInterface).third_contributor_id !== null &&
+					(data as MusicalPieceInterface).third_contributor_id !== undefined &&
+					(data as MusicalPieceInterface).third_contributor_id !== ''
+				) {
 					setCols =
 						setCols +
 						", third_contributor_id = '" +
 						(data as MusicalPieceInterface).third_contributor_id +
 						"' ";
 				}
+				if (isNonEmptyString((data as MusicalPieceInterface).imslp_url)) {
+					setCols =
+						setCols +
+						", imslp_url = '" +
+						(data as MusicalPieceInterface).imslp_url.replaceAll("'", "''").trim() +
+						"' ";
+				}
+				if (isNonEmptyString((data as MusicalPieceInterface).comments)) {
+					setCols =
+						setCols +
+						", comments = '" +
+						(data as MusicalPieceInterface).comments.replaceAll("'", "''").trim() +
+						"' ";
+				}
+				if (isNonEmptyString((data as MusicalPieceInterface).discussion_notes)) {
+					setCols =
+						setCols +
+						", discussion_notes = '" +
+						(data as MusicalPieceInterface).discussion_notes.replaceAll("'", "''").trim() +
+						"' ";
+				}
+				const flagForDiscussion =
+					(data as MusicalPieceInterface).flag_for_discussion === true ? 'true' : 'false';
+				const isNotAppropriate =
+					(data as MusicalPieceInterface).is_not_appropriate === true ? 'true' : 'false';
+				setCols = setCols + ', flag_for_discussion = ' + flagForDiscussion;
+				setCols = setCols + ', is_not_appropriate = ' + isNotAppropriate;
+				setCols = setCols + ', updated_at = NOW()';
 				break;
 		}
 
@@ -1016,7 +1088,7 @@ export async function searchMusicalPiece(printed_name: string, first_contributor
 		const connection = await pool.connect();
 
 		const searchSQL =
-			'SELECT id, printed_name, first_contributor_id, all_movements, second_contributor_id, third_contributor_id ' +
+			'SELECT id, printed_name, first_contributor_id, all_movements, second_contributor_id, third_contributor_id, imslp_url, comments, flag_for_discussion, discussion_notes, is_not_appropriate, updated_at ' +
 			'FROM musical_piece ' +
 			"WHERE LOWER(printed_name) = '" +
 			printed_name.toLowerCase().replaceAll("'", "''").trim() +

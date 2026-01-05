@@ -93,7 +93,12 @@ async function seedPiece(): Promise<void> {
 		first_contributor_id: contributorId,
 		all_movements: 'Allegro',
 		second_contributor_id: null,
-		third_contributor_id: null
+		third_contributor_id: null,
+		imslp_url: null,
+		comments: null,
+		flag_for_discussion: false,
+		discussion_notes: null,
+		is_not_appropriate: false
 	};
 	const pieceResult = await insertTable('musical_piece', piece);
 	pieceId = pieceResult.rows[0].id;

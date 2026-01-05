@@ -1,0 +1,353 @@
+openapi: 3.0.3
+info:
+  title: Concert Program Musical Piece APIs
+  description: >
+    CRUD endpoints for musical pieces used by the Concert Program app. External clients must provide
+    an Authorization bearer token; first-party calls from the same origin may instead use the
+    `pafe_auth` cookie issued by the service.
+  version: 0.5.0
+servers:
+  - url: 'https://schedule.pafenorthwest.org/api/'
+
+paths:
+  /musicalpiece:
+    post:
+      summary: create a new musical piece
+      description: >
+        Adds a musical piece. Requires `printed_name` and `first_contributor_id`; other fields are
+        optional. External clients must send an Authorization bearer token while same-origin calls
+        may rely on the `pafe_auth` cookie.
+      security:
+        - PafeAuthCookie: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MusicalPieceCreateRequest'
+            example:
+              printed_name: 'Concerto in D Major'
+              first_contributor_id: 3
+              all_movements: 'I. Allegro, II. Largo, III. Allegro'
+              second_contributor_id: 4
+              third_contributor_id: null
+              imslp_url: 'https://imslp.org/wiki/Concerto_in_D_major'
+              comments: 'Primary choice for spring'
+              flag_for_discussion: false
+              discussion_notes: null
+              is_not_appropriate: false
+      responses:
+        201:
+          description: created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntityCreated'
+              example:
+                id: 42
+                message: 'Update successful'
+        400:
+          description: missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: error
+                reason: Missing Fields
+        401:
+          description: unauthorized
+        500:
+          description: service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /musicalpiece/{id}:
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+        description: numerical id of the musical piece
+    get:
+      summary: get a musical piece by id
+      description: Returns the musical piece row; no authorization is required.
+      responses:
+        200:
+          description: returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MusicalPiece'
+              example:
+                - id: 1
+                  printed_name: 'Concerto in D Major'
+                  first_contributor_id: 3
+                  all_movements: 'I. Allegro, II. Largo, III. Allegro'
+                  second_contributor_id: 4
+                  third_contributor_id: null
+                  imslp_url: 'https://imslp.org/wiki/Concerto_in_D_major'
+                  comments: 'Primary choice for spring'
+                  flag_for_discussion: false
+                  discussion_notes: null
+                  is_not_appropriate: false
+                  updated_at: '2024-07-15T12:10:05.000Z'
+        404:
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: error
+                message: Not Found
+        500:
+          description: service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    put:
+      summary: update a musical piece by id
+      description: >
+        Updates musical piece fields. External requests require an Authorization bearer token; calls
+        from the same origin as the app may omit the header and use the `pafe_auth` cookie instead.
+        `printed_name` and `first_contributor_id` are required.
+      security:
+        - PafeAuthCookie: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MusicalPieceUpdateRequest'
+            example:
+              printed_name: 'Concerto in D Major'
+              first_contributor_id: 3
+              all_movements: 'I. Allegro, II. Largo, III. Allegro'
+              second_contributor_id: 4
+              third_contributor_id: null
+              imslp_url: 'https://imslp.org/wiki/Concerto_in_D_major'
+              comments: 'Primary choice for spring'
+              flag_for_discussion: true
+              discussion_notes: 'Check edition with orchestra reduction'
+              is_not_appropriate: false
+      responses:
+        200:
+          description: updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+              example:
+                id: 1
+        400:
+          description: missing or invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: error
+                reason: Missing Field, Try Again
+        401:
+          description: unauthorized
+        404:
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        500:
+          description: service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    delete:
+      summary: remove a musical piece by id
+      description: Requires an Authorization bearer token or valid `pafe_auth` cookie.
+      security:
+        - PafeAuthCookie: []
+        - BearerAuth: []
+      responses:
+        200:
+          description: deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationSuccess'
+              example:
+                status: 200
+                body:
+                  message: Delete successful
+        401:
+          description: unauthorized
+        404:
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        500:
+          description: service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    PafeAuthCookie:
+      type: apiKey
+      in: cookie
+      name: pafe_auth
+
+  schemas:
+    MusicalPiece:
+      type: object
+      properties:
+        id:
+          type: integer
+        printed_name:
+          type: string
+          maxLength: 512
+        first_contributor_id:
+          type: integer
+        all_movements:
+          type: string
+          nullable: true
+          maxLength: 512
+        second_contributor_id:
+          type: integer
+          nullable: true
+        third_contributor_id:
+          type: integer
+          nullable: true
+        imslp_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 512
+        comments:
+          type: string
+          nullable: true
+          maxLength: 1000
+        flag_for_discussion:
+          type: boolean
+        discussion_notes:
+          type: string
+          nullable: true
+          maxLength: 1000
+        is_not_appropriate:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - printed_name
+        - first_contributor_id
+        - flag_for_discussion
+        - is_not_appropriate
+        - updated_at
+
+    MusicalPieceCreateRequest:
+      type: object
+      required:
+        - printed_name
+        - first_contributor_id
+      properties:
+        printed_name:
+          type: string
+          maxLength: 512
+        first_contributor_id:
+          type: integer
+        all_movements:
+          type: string
+          nullable: true
+          maxLength: 512
+        second_contributor_id:
+          type: integer
+          nullable: true
+        third_contributor_id:
+          type: integer
+          nullable: true
+        imslp_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 512
+        comments:
+          type: string
+          nullable: true
+          maxLength: 1000
+        flag_for_discussion:
+          type: boolean
+          default: false
+        discussion_notes:
+          type: string
+          nullable: true
+          maxLength: 1000
+        is_not_appropriate:
+          type: boolean
+          default: false
+
+    MusicalPieceUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/MusicalPieceCreateRequest'
+      description: Fields accepted by the update endpoint.
+
+    EntityCreated:
+      type: object
+      properties:
+        id:
+          type: integer
+        message:
+          type: string
+      required:
+        - id
+
+    IdResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+      required:
+        - id
+
+    OperationSuccess:
+      type: object
+      properties:
+        status:
+          type: integer
+        body:
+          type: object
+          properties:
+            message:
+              type: string
+      required:
+        - status
+
+    ApiError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        reason:
+          type: string
+          nullable: true
+        message:
+          type: string
+          nullable: true

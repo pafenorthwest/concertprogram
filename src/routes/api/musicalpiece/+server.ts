@@ -17,24 +17,36 @@ export async function POST({ url, request, cookies }) {
 	}
 
 	try {
-		const {
-			printed_name,
-			first_contributor_id,
-			all_movements,
-			second_contributor_id,
-			third_contributor_id
-		} = await request.json();
+		const body = await request.json();
+		const toNullableString = (value: unknown) => {
+			if (value === null || value === undefined) return null;
+			const trimmed = String(value).trim();
+			return trimmed.length ? trimmed : null;
+		};
+		const toNullableNumber = (value: unknown) => {
+			if (value === null || value === undefined || value === '') return null;
+			const parsed = Number(value);
+			return Number.isNaN(parsed) ? null : parsed;
+		};
+		const toBoolean = (value: unknown) =>
+			value === true || value === 'true' || value === '1' || value === 1 || value === 'on';
+		const firstContributorId = Number(body.first_contributor_id);
 
 		const musicalPiece: MusicalPieceInterface = {
 			id: null,
-			printed_name: printed_name,
-			first_contributor_id: first_contributor_id,
-			all_movements: all_movements,
-			second_contributor_id: second_contributor_id,
-			third_contributor_id: third_contributor_id
+			printed_name: body.printed_name,
+			first_contributor_id: firstContributorId,
+			all_movements: toNullableString(body.all_movements),
+			second_contributor_id: toNullableNumber(body.second_contributor_id),
+			third_contributor_id: toNullableNumber(body.third_contributor_id),
+			imslp_url: toNullableString(body.imslp_url),
+			comments: toNullableString(body.comments),
+			flag_for_discussion: toBoolean(body.flag_for_discussion),
+			discussion_notes: toNullableString(body.discussion_notes),
+			is_not_appropriate: toBoolean(body.is_not_appropriate)
 		};
 
-		if (!printed_name || !first_contributor_id) {
+		if (!musicalPiece.printed_name || Number.isNaN(firstContributorId)) {
 			return json({ status: 'error', reason: 'Missing Fields' }, { status: 400 });
 		} else {
 			const result = await insertTable('musical_piece', musicalPiece);

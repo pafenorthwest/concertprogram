@@ -37,6 +37,12 @@ export interface MusicalPieceInterface {
 	all_movements: string | null;
 	second_contributor_id: number | null;
 	third_contributor_id: number | null;
+	imslp_url: string | null;
+	comments: string | null;
+	flag_for_discussion: boolean;
+	discussion_notes: string | null;
+	is_not_appropriate: boolean;
+	updated_at?: Date | string;
 }
 
 export interface PerformerInterface {
