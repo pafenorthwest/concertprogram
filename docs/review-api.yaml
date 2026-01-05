@@ -1,7 +1,9 @@
 openapi: 3.0.3
 info:
   title: Concert Program Review APIs
-  description: Endpoints used by reviewers to manage musical piece review metadata and queue assignment. Accepts either the bearer token (`Authorization: Bearer ${auth_code}`) or the `pafe_auth` session cookie used by the app.
+  description: >
+    Endpoints used by reviewers to manage musical piece review metadata and queue assignment. Accepts either
+    the bearer token (`Authorization: Bearer ${auth_code}`) or the `pafe_auth` session cookie used by the app.
   version: 0.5.0
 servers:
   - url: 'https://schedule.pafenorthwest.org/api/'

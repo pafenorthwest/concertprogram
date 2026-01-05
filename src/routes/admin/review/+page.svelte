@@ -6,6 +6,7 @@
 		type DivisionTag,
 		type PieceCategory
 	} from '$lib/constants/review';
+	import type { PageData } from './$types';
 
 	type ReviewQueueItem = {
 		id: number;
@@ -25,6 +26,12 @@
 		division_tags: DivisionTag[];
 		is_untagged: boolean;
 	};
+
+	type ComposerOption = PageData['composers'][number];
+
+	export let data: PageData;
+
+	const composerOptions: ComposerOption[] = data?.composers ?? [];
 
 	let queueItems: ReviewQueueItem[] = [];
 	let division: DivisionTag = divisionTags[0];
@@ -56,6 +63,8 @@
 
 	const categorySaveDelay = 500;
 
+	let selectedComposer: ComposerOption | null = null;
+
 	$: filteredItems = queueItems.filter((item) => {
 		if (flaggedOnly && !item.flag_for_discussion) {
 			return false;
@@ -68,7 +77,10 @@
 	});
 
 	$: selectedItem = queueItems.find((item) => item.id === selectedId) ?? null;
+	$: selectedComposer =
+		composerOptions.find((composer) => String(composer.id) === firstContributorId) ?? null;
 	$: composerName =
+		selectedComposer?.full_name ??
 		selectedItem?.first_contributor_name ??
 		(firstContributorId ? `Composer #${firstContributorId}` : '');
 
@@ -269,7 +281,7 @@
 		}
 		const parsedFirstContributorId = toNullableNumber(firstContributorId);
 		if (!parsedFirstContributorId) {
-			errorMessage = 'First contributor ID is required.';
+			errorMessage = 'Composer selection is required.';
 			return false;
 		}
 		const payload = {
@@ -296,10 +308,14 @@
 			return false;
 		}
 
+		const updatedComposerName =
+			selectedComposer?.full_name ?? selectedItem?.first_contributor_name ?? null;
+
 		updateQueueItem(selectedId, {
 			printed_name: printedName,
 			all_movements: allMovements,
 			first_contributor_id: parsedFirstContributorId,
+			first_contributor_name: updatedComposerName,
 			second_contributor_id: toNullableNumber(secondContributorId),
 			third_contributor_id: toNullableNumber(thirdContributorId),
 			imslp_url: imslpUrl,
@@ -555,8 +571,11 @@
 								<dd>{allMovements || '—'}</dd>
 							</div>
 							<div class="summary-row">
-								<dt>Composer ID</dt>
-								<dd>{firstContributorId || '—'}</dd>
+								<dt>Composer</dt>
+								<dd>
+									{selectedComposer?.full_name ?? selectedItem?.first_contributor_name ?? '—'}
+									{firstContributorId ? ` (#${firstContributorId})` : ''}
+								</dd>
 							</div>
 							<div class="summary-row">
 								<dt>Division tags</dt>
@@ -671,8 +690,16 @@
 									<input type="text" bind:value={allMovements} />
 								</label>
 								<label>
-									First contributor ID
-									<input type="number" min="1" bind:value={firstContributorId} />
+									Composer
+									<select bind:value={firstContributorId}>
+										<option value="">Select a composer</option>
+										{#each composerOptions as composer}
+											<option value={String(composer.id)}>
+												{composer.full_name}
+												{composer.years_active ? ` (${composer.years_active})` : ''}
+											</option>
+										{/each}
+									</select>
 								</label>
 								<label>
 									Second contributor ID
