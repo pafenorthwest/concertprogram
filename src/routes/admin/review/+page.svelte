@@ -77,6 +77,17 @@
 	let selectedThirdContributor: FirstContributorOption | null = null;
 	let secondContributorName = '';
 	let thirdContributorName = '';
+	let secondSlotManuallyAdded = false;
+	let thirdSlotManuallyAdded = false;
+	$: showSecondContributor = Boolean(secondContributorId) || secondSlotManuallyAdded;
+	$: showThirdContributor =
+		(Boolean(thirdContributorId) || thirdSlotManuallyAdded) && showSecondContributor;
+	$: {
+		if (!showSecondContributor) {
+			thirdContributorId = '';
+			thirdSlotManuallyAdded = false;
+		}
+	}
 
 	$: filteredItems = queueItems.filter((item) => {
 		if (flaggedOnly && !item.flag_for_discussion) {
@@ -107,7 +118,8 @@
 	$: selectedThirdContributor =
 		contributorOptions.find((contributor) => String(contributor.id) === thirdContributorId) ?? null;
 	$: thirdContributorName =
-		selectedThirdContributor?.display_label ?? (thirdContributorId ? `Contributor #${thirdContributorId}` : '');
+		selectedThirdContributor?.display_label ??
+		(thirdContributorId ? `Contributor #${thirdContributorId}` : '');
 
 	$: updatedAtLabel = selectedItem ? formatUpdatedAt(selectedItem.updated_at) : '';
 
@@ -129,6 +141,8 @@
 		firstContributorId = String(item.first_contributor_id ?? '');
 		secondContributorId = item.second_contributor_id ? String(item.second_contributor_id) : '';
 		thirdContributorId = item.third_contributor_id ? String(item.third_contributor_id) : '';
+		secondSlotManuallyAdded = Boolean(item.second_contributor_id);
+		thirdSlotManuallyAdded = Boolean(item.third_contributor_id);
 		imslpUrl = item.imslp_url ?? '';
 		comments = item.comments ?? '';
 		flagForDiscussion = item.flag_for_discussion;
@@ -201,6 +215,16 @@
 		}
 		const parsed = Number(value);
 		return Number.isFinite(parsed) ? parsed : null;
+	}
+
+	function addContributorSlot() {
+		if (!showSecondContributor) {
+			secondSlotManuallyAdded = true;
+			return;
+		}
+		if (!showThirdContributor) {
+			thirdSlotManuallyAdded = true;
+		}
 	}
 
 	async function loadQueue() {
@@ -303,12 +327,12 @@
 	async function saveDetails(): Promise<boolean> {
 		if (!selectedId) {
 			return false;
-	}
-	const parsedFirstContributorId = toNullableNumber(firstContributorId);
-	if (!parsedFirstContributorId) {
-		errorMessage = 'First contributor selection is required.';
-		return false;
-	}
+		}
+		const parsedFirstContributorId = toNullableNumber(firstContributorId);
+		if (!parsedFirstContributorId) {
+			errorMessage = 'First contributor selection is required.';
+			return false;
+		}
 		const payload = {
 			printed_name: printedName,
 			all_movements: allMovements.trim().length > 0 ? allMovements : null,
@@ -734,28 +758,40 @@
 										{/each}
 									</select>
 								</label>
-								<label>
-									Second Contributor
-									<select bind:value={secondContributorId}>
-										<option value="">None</option>
-										{#each contributorOptions as contributor}
-											<option value={String(contributor.id)}>
-												{contributor.display_label}
-											</option>
-										{/each}
-									</select>
-								</label>
-								<label>
-									Third Contributor
-									<select bind:value={thirdContributorId}>
-										<option value="">None</option>
-										{#each contributorOptions as contributor}
-											<option value={String(contributor.id)}>
-												{contributor.display_label}
-											</option>
-										{/each}
-									</select>
-								</label>
+								{#if showSecondContributor}
+									<label>
+										Second Contributor
+										<select bind:value={secondContributorId}>
+											<option value="">None</option>
+											{#each contributorOptions as contributor}
+												<option value={String(contributor.id)}>
+													{contributor.display_label}
+												</option>
+											{/each}
+										</select>
+									</label>
+								{/if}
+								{#if showThirdContributor}
+									<label>
+										Third Contributor
+										<select bind:value={thirdContributorId}>
+											<option value="">None</option>
+											{#each contributorOptions as contributor}
+												<option value={String(contributor.id)}>
+													{contributor.display_label}
+												</option>
+											{/each}
+										</select>
+									</label>
+								{/if}
+								<button
+									type="button"
+									class="add-contributor"
+									on:click={addContributorSlot}
+									disabled={showSecondContributor && showThirdContributor}
+								>
+									+
+								</button>
 								<label>
 									IMSLP URL
 									<input type="url" bind:value={imslpUrl} />
@@ -974,6 +1010,22 @@
 		background: #ede9fe;
 		border-color: #818cf8;
 		color: #312e81;
+	}
+
+	.add-contributor {
+		background: #e2e8f0;
+		border: 1px solid #cbd5e1;
+		color: #0f172a;
+		border-radius: 6px;
+		padding: 6px 10px;
+		font-weight: 700;
+		cursor: pointer;
+		width: fit-content;
+	}
+
+	.add-contributor:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	.pane-card {
