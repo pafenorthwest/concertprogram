@@ -4,10 +4,9 @@ import {
 	type ImportMusicalTitleInterface,
 	type ImportPerformanceInterface,
 	year,
-	parseMusicalPiece,
-	type PerformanceFilterInterface
+	parseMusicalPiece
 } from '$lib/server/common';
-import { queryPerformances } from '$lib/server/db';
+import { searchPerformanceByPerformer } from '$lib/server/db';
 
 describe('Test Import Code', () => {
 	it('should parse music titles with movements', async () => {
@@ -233,12 +232,11 @@ describe('Test Import Code', () => {
 		const singlePerformance: Performance = new Performance();
 		const firstResults = await singlePerformance.initialize(imported);
 
-		// count rows in DB
-		const filter: PerformanceFilterInterface = {
-			year: year(),
-			concert_series: 'Eastside'
-		};
-		let res = await queryPerformances(filter);
+		// count rows in DB for this performer only to avoid interference from other tests
+		const performerId = singlePerformance.performer?.id;
+		assert.isDefined(performerId, 'Expected performer id for first import');
+		const concertSeries = 'Eastside';
+		let res = await searchPerformanceByPerformer(performerId!, concertSeries, year());
 		const firstCount = res.rowCount;
 
 		assert.isDefined(singlePerformance.musical_piece_1, 'Expected musical piece to be defined');
@@ -327,8 +325,9 @@ describe('Test Import Code', () => {
 		const updatedPerformance: Performance = new Performance();
 		const secondResults = await updatedPerformance.initialize(updatedEntries);
 
-		// count rows in DB
-		res = await queryPerformances(filter);
+		// count rows in DB for this performer only to avoid interference from other tests
+		assert.isDefined(updatedPerformance.performer?.id, 'Expected performer id for update');
+		res = await searchPerformanceByPerformer(updatedPerformance.performer!.id!, concertSeries, year());
 		const secondCount = res.rowCount;
 
 		await updatedPerformance.deleteAll();
