@@ -327,7 +327,11 @@ describe('Test Import Code', () => {
 
 		// count rows in DB for this performer only to avoid interference from other tests
 		assert.isDefined(updatedPerformance.performer?.id, 'Expected performer id for update');
-		res = await searchPerformanceByPerformer(updatedPerformance.performer!.id!, concertSeries, year());
+		res = await searchPerformanceByPerformer(
+			updatedPerformance.performer!.id!,
+			concertSeries,
+			year()
+		);
 		const secondCount = res.rowCount;
 
 		await updatedPerformance.deleteAll();

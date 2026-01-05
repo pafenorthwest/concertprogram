@@ -1,8 +1,13 @@
 import { auth_code } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { decodeSession } from '$lib/server/session';
 import type { AuthRole, AuthSession } from '$lib/server/session';
 
 const REVIEW_ROLES: AuthRole[] = ['Admin', 'MusicEditor', 'DivisionChair'];
+const BEARER_FALLBACK_SESSION: AuthSession = {
+	email: env.REVIEW_BEARER_EMAIL ?? 'review-bearer@test.concertprogram',
+	role: 'Admin'
+};
 
 export function isAuthorized(authHeader: string | null | undefined): boolean {
 	if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -30,13 +35,21 @@ export function isAuthorizedRequest(
 	return isAuthorized(authHeader);
 }
 
-export function getReviewSession(pafeAuth?: string | null): AuthSession | null {
+export function getReviewSession(
+	authHeader: string | null | undefined,
+	pafeAuth?: string | null
+): AuthSession | null {
 	const session = getSessionFromCookie(pafeAuth);
-	if (!session) {
-		return null;
+	if (session) {
+		if (REVIEW_ROLES.includes(session.role)) {
+			return session;
+		}
+		return isAuthorized(authHeader) ? session : null;
 	}
-	if (!REVIEW_ROLES.includes(session.role)) {
-		return null;
+
+	if (isAuthorized(authHeader)) {
+		return BEARER_FALLBACK_SESSION;
 	}
-	return session;
+
+	return null;
 }
