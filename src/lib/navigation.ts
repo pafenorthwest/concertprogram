@@ -9,6 +9,10 @@ export type NavItem = {
 	routeId?: string;
 };
 
+const ROLE_NAV_EXCLUSIONS: Partial<Record<AuthRole, string[]>> = {
+	MusicEditor: ['/admin/musicalpiece']
+};
+
 export const NAV_ITEMS: NavItem[] = [
 	{ href: '/', label: 'Home', icon: 'home' },
 	{ href: '/about', label: 'About', icon: 'info' },
@@ -18,6 +22,12 @@ export const NAV_ITEMS: NavItem[] = [
 		href: '/admin/musicalpiece',
 		label: 'Musical Pieces',
 		icon: 'library_music',
+		requiresAuth: true
+	},
+	{
+		href: '/admin/review',
+		label: 'Piece Review',
+		icon: 'rate_review',
 		requiresAuth: true
 	},
 	{ href: '/admin/performer', label: 'Performer', icon: 'artist', requiresAuth: true },
@@ -41,6 +51,15 @@ export function filterNavItemsForRole(role?: AuthRole | null): NavItem[] {
 		items[homeIndex] = { ...items[homeIndex], href: '/landing' };
 	}
 
+	const excludedRoutes =
+		role && ROLE_NAV_EXCLUSIONS[role]
+			? new Set(
+					ROLE_NAV_EXCLUSIONS[role]!.map((route) => normalizeRouteId(route)).filter(
+						(route): route is string => Boolean(route)
+					)
+				)
+			: new Set<string>();
+
 	if (!role) {
 		return items.filter((item) => !item.requiresAuth);
 	}
@@ -50,6 +69,9 @@ export function filterNavItemsForRole(role?: AuthRole | null): NavItem[] {
 			return true;
 		}
 		const routeId = normalizeRouteId(item.routeId ?? item.href);
+		if (routeId && excludedRoutes.has(routeId)) {
+			return false;
+		}
 		return routeId ? roleAllowsRoute(role, routeId) : false;
 	});
 }

@@ -22,7 +22,8 @@ export const ROLE_ROUTE_ALLOWLIST: Record<AuthRole, string[]> = {
 		'/logout',
 		'/verify/email/[code]',
 		'/admin/composer',
-		'/admin/musicalpiece'
+		'/admin/musicalpiece',
+		'/admin/review'
 	],
 	DivisionChair: [
 		'/',
@@ -33,6 +34,7 @@ export const ROLE_ROUTE_ALLOWLIST: Record<AuthRole, string[]> = {
 		'/verify/email/[code]',
 		'/admin/composer',
 		'/admin/musicalpiece',
+		'/admin/review',
 		'/admin/list',
 		'/admin/performer',
 		'/admin/accompanist',

@@ -51,7 +51,12 @@ describe('Test MusicalPiece HTTP APIs', () => {
 			first_contributor_id: 10,
 			all_movements: 'I. Allegro, II. Allegro',
 			second_contributor_id: null,
-			third_contributor_id: null
+			third_contributor_id: null,
+			imslp_url: null,
+			comments: null,
+			flag_for_discussion: false,
+			discussion_notes: null,
+			is_not_appropriate: false
 		};
 		try {
 			const result = await insertTable('musical_piece', musicalPiece);

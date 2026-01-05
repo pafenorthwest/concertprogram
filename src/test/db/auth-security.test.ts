@@ -395,6 +395,7 @@ describe.sequential('Auth and authorization hardening', () => {
 		it('filters nav items to the role allowlist', () => {
 			const nav = filterNavItemsForRole('MusicEditor');
 			expect(nav.some((item) => item.href === '/landing')).toBe(true);
+			expect(nav.some((item) => item.href === '/admin/musicalpiece')).toBe(false);
 			const protectedItems = nav.filter((item) => item.requiresAuth);
 			for (const item of protectedItems) {
 				const routeId = normalizeRouteId(item.routeId ?? item.href);
