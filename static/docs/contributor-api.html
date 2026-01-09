@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf8" />
+  <title>Concert Program APIs</title>
+  <!-- needed for adaptive design -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script src="https://cdn.redocly.com/redoc/v2.5.1/bundles/redoc.standalone.js"></script><style data-styled="true" data-styled-version="6.2.0">.JqnEq{width:calc(100% - 40%);padding:0 40px;}/*!sc*/
+@media print,screen and (max-width: 75rem){.JqnEq{width:100%;padding:40px 40px;}}/*!sc*/
+data-styled.g4[id="sc-hKFyIn"]{content:"JqnEq,"}/*!sc*/
+.hGRGuT{padding:40px 0;}/*!sc*/
+.hGRGuT:last-child{min-height:calc(100vh + 1px);}/*!sc*/
+.hGRGuT>.hGRGuT:last-child{min-height:initial;}/*!sc*/
+@media print,screen and (max-width: 75rem){.hGRGuT{padding:0;}}/*!sc*/
+.bHcLRs{padding:40px 0;position:relative;}/*!sc*/
+.bHcLRs:last-child{min-height:calc(100vh + 1px);}/*!sc*/
+.bHcLRs>.bHcLRs:last-child{min-height:initial;}/*!sc*/
+@media print,screen and (max-width: 75rem){.bHcLRs{padding:0;}}/*!sc*/
+.bHcLRs:not(:last-of-type):after{position:absolute;bottom:0;width:100%;display:block;content:'';border-bottom:1px solid rgba(0, 0, 0, 0.2);}/*!sc*/
+data-styled.g5[id="sc-eCApGK"]{content:"hGRGuT,bHcLRs,"}/*!sc*/
+.lkqCQx{width:40%;color:#ffffff;background-color:#263238;padding:0 40px;}/*!sc*/
+@media print,screen and (max-width: 75rem){.lkqCQx{width:100%;padding:40px 40px;}}/*!sc*/
+data-styled.g6[id="sc-jSFkmN"]{content:"lkqCQx,"}/*!sc*/
+.cMZKN{background-color:#263238;}/*!sc*/
+data-styled.g7[id="sc-gKAblk"]{content:"cMZKN,"}/*!sc*/
+.ckpEWu{display:flex;width:100%;padding:0;}/*!sc*/
+@media print,screen and (max-width: 75rem){.ckpEWu{flex-direction:column;}}/*!sc*/
+data-styled.g8[id="sc-iCoHVD"]{content:"ckpEWu,"}/*!sc*/
+.eTYudn{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.85714em;line-height:1.6em;color:#333333;}/*!sc*/
+data-styled.g9[id="sc-fujyUa"]{content:"eTYudn,"}/*!sc*/
+.dhgxOD{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.57143em;line-height:1.6em;color:#333333;margin:0 0 20px;}/*!sc*/
+data-styled.g10[id="sc-pNWxu"]{content:"dhgxOD,"}/*!sc*/
+.fPTtNr{color:#ffffff;}/*!sc*/
+data-styled.g12[id="sc-kEqYlM"]{content:"fPTtNr,"}/*!sc*/
+.lSHqA{border-bottom:1px solid rgba(38, 50, 56, 0.3);margin:1em 0 1em 0;color:rgba(38, 50, 56, 0.5);font-weight:normal;text-transform:uppercase;font-size:0.929em;line-height:20px;}/*!sc*/
+data-styled.g13[id="sc-iqAbSd"]{content:"lSHqA,"}/*!sc*/
+.dXzqIL{cursor:pointer;margin-left:-20px;padding:0;line-height:1;width:20px;display:inline-block;outline:0;}/*!sc*/
+.dXzqIL:before{content:'';width:15px;height:15px;background-size:contain;background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cGF0aCBmaWxsPSIjMDEwMTAxIiBkPSJNNDU5LjcgMjMzLjRsLTkwLjUgOTAuNWMtNTAgNTAtMTMxIDUwLTE4MSAwIC03LjktNy44LTE0LTE2LjctMTkuNC0yNS44bDQyLjEtNDIuMWMyLTIgNC41LTMuMiA2LjgtNC41IDIuOSA5LjkgOCAxOS4zIDE1LjggMjcuMiAyNSAyNSA2NS42IDI0LjkgOTAuNSAwbDkwLjUtOTAuNWMyNS0yNSAyNS02NS42IDAtOTAuNSAtMjQuOS0yNS02NS41LTI1LTkwLjUgMGwtMzIuMiAzMi4yYy0yNi4xLTEwLjItNTQuMi0xMi45LTgxLjYtOC45bDY4LjYtNjguNmM1MC01MCAxMzEtNTAgMTgxIDBDNTA5LjYgMTAyLjMgNTA5LjYgMTgzLjQgNDU5LjcgMjMzLjR6TTIyMC4zIDM4Mi4ybC0zMi4yIDMyLjJjLTI1IDI0LjktNjUuNiAyNC45LTkwLjUgMCAtMjUtMjUtMjUtNjUuNiAwLTkwLjVsOTAuNS05MC41YzI1LTI1IDY1LjUtMjUgOTAuNSAwIDcuOCA3LjggMTIuOSAxNy4yIDE1LjggMjcuMSAyLjQtMS40IDQuOC0yLjUgNi44LTQuNWw0Mi4xLTQyYy01LjQtOS4yLTExLjYtMTgtMTkuNC0yNS44IC01MC01MC0xMzEtNTAtMTgxIDBsLTkwLjUgOTAuNWMtNTAgNTAtNTAgMTMxIDAgMTgxIDUwIDUwIDEzMSA1MCAxODEgMGw2OC42LTY4LjZDMjc0LjYgMzk1LjEgMjQ2LjQgMzkyLjMgMjIwLjMgMzgyLjJ6Ii8+PC9zdmc+Cg==');opacity:0.5;visibility:hidden;display:inline-block;vertical-align:middle;}/*!sc*/
+h1:hover>.dXzqIL::before,h2:hover>.dXzqIL::before,.dXzqIL:hover::before{visibility:visible;}/*!sc*/
+data-styled.g14[id="sc-crzoUm"]{content:"dXzqIL,"}/*!sc*/
+.dcXFwS{height:1.3em;width:1.3em;min-width:1.3em;vertical-align:middle;transition:transform 0.2s ease-out;transform:rotateZ(-90deg);}/*!sc*/
+.dIqTyd{height:1.5em;width:1.5em;min-width:1.5em;vertical-align:middle;float:left;transition:transform 0.2s ease-out;transform:rotateZ(-90deg);}/*!sc*/
+.dIqTyd polygon{fill:#1d8127;}/*!sc*/
+.iuGtkN{height:1.5em;width:1.5em;min-width:1.5em;vertical-align:middle;float:left;transition:transform 0.2s ease-out;transform:rotateZ(-90deg);}/*!sc*/
+.iuGtkN polygon{fill:#d41f1c;}/*!sc*/
+.itMstt{height:20px;width:20px;min-width:20px;vertical-align:middle;float:right;transition:transform 0.2s ease-out;transform:rotateZ(0);}/*!sc*/
+.itMstt polygon{fill:white;}/*!sc*/
+data-styled.g15[id="sc-dIsA-D"]{content:"dcXFwS,dIqTyd,iuGtkN,itMstt,"}/*!sc*/
+.hXKwrf{border-left:1px solid #7c7cbb;box-sizing:border-box;position:relative;padding:10px 10px 10px 0;}/*!sc*/
+@media screen and (max-width: 50rem){.hXKwrf{display:block;overflow:hidden;}}/*!sc*/
+tr:first-of-type>.hXKwrf,tr.last>.hXKwrf{border-left-width:0;background-position:top left;background-repeat:no-repeat;background-size:1px 100%;}/*!sc*/
+tr:first-of-type>.hXKwrf{background-image:linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent 22px,
+      #7c7cbb 22px,
+      #7c7cbb 100%
+    );}/*!sc*/
+tr.last>.hXKwrf{background-image:linear-gradient(
+      to bottom,
+      #7c7cbb 0%,
+      #7c7cbb 22px,
+      transparent 22px,
+      transparent 100%
+    );}/*!sc*/
+tr.last+tr>.hXKwrf{border-left-color:transparent;}/*!sc*/
+tr.last:first-child>.hXKwrf{background:none;border-left-color:transparent;}/*!sc*/
+data-styled.g18[id="sc-hBMVcW"]{content:"hXKwrf,"}/*!sc*/
+.fnJosS{vertical-align:top;line-height:20px;white-space:nowrap;font-size:13px;font-family:Courier,monospace;}/*!sc*/
+.fnJosS.deprecated{text-decoration:line-through;color:#707070;}/*!sc*/
+data-styled.g20[id="sc-fFSRdx"]{content:"fnJosS,"}/*!sc*/
+.eFCqho{border-bottom:1px solid #9fb4be;padding:10px 0;width:75%;box-sizing:border-box;}/*!sc*/
+tr.expanded .eFCqho{border-bottom:none;}/*!sc*/
+@media screen and (max-width: 50rem){.eFCqho{padding:0 20px;border-bottom:none;border-left:1px solid #7c7cbb;}tr.last>.eFCqho{border-left:none;}}/*!sc*/
+data-styled.g21[id="sc-bkbjAk"]{content:"eFCqho,"}/*!sc*/
+.jApVlU{color:#7c7cbb;font-family:Courier,monospace;margin-right:10px;}/*!sc*/
+.jApVlU::before{content:'';display:inline-block;vertical-align:middle;width:10px;height:1px;background:#7c7cbb;}/*!sc*/
+.jApVlU::after{content:'';display:inline-block;vertical-align:middle;width:1px;background:#7c7cbb;height:7px;}/*!sc*/
+data-styled.g22[id="sc-iemXMz"]{content:"jApVlU,"}/*!sc*/
+.iieSdO{border-collapse:separate;border-radius:3px;font-size:14px;border-spacing:0;width:100%;}/*!sc*/
+.iieSdO >tr{vertical-align:middle;}/*!sc*/
+@media screen and (max-width: 50rem){.iieSdO{display:block;}.iieSdO >tr,.iieSdO >tbody>tr{display:block;}}/*!sc*/
+@media screen and (max-width: 50rem) and (-ms-high-contrast:none){.iieSdO td{float:left;width:100%;}}/*!sc*/
+.iieSdO .sc-dIvqjm,.iieSdO .sc-dIvqjm .sc-dIvqjm .sc-dIvqjm,.iieSdO .sc-dIvqjm .sc-dIvqjm .sc-dIvqjm .sc-dIvqjm .sc-dIvqjm{margin:1em;margin-right:0;background:#fafafa;}/*!sc*/
+.iieSdO .sc-dIvqjm .sc-dIvqjm,.iieSdO .sc-dIvqjm .sc-dIvqjm .sc-dIvqjm .sc-dIvqjm,.iieSdO .sc-dIvqjm .sc-dIvqjm .sc-dIvqjm .sc-dIvqjm .sc-dIvqjm .sc-dIvqjm{background:#ffffff;}/*!sc*/
+data-styled.g24[id="sc-hHEjAp"]{content:"iieSdO,"}/*!sc*/
+.kjnOLV >ul{list-style:none;padding:0;margin:0;margin:0 -5px;}/*!sc*/
+.kjnOLV >ul >li{padding:5px 10px;display:inline-block;background-color:#11171a;border-bottom:1px solid rgba(0, 0, 0, 0.5);cursor:pointer;text-align:center;outline:none;color:#ccc;margin:0 5px 5px 5px;border:1px solid #07090b;border-radius:5px;min-width:60px;font-size:0.9em;font-weight:bold;}/*!sc*/
+.kjnOLV >ul >li.react-tabs__tab--selected{color:#333333;background:#ffffff;}/*!sc*/
+.kjnOLV >ul >li.react-tabs__tab--selected:focus{outline:auto;}/*!sc*/
+.kjnOLV >ul >li:only-child{flex:none;min-width:100px;}/*!sc*/
+.kjnOLV >ul >li.tab-success{color:#1d8127;}/*!sc*/
+.kjnOLV >ul >li.tab-redirect{color:#ffa500;}/*!sc*/
+.kjnOLV >ul >li.tab-info{color:#87ceeb;}/*!sc*/
+.kjnOLV >ul >li.tab-error{color:#d41f1c;}/*!sc*/
+.kjnOLV >.react-tabs__tab-panel{background:#11171a;}/*!sc*/
+.kjnOLV >.react-tabs__tab-panel>div,.kjnOLV >.react-tabs__tab-panel>pre{padding:20px;margin:0;}/*!sc*/
+.kjnOLV >.react-tabs__tab-panel>div>pre{padding:0;}/*!sc*/
+data-styled.g30[id="sc-cxNIbU"]{content:"kjnOLV,"}/*!sc*/
+.igwipR code[class*='language-'],.igwipR pre[class*='language-']{text-shadow:0 -0.1em 0.2em black;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.5;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none;}/*!sc*/
+@media print{.igwipR code[class*='language-'],.igwipR pre[class*='language-']{text-shadow:none;}}/*!sc*/
+.igwipR pre[class*='language-']{padding:1em;margin:0.5em 0;overflow:auto;}/*!sc*/
+.igwipR .token.comment,.igwipR .token.prolog,.igwipR .token.doctype,.igwipR .token.cdata{color:hsl(30, 20%, 50%);}/*!sc*/
+.igwipR .token.punctuation{opacity:0.7;}/*!sc*/
+.igwipR .namespace{opacity:0.7;}/*!sc*/
+.igwipR .token.property,.igwipR .token.tag,.igwipR .token.number,.igwipR .token.constant,.igwipR .token.symbol{color:#4a8bb3;}/*!sc*/
+.igwipR .token.boolean{color:#e64441;}/*!sc*/
+.igwipR .token.selector,.igwipR .token.attr-name,.igwipR .token.string,.igwipR .token.char,.igwipR .token.builtin,.igwipR .token.inserted{color:#a0fbaa;}/*!sc*/
+.igwipR .token.selector+a,.igwipR .token.attr-name+a,.igwipR .token.string+a,.igwipR .token.char+a,.igwipR .token.builtin+a,.igwipR .token.inserted+a,.igwipR .token.selector+a:visited,.igwipR .token.attr-name+a:visited,.igwipR .token.string+a:visited,.igwipR .token.char+a:visited,.igwipR .token.builtin+a:visited,.igwipR .token.inserted+a:visited{color:#4ed2ba;text-decoration:underline;}/*!sc*/
+.igwipR .token.property.string{color:white;}/*!sc*/
+.igwipR .token.operator,.igwipR .token.entity,.igwipR .token.url,.igwipR .token.variable{color:hsl(40, 90%, 60%);}/*!sc*/
+.igwipR .token.atrule,.igwipR .token.attr-value,.igwipR .token.keyword{color:hsl(350, 40%, 70%);}/*!sc*/
+.igwipR .token.regex,.igwipR .token.important{color:#e90;}/*!sc*/
+.igwipR .token.important,.igwipR .token.bold{font-weight:bold;}/*!sc*/
+.igwipR .token.italic{font-style:italic;}/*!sc*/
+.igwipR .token.entity{cursor:help;}/*!sc*/
+.igwipR .token.deleted{color:red;}/*!sc*/
+data-styled.g32[id="sc-iJCRLm"]{content:"igwipR,"}/*!sc*/
+.iQrBPp{opacity:0.7;transition:opacity 0.3s ease;text-align:right;}/*!sc*/
+.iQrBPp:focus-within{opacity:1;}/*!sc*/
+.iQrBPp >button{background-color:transparent;border:0;color:inherit;padding:2px 10px;font-family:Roboto,sans-serif;font-size:14px;line-height:1.5em;cursor:pointer;outline:0;}/*!sc*/
+.iQrBPp >button :hover,.iQrBPp >button :focus{background:rgba(255, 255, 255, 0.1);}/*!sc*/
+data-styled.g33[id="sc-giAqnD"]{content:"iQrBPp,"}/*!sc*/
+.kPDcw:hover .sc-giAqnD{opacity:1;}/*!sc*/
+data-styled.g34[id="sc-ezzayM"]{content:"kPDcw,"}/*!sc*/
+.lndqgU{font-family:Courier,monospace;font-size:13px;overflow-x:auto;margin:0;white-space:pre;}/*!sc*/
+data-styled.g35[id="sc-bYwzbd"]{content:"lndqgU,"}/*!sc*/
+.hMAVtd{position:relative;}/*!sc*/
+data-styled.g37[id="sc-kLokie"]{content:"hMAVtd,"}/*!sc*/
+.iAgJCb{margin-left:10px;text-transform:none;font-size:0.929em;color:black;}/*!sc*/
+data-styled.g41[id="sc-gXfWUn"]{content:"iAgJCb,"}/*!sc*/
+.clhtbQ{font-family:Roboto,sans-serif;font-weight:400;line-height:1.5em;}/*!sc*/
+.clhtbQ p:last-child{margin-bottom:0;}/*!sc*/
+.clhtbQ h1{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.85714em;line-height:1.6em;color:#32329f;margin-top:0;}/*!sc*/
+.clhtbQ h2{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.57143em;line-height:1.6em;color:#333333;}/*!sc*/
+.clhtbQ code{color:#e53935;background-color:rgba(38, 50, 56, 0.05);font-family:Courier,monospace;border-radius:2px;border:1px solid rgba(38, 50, 56, 0.1);padding:0 5px;font-size:13px;font-weight:400;word-break:break-word;}/*!sc*/
+.clhtbQ pre{font-family:Courier,monospace;white-space:pre;background-color:#11171a;color:white;padding:20px;overflow-x:auto;line-height:normal;border-radius:0;border:1px solid rgba(38, 50, 56, 0.1);}/*!sc*/
+.clhtbQ pre code{background-color:transparent;color:white;padding:0;}/*!sc*/
+.clhtbQ pre code:before,.clhtbQ pre code:after{content:none;}/*!sc*/
+.clhtbQ blockquote{margin:0;margin-bottom:1em;padding:0 15px;color:#777;border-left:4px solid #ddd;}/*!sc*/
+.clhtbQ img{max-width:100%;box-sizing:content-box;}/*!sc*/
+.clhtbQ ul,.clhtbQ ol{padding-left:2em;margin:0;margin-bottom:1em;}/*!sc*/
+.clhtbQ ul ul,.clhtbQ ol ul,.clhtbQ ul ol,.clhtbQ ol ol{margin-bottom:0;margin-top:0;}/*!sc*/
+.clhtbQ table{display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all;border-collapse:collapse;border-spacing:0;margin-top:1.5em;margin-bottom:1.5em;}/*!sc*/
+.clhtbQ table tr{background-color:#fff;border-top:1px solid #ccc;}/*!sc*/
+.clhtbQ table tr:nth-child(2n){background-color:#fafafa;}/*!sc*/
+.clhtbQ table th,.clhtbQ table td{padding:6px 13px;border:1px solid #ddd;}/*!sc*/
+.clhtbQ table th{text-align:left;font-weight:bold;}/*!sc*/
+.clhtbQ .share-link{cursor:pointer;margin-left:-20px;padding:0;line-height:1;width:20px;display:inline-block;outline:0;}/*!sc*/
+.clhtbQ .share-link:before{content:'';width:15px;height:15px;background-size:contain;background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cGF0aCBmaWxsPSIjMDEwMTAxIiBkPSJNNDU5LjcgMjMzLjRsLTkwLjUgOTAuNWMtNTAgNTAtMTMxIDUwLTE4MSAwIC03LjktNy44LTE0LTE2LjctMTkuNC0yNS44bDQyLjEtNDIuMWMyLTIgNC41LTMuMiA2LjgtNC41IDIuOSA5LjkgOCAxOS4zIDE1LjggMjcuMiAyNSAyNSA2NS42IDI0LjkgOTAuNSAwbDkwLjUtOTAuNWMyNS0yNSAyNS02NS42IDAtOTAuNSAtMjQuOS0yNS02NS41LTI1LTkwLjUgMGwtMzIuMiAzMi4yYy0yNi4xLTEwLjItNTQuMi0xMi45LTgxLjYtOC45bDY4LjYtNjguNmM1MC01MCAxMzEtNTAgMTgxIDBDNTA5LjYgMTAyLjMgNTA5LjYgMTgzLjQgNDU5LjcgMjMzLjR6TTIyMC4zIDM4Mi4ybC0zMi4yIDMyLjJjLTI1IDI0LjktNjUuNiAyNC45LTkwLjUgMCAtMjUtMjUtMjUtNjUuNiAwLTkwLjVsOTAuNS05MC41YzI1LTI1IDY1LjUtMjUgOTAuNSAwIDcuOCA3LjggMTIuOSAxNy4yIDE1LjggMjcuMSAyLjQtMS40IDQuOC0yLjUgNi44LTQuNWw0Mi4xLTQyYy01LjQtOS4yLTExLjYtMTgtMTkuNC0yNS44IC01MC01MC0xMzEtNTAtMTgxIDBsLTkwLjUgOTAuNWMtNTAgNTAtNTAgMTMxIDAgMTgxIDUwIDUwIDEzMSA1MCAxODEgMGw2OC42LTY4LjZDMjc0LjYgMzk1LjEgMjQ2LjQgMzkyLjMgMjIwLjMgMzgyLjJ6Ii8+PC9zdmc+Cg==');opacity:0.5;visibility:hidden;display:inline-block;vertical-align:middle;}/*!sc*/
+.clhtbQ h1:hover>.share-link::before,.clhtbQ h2:hover>.share-link::before,.clhtbQ .share-link:hover::before{visibility:visible;}/*!sc*/
+.clhtbQ a{text-decoration:auto;color:#32329f;}/*!sc*/
+.clhtbQ a:visited{color:#32329f;}/*!sc*/
+.clhtbQ a:hover{color:#6868cf;text-decoration:auto;}/*!sc*/
+.dhkCIO{font-family:Roboto,sans-serif;font-weight:400;line-height:1.5em;}/*!sc*/
+.dhkCIO p:last-child{margin-bottom:0;}/*!sc*/
+.dhkCIO p:first-child{margin-top:0;}/*!sc*/
+.dhkCIO p:last-child{margin-bottom:0;}/*!sc*/
+.dhkCIO h1{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.85714em;line-height:1.6em;color:#32329f;margin-top:0;}/*!sc*/
+.dhkCIO h2{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.57143em;line-height:1.6em;color:#333333;}/*!sc*/
+.dhkCIO code{color:#e53935;background-color:rgba(38, 50, 56, 0.05);font-family:Courier,monospace;border-radius:2px;border:1px solid rgba(38, 50, 56, 0.1);padding:0 5px;font-size:13px;font-weight:400;word-break:break-word;}/*!sc*/
+.dhkCIO pre{font-family:Courier,monospace;white-space:pre;background-color:#11171a;color:white;padding:20px;overflow-x:auto;line-height:normal;border-radius:0;border:1px solid rgba(38, 50, 56, 0.1);}/*!sc*/
+.dhkCIO pre code{background-color:transparent;color:white;padding:0;}/*!sc*/
+.dhkCIO pre code:before,.dhkCIO pre code:after{content:none;}/*!sc*/
+.dhkCIO blockquote{margin:0;margin-bottom:1em;padding:0 15px;color:#777;border-left:4px solid #ddd;}/*!sc*/
+.dhkCIO img{max-width:100%;box-sizing:content-box;}/*!sc*/
+.dhkCIO ul,.dhkCIO ol{padding-left:2em;margin:0;margin-bottom:1em;}/*!sc*/
+.dhkCIO ul ul,.dhkCIO ol ul,.dhkCIO ul ol,.dhkCIO ol ol{margin-bottom:0;margin-top:0;}/*!sc*/
+.dhkCIO table{display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all;border-collapse:collapse;border-spacing:0;margin-top:1.5em;margin-bottom:1.5em;}/*!sc*/
+.dhkCIO table tr{background-color:#fff;border-top:1px solid #ccc;}/*!sc*/
+.dhkCIO table tr:nth-child(2n){background-color:#fafafa;}/*!sc*/
+.dhkCIO table th,.dhkCIO table td{padding:6px 13px;border:1px solid #ddd;}/*!sc*/
+.dhkCIO table th{text-align:left;font-weight:bold;}/*!sc*/
+.dhkCIO .share-link{cursor:pointer;margin-left:-20px;padding:0;line-height:1;width:20px;display:inline-block;outline:0;}/*!sc*/
+.dhkCIO .share-link:before{content:'';width:15px;height:15px;background-size:contain;background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cGF0aCBmaWxsPSIjMDEwMTAxIiBkPSJNNDU5LjcgMjMzLjRsLTkwLjUgOTAuNWMtNTAgNTAtMTMxIDUwLTE4MSAwIC03LjktNy44LTE0LTE2LjctMTkuNC0yNS44bDQyLjEtNDIuMWMyLTIgNC41LTMuMiA2LjgtNC41IDIuOSA5LjkgOCAxOS4zIDE1LjggMjcuMiAyNSAyNSA2NS42IDI0LjkgOTAuNSAwbDkwLjUtOTAuNWMyNS0yNSAyNS02NS42IDAtOTAuNSAtMjQuOS0yNS02NS41LTI1LTkwLjUgMGwtMzIuMiAzMi4yYy0yNi4xLTEwLjItNTQuMi0xMi45LTgxLjYtOC45bDY4LjYtNjguNmM1MC01MCAxMzEtNTAgMTgxIDBDNTA5LjYgMTAyLjMgNTA5LjYgMTgzLjQgNDU5LjcgMjMzLjR6TTIyMC4zIDM4Mi4ybC0zMi4yIDMyLjJjLTI1IDI0LjktNjUuNiAyNC45LTkwLjUgMCAtMjUtMjUtMjUtNjUuNiAwLTkwLjVsOTAuNS05MC41YzI1LTI1IDY1LjUtMjUgOTAuNSAwIDcuOCA3LjggMTIuOSAxNy4yIDE1LjggMjcuMSAyLjQtMS40IDQuOC0yLjUgNi44LTQuNWw0Mi4xLTQyYy01LjQtOS4yLTExLjYtMTgtMTkuNC0yNS44IC01MC01MC0xMzEtNTAtMTgxIDBsLTkwLjUgOTAuNWMtNTAgNTAtNTAgMTMxIDAgMTgxIDUwIDUwIDEzMSA1MCAxODEgMGw2OC42LTY4LjZDMjc0LjYgMzk1LjEgMjQ2LjQgMzkyLjMgMjIwLjMgMzgyLjJ6Ii8+PC9zdmc+Cg==');opacity:0.5;visibility:hidden;display:inline-block;vertical-align:middle;}/*!sc*/
+.dhkCIO h1:hover>.share-link::before,.dhkCIO h2:hover>.share-link::before,.dhkCIO .share-link:hover::before{visibility:visible;}/*!sc*/
+.dhkCIO a{text-decoration:auto;color:#32329f;}/*!sc*/
+.dhkCIO a:visited{color:#32329f;}/*!sc*/
+.dhkCIO a:hover{color:#6868cf;text-decoration:auto;}/*!sc*/
+.Ulvia{font-family:Roboto,sans-serif;font-weight:400;line-height:1.5em;}/*!sc*/
+.Ulvia p:last-child{margin-bottom:0;}/*!sc*/
+.Ulvia p:first-child{margin-top:0;}/*!sc*/
+.Ulvia p:last-child{margin-bottom:0;}/*!sc*/
+.Ulvia p{display:inline-block;}/*!sc*/
+.Ulvia h1{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.85714em;line-height:1.6em;color:#32329f;margin-top:0;}/*!sc*/
+.Ulvia h2{font-family:Montserrat,sans-serif;font-weight:400;font-size:1.57143em;line-height:1.6em;color:#333333;}/*!sc*/
+.Ulvia code{color:#e53935;background-color:rgba(38, 50, 56, 0.05);font-family:Courier,monospace;border-radius:2px;border:1px solid rgba(38, 50, 56, 0.1);padding:0 5px;font-size:13px;font-weight:400;word-break:break-word;}/*!sc*/
+.Ulvia pre{font-family:Courier,monospace;white-space:pre;background-color:#11171a;color:white;padding:20px;overflow-x:auto;line-height:normal;border-radius:0;border:1px solid rgba(38, 50, 56, 0.1);}/*!sc*/
+.Ulvia pre code{background-color:transparent;color:white;padding:0;}/*!sc*/
+.Ulvia pre code:before,.Ulvia pre code:after{content:none;}/*!sc*/
+.Ulvia blockquote{margin:0;margin-bottom:1em;padding:0 15px;color:#777;border-left:4px solid #ddd;}/*!sc*/
+.Ulvia img{max-width:100%;box-sizing:content-box;}/*!sc*/
+.Ulvia ul,.Ulvia ol{padding-left:2em;margin:0;margin-bottom:1em;}/*!sc*/
+.Ulvia ul ul,.Ulvia ol ul,.Ulvia ul ol,.Ulvia ol ol{margin-bottom:0;margin-top:0;}/*!sc*/
+.Ulvia table{display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all;border-collapse:collapse;border-spacing:0;margin-top:1.5em;margin-bottom:1.5em;}/*!sc*/
+.Ulvia table tr{background-color:#fff;border-top:1px solid #ccc;}/*!sc*/
+.Ulvia table tr:nth-child(2n){background-color:#fafafa;}/*!sc*/
+.Ulvia table th,.Ulvia table td{padding:6px 13px;border:1px solid #ddd;}/*!sc*/
+.Ulvia table th{text-align:left;font-weight:bold;}/*!sc*/
+.Ulvia .share-link{cursor:pointer;margin-left:-20px;padding:0;line-height:1;width:20px;display:inline-block;outline:0;}/*!sc*/
+.Ulvia .share-link:before{content:'';width:15px;height:15px;background-size:contain;background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cGF0aCBmaWxsPSIjMDEwMTAxIiBkPSJNNDU5LjcgMjMzLjRsLTkwLjUgOTAuNWMtNTAgNTAtMTMxIDUwLTE4MSAwIC03LjktNy44LTE0LTE2LjctMTkuNC0yNS44bDQyLjEtNDIuMWMyLTIgNC41LTMuMiA2LjgtNC41IDIuOSA5LjkgOCAxOS4zIDE1LjggMjcuMiAyNSAyNSA2NS42IDI0LjkgOTAuNSAwbDkwLjUtOTAuNWMyNS0yNSAyNS02NS42IDAtOTAuNSAtMjQuOS0yNS02NS41LTI1LTkwLjUgMGwtMzIuMiAzMi4yYy0yNi4xLTEwLjItNTQuMi0xMi45LTgxLjYtOC45bDY4LjYtNjguNmM1MC01MCAxMzEtNTAgMTgxIDBDNTA5LjYgMTAyLjMgNTA5LjYgMTgzLjQgNDU5LjcgMjMzLjR6TTIyMC4zIDM4Mi4ybC0zMi4yIDMyLjJjLTI1IDI0LjktNjUuNiAyNC45LTkwLjUgMCAtMjUtMjUtMjUtNjUuNiAwLTkwLjVsOTAuNS05MC41YzI1LTI1IDY1LjUtMjUgOTAuNSAwIDcuOCA3LjggMTIuOSAxNy4yIDE1LjggMjcuMSAyLjQtMS40IDQuOC0yLjUgNi44LTQuNWw0Mi4xLTQyYy01LjQtOS4yLTExLjYtMTgtMTkuNC0yNS44IC01MC01MC0xMzEtNTAtMTgxIDBsLTkwLjUgOTAuNWMtNTAgNTAtNTAgMTMxIDAgMTgxIDUwIDUwIDEzMSA1MCAxODEgMGw2OC42LTY4LjZDMjc0LjYgMzk1LjEgMjQ2LjQgMzkyLjMgMjIwLjMgMzgyLjJ6Ii8+PC9zdmc+Cg==');opacity:0.5;visibility:hidden;display:inline-block;vertical-align:middle;}/*!sc*/
+.Ulvia h1:hover>.share-link::before,.Ulvia h2:hover>.share-link::before,.Ulvia .share-link:hover::before{visibility:visible;}/*!sc*/
+.Ulvia a{text-decoration:auto;color:#32329f;}/*!sc*/
+.Ulvia a:visited{color:#32329f;}/*!sc*/
+.Ulvia a:hover{color:#6868cf;text-decoration:auto;}/*!sc*/
+data-styled.g42[id="sc-cBopra"]{content:"clhtbQ,dhkCIO,Ulvia,"}/*!sc*/
+.feKNOe{display:inline;}/*!sc*/
+data-styled.g43[id="sc-ciSmjt"]{content:"feKNOe,"}/*!sc*/
+.hWGddi{position:relative;}/*!sc*/
+data-styled.g44[id="sc-jcwofc"]{content:"hWGddi,"}/*!sc*/
+.TFkbX:hover>.sc-giAqnD{opacity:1;}/*!sc*/
+data-styled.g49[id="sc-cTJmaT"]{content:"TFkbX,"}/*!sc*/
+.gzqRpf{font-family:Courier,monospace;font-size:13px;white-space:pre;contain:content;overflow-x:auto;}/*!sc*/
+.gzqRpf .redoc-json code>.collapser{display:none;pointer-events:none;}/*!sc*/
+.gzqRpf .callback-function{color:gray;}/*!sc*/
+.gzqRpf .collapser:after{content:'-';cursor:pointer;}/*!sc*/
+.gzqRpf .collapsed>.collapser:after{content:'+';cursor:pointer;}/*!sc*/
+.gzqRpf .ellipsis:after{content:' … ';}/*!sc*/
+.gzqRpf .collapsible{margin-left:2em;}/*!sc*/
+.gzqRpf .hoverable{padding-top:1px;padding-bottom:1px;padding-left:2px;padding-right:2px;border-radius:2px;}/*!sc*/
+.gzqRpf .hovered{background-color:rgba(235, 238, 249, 1);}/*!sc*/
+.gzqRpf .collapser{background-color:transparent;border:0;color:#fff;font-family:Courier,monospace;font-size:13px;padding-right:6px;padding-left:6px;padding-top:0;padding-bottom:0;display:flex;align-items:center;justify-content:center;width:15px;height:15px;position:absolute;top:4px;left:-1.5em;cursor:default;user-select:none;-webkit-user-select:none;padding:2px;}/*!sc*/
+.gzqRpf .collapser:focus{outline-color:#fff;outline-style:dotted;outline-width:1px;}/*!sc*/
+.gzqRpf ul{list-style-type:none;padding:0px;margin:0px 0px 0px 26px;}/*!sc*/
+.gzqRpf li{position:relative;display:block;}/*!sc*/
+.gzqRpf .hoverable{display:inline-block;}/*!sc*/
+.gzqRpf .selected{outline-style:solid;outline-width:1px;outline-style:dotted;}/*!sc*/
+.gzqRpf .collapsed>.collapsible{display:none;}/*!sc*/
+.gzqRpf .ellipsis{display:none;}/*!sc*/
+.gzqRpf .collapsed>.ellipsis{display:inherit;}/*!sc*/
+data-styled.g50[id="sc-jNnnWC"]{content:"gzqRpf,"}/*!sc*/
+.cJauvV{padding:0.9em;background-color:rgba(38,50,56,0.4);margin:0 0 10px 0;display:block;font-family:Montserrat,sans-serif;font-size:0.929em;line-height:1.5em;}/*!sc*/
+data-styled.g51[id="sc-dPaNSK"]{content:"cJauvV,"}/*!sc*/
+.bbHlHM{font-family:Montserrat,sans-serif;font-size:12px;position:absolute;z-index:1;top:-11px;left:12px;font-weight:600;color:rgba(255,255,255,0.7);}/*!sc*/
+data-styled.g52[id="sc-bBjRzb"]{content:"bbHlHM,"}/*!sc*/
+.iQJboe{position:relative;}/*!sc*/
+data-styled.g53[id="sc-cOigig"]{content:"iQJboe,"}/*!sc*/
+.ieeHxx{margin-top:15px;}/*!sc*/
+data-styled.g56[id="sc-hTRkEj"]{content:"ieeHxx,"}/*!sc*/
+.elHQG{vertical-align:middle;font-size:13px;line-height:20px;}/*!sc*/
+data-styled.g58[id="sc-gSYCTF"]{content:"elHQG,"}/*!sc*/
+.dCfXjC{color:rgba(102,102,102,0.9);}/*!sc*/
+data-styled.g59[id="sc-laZMym"]{content:"dCfXjC,"}/*!sc*/
+.ljhzKQ{color:#666;}/*!sc*/
+data-styled.g60[id="sc-iNiQeD"]{content:"ljhzKQ,"}/*!sc*/
+.iPwTkS{color:#d41f1c;font-size:0.9em;font-weight:normal;margin-left:20px;line-height:1;}/*!sc*/
+data-styled.g62[id="sc-eJoaVA"]{content:"iPwTkS,"}/*!sc*/
+.hDbwkF{border-radius:2px;word-break:break-word;background-color:rgba(51,51,51,0.05);color:rgba(51,51,51,0.9);padding:0 5px;border:1px solid rgba(51,51,51,0.1);font-family:Courier,monospace;}/*!sc*/
++{margin-left:0;}/*!sc*/
+data-styled.g66[id="sc-lbVuaI"]{content:"hDbwkF,"}/*!sc*/
+.MXusr:after{content:' and ';font-weight:normal;}/*!sc*/
+.MXusr:last-child:after{content:none;}/*!sc*/
+.MXusr a{text-decoration:auto;color:#32329f;}/*!sc*/
+.MXusr a:visited{color:#32329f;}/*!sc*/
+.MXusr a:hover{color:#6868cf;text-decoration:auto;}/*!sc*/
+data-styled.g81[id="sc-hOPghD"]{content:"MXusr,"}/*!sc*/
+.gosqUc{white-space:nowrap;}/*!sc*/
+.gosqUc:after{content:' or ';white-space:pre;}/*!sc*/
+.gosqUc:last-child:after,.gosqUc:only-child:after{content:none;}/*!sc*/
+.gosqUc a{text-decoration:auto;color:#32329f;}/*!sc*/
+.gosqUc a:visited{color:#32329f;}/*!sc*/
+.gosqUc a:hover{color:#6868cf;text-decoration:auto;}/*!sc*/
+data-styled.g82[id="sc-dsXyEq"]{content:"gosqUc,"}/*!sc*/
+.jlVrFh{flex:1 1 auto;cursor:pointer;}/*!sc*/
+data-styled.g83[id="sc-daBvwJ"]{content:"jlVrFh,"}/*!sc*/
+.jmMLYF{width:75%;text-overflow:ellipsis;border-radius:4px;overflow:hidden;}/*!sc*/
+@media screen and (max-width: 50rem){.jmMLYF{margin-top:10px;}}/*!sc*/
+data-styled.g84[id="sc-jUfxss"]{content:"jmMLYF,"}/*!sc*/
+.hdXgTR{display:inline-block;margin:0;}/*!sc*/
+data-styled.g85[id="sc-jQAyEv"]{content:"hdXgTR,"}/*!sc*/
+.gxeHgZ{width:100%;display:flex;margin:1em 0;flex-direction:row;}/*!sc*/
+@media screen and (max-width: 50rem){.gxeHgZ{flex-direction:column;}}/*!sc*/
+data-styled.g86[id="sc-fuIRbi"]{content:"gxeHgZ,"}/*!sc*/
+.fUVkRL{margin-top:0;margin-bottom:0.5em;}/*!sc*/
+data-styled.g92[id="sc-csTaMr"]{content:"fUVkRL,"}/*!sc*/
+.bRRpUF{width:9ex;display:inline-block;height:13px;line-height:13px;background-color:#333;border-radius:3px;background-repeat:no-repeat;background-position:6px 4px;font-size:7px;font-family:Verdana,sans-serif;color:white;text-transform:uppercase;text-align:center;font-weight:bold;vertical-align:middle;margin-right:6px;margin-top:2px;}/*!sc*/
+.bRRpUF.get{background-color:#2F8132;}/*!sc*/
+.bRRpUF.post{background-color:#186FAF;}/*!sc*/
+.bRRpUF.put{background-color:#95507c;}/*!sc*/
+.bRRpUF.options{background-color:#947014;}/*!sc*/
+.bRRpUF.patch{background-color:#bf581d;}/*!sc*/
+.bRRpUF.delete{background-color:#cc3333;}/*!sc*/
+.bRRpUF.basic{background-color:#707070;}/*!sc*/
+.bRRpUF.link{background-color:#07818F;}/*!sc*/
+.bRRpUF.head{background-color:#A23DAD;}/*!sc*/
+.bRRpUF.hook{background-color:#32329f;}/*!sc*/
+.bRRpUF.schema{background-color:#707070;}/*!sc*/
+data-styled.g100[id="sc-WZYaH"]{content:"bRRpUF,"}/*!sc*/
+.iOcWWL{margin:0;padding:0;}/*!sc*/
+.iOcWWL:first-child{padding-bottom:32px;}/*!sc*/
+.sc-ikXwZu .sc-ikXwZu{font-size:0.929em;}/*!sc*/
+data-styled.g101[id="sc-ikXwZu"]{content:"iOcWWL,"}/*!sc*/
+.gOUyzr{list-style:none inside none;overflow:hidden;text-overflow:ellipsis;padding:0;}/*!sc*/
+data-styled.g102[id="sc-uxeQP"]{content:"gOUyzr,"}/*!sc*/
+.eiiZIg{cursor:pointer;color:#333333;margin:0;padding:12.5px 20px;display:flex;justify-content:space-between;font-family:Montserrat,sans-serif;background-color:#fafafa;}/*!sc*/
+.eiiZIg:hover{color:#32329f;background-color:#ededed;}/*!sc*/
+.eiiZIg .sc-dIsA-D{height:1.5em;width:1.5em;}/*!sc*/
+.eiiZIg .sc-dIsA-D polygon{fill:#333333;}/*!sc*/
+data-styled.g103[id="sc-biJoGY"]{content:"eiiZIg,"}/*!sc*/
+.jyzKwv{display:inline-block;vertical-align:middle;width:calc(100% - 38px);overflow:hidden;text-overflow:ellipsis;}/*!sc*/
+data-styled.g104[id="sc-eHEFXp"]{content:"jyzKwv,"}/*!sc*/
+.goYnlI{font-size:0.8em;margin-top:10px;text-align:center;position:fixed;width:260px;bottom:0;background:#fafafa;}/*!sc*/
+.goYnlI a,.goYnlI a:visited,.goYnlI a:hover{color:#333333!important;padding:5px 0;border-top:1px solid #e1e1e1;text-decoration:none;display:flex;align-items:center;justify-content:center;}/*!sc*/
+.goYnlI img{width:15px;margin-right:5px;}/*!sc*/
+@media screen and (max-width: 50rem){.goYnlI{width:100%;}}/*!sc*/
+data-styled.g105[id="sc-hzUJqK"]{content:"goYnlI,"}/*!sc*/
+.cAZxfo{cursor:pointer;position:relative;margin-bottom:5px;}/*!sc*/
+data-styled.g111[id="sc-fXgAFL"]{content:"cAZxfo,"}/*!sc*/
+.jScNnR{font-family:Courier,monospace;margin-left:10px;flex:1;overflow-x:hidden;text-overflow:ellipsis;}/*!sc*/
+data-styled.g112[id="sc-EZpBe"]{content:"jScNnR,"}/*!sc*/
+.iQdhHY{outline:0;color:inherit;width:100%;text-align:left;cursor:pointer;padding:10px 30px 10px 20px;border-radius:4px 4px 0 0;background-color:#11171a;display:flex;white-space:nowrap;align-items:center;border:1px solid transparent;border-bottom:0;transition:border-color 0.25s ease;}/*!sc*/
+.iQdhHY ..sc-EZpBe{color:#ffffff;}/*!sc*/
+.iQdhHY:focus{box-shadow:inset 0 2px 2px rgba(0, 0, 0, 0.45),0 2px 0 rgba(128, 128, 128, 0.25);}/*!sc*/
+data-styled.g113[id="sc-jXcwIl"]{content:"iQdhHY,"}/*!sc*/
+.hOamOH{font-size:0.929em;line-height:20px;background-color:#186FAF;color:#ffffff;padding:3px 10px;text-transform:uppercase;font-family:Montserrat,sans-serif;margin:0;}/*!sc*/
+.hLeKmZ{font-size:0.929em;line-height:20px;background-color:#2F8132;color:#ffffff;padding:3px 10px;text-transform:uppercase;font-family:Montserrat,sans-serif;margin:0;}/*!sc*/
+.biFwzo{font-size:0.929em;line-height:20px;background-color:#95507c;color:#ffffff;padding:3px 10px;text-transform:uppercase;font-family:Montserrat,sans-serif;margin:0;}/*!sc*/
+.cIOfnR{font-size:0.929em;line-height:20px;background-color:#cc3333;color:#ffffff;padding:3px 10px;text-transform:uppercase;font-family:Montserrat,sans-serif;margin:0;}/*!sc*/
+data-styled.g114[id="sc-eEVlDE"]{content:"hOamOH,hLeKmZ,biFwzo,cIOfnR,"}/*!sc*/
+.eQxKDz{position:absolute;width:100%;z-index:100;background:#fafafa;color:#263238;box-sizing:border-box;box-shadow:0 0 6px rgba(0, 0, 0, 0.33);overflow:hidden;border-bottom-left-radius:4px;border-bottom-right-radius:4px;transition:all 0.25s ease;visibility:hidden;transform:translateY(-50%) scaleY(0);}/*!sc*/
+data-styled.g115[id="sc-fmdMXb"]{content:"eQxKDz,"}/*!sc*/
+.eErHFZ{padding:10px;}/*!sc*/
+data-styled.g116[id="sc-ljslrq"]{content:"eErHFZ,"}/*!sc*/
+.eLGYTZ{padding:5px;border:1px solid #ccc;background:#fff;word-break:break-all;color:#32329f;}/*!sc*/
+.eLGYTZ >span{color:#333333;}/*!sc*/
+data-styled.g117[id="sc-jlZIZB"]{content:"eLGYTZ,"}/*!sc*/
+.cDQkvx{text-transform:lowercase;margin-left:0;line-height:1.5em;}/*!sc*/
+data-styled.g118[id="sc-dTSxUU"]{content:"cDQkvx,"}/*!sc*/
+.hmOExS{display:block;border:0;width:100%;text-align:left;padding:10px;border-radius:2px;margin-bottom:4px;line-height:1.5em;cursor:pointer;color:#1d8127;background-color:rgba(29,129,39,0.07);}/*!sc*/
+.hmOExS:focus{outline:auto #1d8127;}/*!sc*/
+.eIanEs{display:block;border:0;width:100%;text-align:left;padding:10px;border-radius:2px;margin-bottom:4px;line-height:1.5em;cursor:pointer;color:#d41f1c;background-color:rgba(212,31,28,0.07);}/*!sc*/
+.eIanEs:focus{outline:auto #d41f1c;}/*!sc*/
+.iCbEPG{display:block;border:0;width:100%;text-align:left;padding:10px;border-radius:2px;margin-bottom:4px;line-height:1.5em;cursor:pointer;color:#d41f1c;background-color:rgba(212,31,28,0.07);cursor:default;}/*!sc*/
+.iCbEPG:focus{outline:auto #d41f1c;}/*!sc*/
+.iCbEPG::before{content:"—";font-weight:bold;width:1.5em;text-align:center;display:inline-block;vertical-align:top;}/*!sc*/
+.iCbEPG:focus{outline:0;}/*!sc*/
+data-styled.g120[id="sc-cbeQSO"]{content:"hmOExS,eIanEs,iCbEPG,"}/*!sc*/
+.fUrPxn{vertical-align:top;}/*!sc*/
+data-styled.g123[id="sc-fWWZrS"]{content:"fUrPxn,"}/*!sc*/
+.kKdFCJ{font-size:1.3em;padding:0.2em 0;margin:3em 0 1.1em;color:#333333;font-weight:normal;}/*!sc*/
+data-styled.g124[id="sc-fIxnHT"]{content:"kKdFCJ,"}/*!sc*/
+.gYfXVD{margin-bottom:30px;}/*!sc*/
+data-styled.g129[id="sc-iGkqGA"]{content:"gYfXVD,"}/*!sc*/
+.jLaHZD{user-select:none;width:20px;height:20px;align-self:center;display:flex;flex-direction:column;color:#32329f;}/*!sc*/
+data-styled.g130[id="sc-irKEWB"]{content:"jLaHZD,"}/*!sc*/
+.eXgkAf{width:260px;background-color:#fafafa;overflow:hidden;display:flex;flex-direction:column;backface-visibility:hidden;height:100vh;position:sticky;position:-webkit-sticky;top:0;}/*!sc*/
+@media screen and (max-width: 50rem){.eXgkAf{position:fixed;z-index:20;width:100%;background:#fafafa;display:none;}}/*!sc*/
+@media print{.eXgkAf{display:none;}}/*!sc*/
+data-styled.g131[id="sc-eWnSVh"]{content:"eXgkAf,"}/*!sc*/
+.bXocwP{outline:none;user-select:none;background-color:#f2f2f2;color:#32329f;display:none;cursor:pointer;position:fixed;right:20px;z-index:100;border-radius:50%;box-shadow:0 0 20px rgba(0, 0, 0, 0.3);bottom:44px;width:60px;height:60px;padding:0 20px;}/*!sc*/
+@media screen and (max-width: 50rem){.bXocwP{display:flex;}}/*!sc*/
+.bXocwP svg{color:#0065FB;}/*!sc*/
+@media print{.bXocwP{display:none;}}/*!sc*/
+data-styled.g132[id="sc-kTCrpw"]{content:"bXocwP,"}/*!sc*/
+.iREmbn{font-family:Roboto,sans-serif;font-size:14px;font-weight:400;line-height:1.5em;color:#333333;display:flex;position:relative;text-align:left;-webkit-font-smoothing:antialiased;font-smoothing:antialiased;text-rendering:optimizeSpeed!important;tap-highlight-color:rgba(0, 0, 0, 0);text-size-adjust:100%;}/*!sc*/
+.iREmbn *{box-sizing:border-box;-webkit-tap-highlight-color:rgba(255, 255, 255, 0);}/*!sc*/
+data-styled.g133[id="sc-dvUxUj"]{content:"iREmbn,"}/*!sc*/
+.inqUMY{z-index:1;position:relative;overflow:hidden;width:calc(100% - 260px);contain:layout;}/*!sc*/
+@media print,screen and (max-width: 50rem){.inqUMY{width:100%;}}/*!sc*/
+data-styled.g134[id="sc-jtiWoy"]{content:"inqUMY,"}/*!sc*/
+.cHQCKY{background:#263238;position:absolute;top:0;bottom:0;right:0;width:calc((100% - 260px) * 0.4);}/*!sc*/
+@media print,screen and (max-width: 75rem){.cHQCKY{display:none;}}/*!sc*/
+data-styled.g135[id="sc-ellfmx"]{content:"cHQCKY,"}/*!sc*/
+.eEhJRB{padding:5px 0;}/*!sc*/
+data-styled.g136[id="sc-kizDGM"]{content:"eEhJRB,"}/*!sc*/
+.jYCMuU{width:calc(100% - 40px);box-sizing:border-box;margin:0 20px;padding:5px 10px 5px 20px;border:0;border-bottom:1px solid #e1e1e1;font-family:Roboto,sans-serif;font-weight:bold;font-size:13px;color:#333333;background-color:transparent;outline:none;}/*!sc*/
+data-styled.g137[id="sc-cKRKlz"]{content:"jYCMuU,"}/*!sc*/
+.fPMEyd{position:absolute;left:20px;height:1.8em;width:0.9em;}/*!sc*/
+.fPMEyd path{fill:#333333;}/*!sc*/
+data-styled.g138[id="sc-iIgiFO"]{content:"fPMEyd,"}/*!sc*/
+</style>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+</head>
+
+<body>
+  
+      <div id="redoc"><div class="sc-dvUxUj iREmbn redoc-wrap"><div class="sc-eWnSVh eXgkAf menu-content" style="top:0px;height:calc(100vh - 0px)"><div role="search" class="sc-kizDGM eEhJRB"><svg class="sc-iIgiFO fPMEyd search-icon" version="1.1" viewBox="0 0 1000 1000" x="0px" xmlns="http://www.w3.org/2000/svg" y="0px"><path d="M968.2,849.4L667.3,549c83.9-136.5,66.7-317.4-51.7-435.6C477.1-25,252.5-25,113.9,113.4c-138.5,138.3-138.5,362.6,0,501C219.2,730.1,413.2,743,547.6,666.5l301.9,301.4c43.6,43.6,76.9,14.9,104.2-12.4C981,928.3,1011.8,893,968.2,849.4z M524.5,522c-88.9,88.7-233,88.7-321.8,0c-88.9-88.7-88.9-232.6,0-321.3c88.9-88.7,233-88.7,321.8,0C613.4,289.4,613.4,433.3,524.5,522z"></path></svg><input placeholder="Search..." aria-label="Search" type="text" class="sc-cKRKlz jYCMuU search-input" value=""/></div><div class="sc-kLokie hMAVtd scrollbar-container undefined"><ul role="menu" class="sc-ikXwZu iOcWWL"><li tabindex="0" depth="2" data-item-id="/paths/~1contributor/post" role="menuitem" aria-label="create a new contributor" aria-expanded="false" class="sc-uxeQP gOUyzr"><label class="sc-biJoGY eiiZIg -depth2"><span type="post" class="sc-WZYaH bRRpUF operation-type post">post</span><span tabindex="0" width="calc(100% - 38px)" class="sc-eHEFXp jyzKwv">create a new contributor</span></label></li><li tabindex="0" depth="2" data-item-id="/paths/~1contributor~1{id}/get" role="menuitem" aria-label="get a contributor by id" aria-expanded="false" class="sc-uxeQP gOUyzr"><label class="sc-biJoGY eiiZIg -depth2"><span type="get" class="sc-WZYaH bRRpUF operation-type get">get</span><span tabindex="0" width="calc(100% - 38px)" class="sc-eHEFXp jyzKwv">get a contributor by id</span></label></li><li tabindex="0" depth="2" data-item-id="/paths/~1contributor~1{id}/put" role="menuitem" aria-label="update a contributor by id" aria-expanded="false" class="sc-uxeQP gOUyzr"><label class="sc-biJoGY eiiZIg -depth2"><span type="put" class="sc-WZYaH bRRpUF operation-type put">put</span><span tabindex="0" width="calc(100% - 38px)" class="sc-eHEFXp jyzKwv">update a contributor by id</span></label></li><li tabindex="0" depth="2" data-item-id="/paths/~1contributor~1{id}/delete" role="menuitem" aria-label="remove a contributor by id" aria-expanded="false" class="sc-uxeQP gOUyzr"><label class="sc-biJoGY eiiZIg -depth2"><span type="delete" class="sc-WZYaH bRRpUF operation-type delete">del</span><span tabindex="0" width="calc(100% - 38px)" class="sc-eHEFXp jyzKwv">remove a contributor by id</span></label></li></ul><div class="sc-hzUJqK goYnlI"><a target="_blank" rel="noopener noreferrer" href="https://redocly.com/redoc/">API docs by Redocly</a></div></div></div><div class="sc-kTCrpw bXocwP"><div class="sc-irKEWB jLaHZD"><svg class="" style="transform:translate(2px, -4px) rotate(180deg);transition:transform 0.2s ease" viewBox="0 0 926.23699 573.74994" version="1.1" x="0px" y="0px" width="15" height="15"><g transform="translate(904.92214,-879.1482)"><path d="
+          m -673.67664,1221.6502 -231.2455,-231.24803 55.6165,
+          -55.627 c 30.5891,-30.59485 56.1806,-55.627 56.8701,-55.627 0.6894,
+          0 79.8637,78.60862 175.9427,174.68583 l 174.6892,174.6858 174.6892,
+          -174.6858 c 96.079,-96.07721 175.253196,-174.68583 175.942696,
+          -174.68583 0.6895,0 26.281,25.03215 56.8701,
+          55.627 l 55.6165,55.627 -231.245496,231.24803 c -127.185,127.1864
+          -231.5279,231.248 -231.873,231.248 -0.3451,0 -104.688,
+          -104.0616 -231.873,-231.248 z
+        " fill="currentColor"></path></g></svg><svg class="" style="transform:translate(2px, 4px);transition:transform 0.2s ease" viewBox="0 0 926.23699 573.74994" version="1.1" x="0px" y="0px" width="15" height="15"><g transform="translate(904.92214,-879.1482)"><path d="
+          m -673.67664,1221.6502 -231.2455,-231.24803 55.6165,
+          -55.627 c 30.5891,-30.59485 56.1806,-55.627 56.8701,-55.627 0.6894,
+          0 79.8637,78.60862 175.9427,174.68583 l 174.6892,174.6858 174.6892,
+          -174.6858 c 96.079,-96.07721 175.253196,-174.68583 175.942696,
+          -174.68583 0.6895,0 26.281,25.03215 56.8701,
+          55.627 l 55.6165,55.627 -231.245496,231.24803 c -127.185,127.1864
+          -231.5279,231.248 -231.873,231.248 -0.3451,0 -104.688,
+          -104.0616 -231.873,-231.248 z
+        " fill="currentColor"></path></g></svg></div></div><div class="sc-jtiWoy inqUMY api-content"><div class="sc-eCApGK hGRGuT"><div class="sc-iCoHVD ckpEWu"><div class="sc-hKFyIn JqnEq api-info"><h1 class="sc-fujyUa sc-csTaMr eTYudn fUVkRL">Concert Program APIs<!-- --> <span>(<!-- -->0.5.0<!-- -->)</span></h1><p>Download OpenAPI specification<!-- -->:</p><div class="sc-iJCRLm sc-cBopra igwipR clhtbQ"></div><div data-role="redoc-summary" html="" class="sc-iJCRLm sc-cBopra igwipR clhtbQ"></div><div data-role="redoc-description" html="&lt;p&gt;APIs supporting Contributor updates supporting multiple roles including &amp;#39;composers&amp;#39;&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR clhtbQ"><p>APIs supporting Contributor updates supporting multiple roles including &#39;composers&#39;</p>
+</div></div></div></div><div id="/paths/~1contributor/post" data-section-id="/paths/~1contributor/post" class="sc-eCApGK bHcLRs"><div class="sc-iCoHVD ckpEWu"><div class="sc-hKFyIn JqnEq"><h2 class="sc-pNWxu dhgxOD"><a class="sc-crzoUm dXzqIL" href="#/paths/~1contributor/post" aria-label="/paths/~1contributor/post"></a>create a new contributor<!-- --> </h2><div class="sc-iGkqGA gYfXVD"><div html="&lt;p&gt;Adds a new contributor with role and years active. External clients must present an Authorization bearer token; requests from the Concert Program app may also provide the &lt;code&gt;pafe_auth&lt;/code&gt; cookie issued by the service. If the role is omitted or not recognized, it is set to &lt;code&gt;Composer&lt;/code&gt;. The optional &lt;code&gt;alias&lt;/code&gt; value is stored in the &lt;code&gt;notes&lt;/code&gt; field.&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR clhtbQ"><p>Adds a new contributor with role and years active. External clients must present an Authorization bearer token; requests from the Concert Program app may also provide the <code>pafe_auth</code> cookie issued by the service. If the role is omitted or not recognized, it is set to <code>Composer</code>. The optional <code>alias</code> value is stored in the <code>notes</code> field.</p>
+</div></div><div class="sc-fuIRbi gxeHgZ"><div class="sc-daBvwJ jlVrFh"><h5 class="sc-iqAbSd sc-jQAyEv lSHqA hdXgTR">Authorizations:</h5><svg class="sc-dIsA-D dcXFwS" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></div><div class="sc-jUfxss jmMLYF"><span class="sc-dsXyEq gosqUc"><span class="sc-hOPghD MXusr"><i>BearerAuth</i></span></span></div></div><h5 class="sc-iqAbSd lSHqA">Request Body schema: <span class="sc-gXfWUn iAgJCb">application/json</span><div class="sc-gSYCTF sc-eJoaVA sc-dTSxUU elHQG iPwTkS cDQkvx">required</div></h5><div html="&lt;p&gt;JSON data for the contributor to create&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR clhtbQ"><p>JSON data for the contributor to create</p>
+</div><table class="sc-hHEjAp iieSdO"><tbody><tr class=""><td kind="field" title="full_name" class="sc-hBMVcW sc-fFSRdx hXKwrf fnJosS"><span class="sc-iemXMz jApVlU"></span><span class="property-name">full_name</span><div class="sc-gSYCTF sc-eJoaVA elHQG iPwTkS">required</div></td><td class="sc-bkbjAk eFCqho"><div><div><span class="sc-gSYCTF sc-laZMym elHQG dCfXjC"></span><span class="sc-gSYCTF sc-iNiQeD elHQG ljhzKQ">string</span></div> <div><div html="" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"></div></div></div></td></tr><tr class=""><td kind="field" title="years_active" class="sc-hBMVcW sc-fFSRdx hXKwrf fnJosS"><span class="sc-iemXMz jApVlU"></span><span class="property-name">years_active</span><div class="sc-gSYCTF sc-eJoaVA elHQG iPwTkS">required</div></td><td class="sc-bkbjAk eFCqho"><div><div><span class="sc-gSYCTF sc-laZMym elHQG dCfXjC"></span><span class="sc-gSYCTF sc-iNiQeD elHQG ljhzKQ">string</span></div> <div><div html="" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"></div></div></div></td></tr><tr class=""><td kind="field" title="role" class="sc-hBMVcW sc-fFSRdx hXKwrf fnJosS"><span class="sc-iemXMz jApVlU"></span><span class="property-name">role</span></td><td class="sc-bkbjAk eFCqho"><div><div><span class="sc-gSYCTF sc-laZMym elHQG dCfXjC"></span><span class="sc-gSYCTF sc-iNiQeD elHQG ljhzKQ">string</span></div><div><span class="sc-gSYCTF elHQG"> <!-- -->Default:<!-- --> </span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Composer&quot;</span></div><div><span class="sc-gSYCTF elHQG"> <!-- -->Enum<!-- -->:</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Composer&quot;</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Copyist&quot;</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Editor&quot;</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Arranger&quot;</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Transcriber&quot;</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Realizer&quot;</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Orchestrator&quot;</span> </div> <div><div html="&lt;p&gt;role this contributor played for the work&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"><p>role this contributor played for the work</p>
+</div></div></div></td></tr><tr class="last "><td kind="field" title="alias" class="sc-hBMVcW sc-fFSRdx hXKwrf fnJosS"><span class="sc-iemXMz jApVlU"></span><span class="property-name">alias</span></td><td class="sc-bkbjAk eFCqho"><div><div><span class="sc-gSYCTF sc-laZMym elHQG dCfXjC"></span><span class="sc-gSYCTF sc-iNiQeD elHQG ljhzKQ">string</span></div> <div><div html="&lt;p&gt;Alternate name stored internally as &lt;code&gt;notes&lt;/code&gt;&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"><p>Alternate name stored internally as <code>notes</code></p>
+</div></div></div></td></tr></tbody></table><div><h3 class="sc-fIxnHT kKdFCJ">Responses</h3><div><button class="sc-cbeQSO hmOExS"><svg class="sc-dIsA-D dIqTyd" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">201<!-- --> </strong><div html="&lt;p&gt;created&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>created</p>
+</div></button></div><div><button class="sc-cbeQSO eIanEs"><svg class="sc-dIsA-D iuGtkN" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">400<!-- --> </strong><div html="&lt;p&gt;bad data, missing fields or incorrect format&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>bad data, missing fields or incorrect format</p>
+</div></button></div><div><button class="sc-cbeQSO iCbEPG" disabled=""><strong class="sc-fWWZrS fUrPxn">401<!-- --> </strong><div html="&lt;p&gt;unauthorized, lacking authorization header&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>unauthorized, lacking authorization header</p>
+</div></button></div><div><button class="sc-cbeQSO eIanEs"><svg class="sc-dIsA-D iuGtkN" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">500<!-- --> </strong><div html="&lt;p&gt;service error&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>service error</p>
+</div></button></div></div></div><div class="sc-jSFkmN sc-gKAblk lkqCQx cMZKN"><div class="sc-fXgAFL cAZxfo"><button class="sc-jXcwIl iQdhHY"><span type="post" class="sc-eEVlDE hOamOH http-verb post">post</span><span class="sc-EZpBe jScNnR">/contributor</span><svg class="sc-dIsA-D itMstt" style="margin-right:-25px" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></button><div aria-hidden="true" class="sc-fmdMXb eQxKDz"><div class="sc-ljslrq eErHFZ"><div html="" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"></div><div tabindex="0" role="button"><div class="sc-jlZIZB eLGYTZ"><span>https://schedule.pafenorthwest.org/api</span>/contributor</div></div></div></div></div><div><h3 class="sc-kEqYlM fPTtNr"> <!-- -->Request samples<!-- --> </h3><div class="sc-cxNIbU kjnOLV" data-rttabs="true"><ul class="react-tabs__tab-list" role="tablist"><li class="react-tabs__tab react-tabs__tab--selected" role="tab" id="tab_R_154q_0" aria-selected="true" aria-disabled="false" aria-controls="panel_R_154q_0" tabindex="0" data-rttab="true">Payload</li></ul><div class="react-tabs__tab-panel react-tabs__tab-panel--selected" role="tabpanel" id="panel_R_154q_0" aria-labelledby="tab_R_154q_0"><div><div class="sc-cOigig iQJboe"><span class="sc-bBjRzb bbHlHM">Content type</span><div class="sc-dPaNSK cJauvV">application/json</div></div><div class="sc-hTRkEj ieeHxx"><div class="sc-cTJmaT TFkbX"><div class="sc-giAqnD iQrBPp"><button><div class="sc-jcwofc hWGddi">Copy</div></button></div><div tabindex="0" class="sc-iJCRLm igwipR sc-jNnnWC gzqRpf"><div class="redoc-json"><code><button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable "><span class="property token string">"full_name"</span>: <span class="token string">&quot;Johann Sebastian Bach&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"years_active"</span>: <span class="token string">&quot;1685 - 1750&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"role"</span>: <span class="token string">&quot;Composer&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"alias"</span>: <span class="token string">&quot;J. S. Bach&quot;</span></div></li></ul><span class="token punctuation">}</span></code></div></div></div></div></div></div></div></div><div><h3 class="sc-kEqYlM fPTtNr"> <!-- -->Response samples<!-- --> </h3><div class="sc-cxNIbU kjnOLV" data-rttabs="true"><ul class="react-tabs__tab-list" role="tablist"><li class="tab-success react-tabs__tab--selected" role="tab" id="tab_R_174q_0" aria-selected="true" aria-disabled="false" aria-controls="panel_R_174q_0" tabindex="0" data-rttab="true">201</li><li class="tab-error" role="tab" id="tab_R_174q_1" aria-selected="false" aria-disabled="false" aria-controls="panel_R_174q_1" data-rttab="true">400</li><li class="tab-error" role="tab" id="tab_R_174q_2" aria-selected="false" aria-disabled="false" aria-controls="panel_R_174q_2" data-rttab="true">500</li></ul><div class="react-tabs__tab-panel react-tabs__tab-panel--selected" role="tabpanel" id="panel_R_174q_0" aria-labelledby="tab_R_174q_0"><div><div class="sc-cOigig iQJboe"><span class="sc-bBjRzb bbHlHM">Content type</span><div class="sc-dPaNSK cJauvV">application/json</div></div><div class="sc-hTRkEj ieeHxx"><div class="sc-cTJmaT TFkbX"><div class="sc-giAqnD iQrBPp"><button><div class="sc-jcwofc hWGddi">Copy</div></button></div><div tabindex="0" class="sc-iJCRLm igwipR sc-jNnnWC gzqRpf"><div class="redoc-json"><code><button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable "><span class="property token string">"id"</span>: <span class="token number">123</span></div></li></ul><span class="token punctuation">}</span></code></div></div></div></div></div></div><div class="react-tabs__tab-panel" role="tabpanel" id="panel_R_174q_1" aria-labelledby="tab_R_174q_1"></div><div class="react-tabs__tab-panel" role="tabpanel" id="panel_R_174q_2" aria-labelledby="tab_R_174q_2"></div></div></div></div></div></div><div id="/paths/~1contributor~1{id}/get" data-section-id="/paths/~1contributor~1{id}/get" class="sc-eCApGK bHcLRs"><div class="sc-iCoHVD ckpEWu"><div class="sc-hKFyIn JqnEq"><h2 class="sc-pNWxu dhgxOD"><a class="sc-crzoUm dXzqIL" href="#/paths/~1contributor~1{id}/get" aria-label="/paths/~1contributor~1{id}/get"></a>get a contributor by id<!-- --> </h2><div class="sc-iGkqGA gYfXVD"><div html="&lt;p&gt;Returns the contributor row; no authorization is required.&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR clhtbQ"><p>Returns the contributor row; no authorization is required.</p>
+</div></div><div><h5 class="sc-iqAbSd lSHqA">path<!-- --> Parameters</h5><table class="sc-hHEjAp iieSdO"><tbody><tr class="last "><td kind="field" title="id" class="sc-hBMVcW sc-fFSRdx hXKwrf fnJosS"><span class="sc-iemXMz jApVlU"></span><span class="property-name">id</span><div class="sc-gSYCTF sc-eJoaVA elHQG iPwTkS">required</div></td><td class="sc-bkbjAk eFCqho"><div><div><span class="sc-gSYCTF sc-laZMym elHQG dCfXjC"></span><span class="sc-gSYCTF sc-iNiQeD elHQG ljhzKQ">integer</span></div> <div><div html="&lt;p&gt;numerical id of contributor&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"><p>numerical id of contributor</p>
+</div></div></div></td></tr></tbody></table></div><div><h3 class="sc-fIxnHT kKdFCJ">Responses</h3><div><button class="sc-cbeQSO hmOExS"><svg class="sc-dIsA-D dIqTyd" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">200<!-- --> </strong><div html="&lt;p&gt;returned&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>returned</p>
+</div></button></div><div><button class="sc-cbeQSO eIanEs"><svg class="sc-dIsA-D iuGtkN" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">404<!-- --> </strong><div html="&lt;p&gt;not found&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>not found</p>
+</div></button></div><div><button class="sc-cbeQSO eIanEs"><svg class="sc-dIsA-D iuGtkN" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">500<!-- --> </strong><div html="&lt;p&gt;service error&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>service error</p>
+</div></button></div></div></div><div class="sc-jSFkmN sc-gKAblk lkqCQx cMZKN"><div class="sc-fXgAFL cAZxfo"><button class="sc-jXcwIl iQdhHY"><span type="get" class="sc-eEVlDE hLeKmZ http-verb get">get</span><span class="sc-EZpBe jScNnR">/contributor/{id}</span><svg class="sc-dIsA-D itMstt" style="margin-right:-25px" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></button><div aria-hidden="true" class="sc-fmdMXb eQxKDz"><div class="sc-ljslrq eErHFZ"><div html="" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"></div><div tabindex="0" role="button"><div class="sc-jlZIZB eLGYTZ"><span>https://schedule.pafenorthwest.org/api</span>/contributor/{id}</div></div></div></div></div><div><h3 class="sc-kEqYlM fPTtNr"> <!-- -->Response samples<!-- --> </h3><div class="sc-cxNIbU kjnOLV" data-rttabs="true"><ul class="react-tabs__tab-list" role="tablist"><li class="tab-success react-tabs__tab--selected" role="tab" id="tab_R_175a_0" aria-selected="true" aria-disabled="false" aria-controls="panel_R_175a_0" tabindex="0" data-rttab="true">200</li><li class="tab-error" role="tab" id="tab_R_175a_1" aria-selected="false" aria-disabled="false" aria-controls="panel_R_175a_1" data-rttab="true">404</li><li class="tab-error" role="tab" id="tab_R_175a_2" aria-selected="false" aria-disabled="false" aria-controls="panel_R_175a_2" data-rttab="true">500</li></ul><div class="react-tabs__tab-panel react-tabs__tab-panel--selected" role="tabpanel" id="panel_R_175a_0" aria-labelledby="tab_R_175a_0"><div><div class="sc-cOigig iQJboe"><span class="sc-bBjRzb bbHlHM">Content type</span><div class="sc-dPaNSK cJauvV">application/json</div></div><div class="sc-hTRkEj ieeHxx"><div class="sc-cTJmaT TFkbX"><div class="sc-giAqnD iQrBPp"><button><div class="sc-jcwofc hWGddi">Copy</div></button><button> Expand all </button><button> Collapse all </button></div><div tabindex="0" class="sc-iJCRLm igwipR sc-jNnnWC gzqRpf"><div class="redoc-json"><code><button class="collapser" aria-label="collapse"></button><span class="token punctuation">[</span><span class="ellipsis"></span><ul class="array collapsible"><li><div class="hoverable "><button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable collapsed"><span class="property token string">"id"</span>: <span class="token number">1</span><span class="token punctuation">,</span></div></li><li><div class="hoverable collapsed"><span class="property token string">"full_name"</span>: <span class="token string">&quot;Johann Sebastian Bach&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable collapsed"><span class="property token string">"years_active"</span>: <span class="token string">&quot;1685 - 1750&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable collapsed"><span class="property token string">"role"</span>: <span class="token string">&quot;Composer&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable collapsed"><span class="property token string">"notes"</span>: <span class="token string">&quot;J. S. Bach&quot;</span></div></li></ul><span class="token punctuation">}</span></div></li></ul><span class="token punctuation">]</span></code></div></div></div></div></div></div><div class="react-tabs__tab-panel" role="tabpanel" id="panel_R_175a_1" aria-labelledby="tab_R_175a_1"></div><div class="react-tabs__tab-panel" role="tabpanel" id="panel_R_175a_2" aria-labelledby="tab_R_175a_2"></div></div></div></div></div></div><div id="/paths/~1contributor~1{id}/put" data-section-id="/paths/~1contributor~1{id}/put" class="sc-eCApGK bHcLRs"><div class="sc-iCoHVD ckpEWu"><div class="sc-hKFyIn JqnEq"><h2 class="sc-pNWxu dhgxOD"><a class="sc-crzoUm dXzqIL" href="#/paths/~1contributor~1{id}/put" aria-label="/paths/~1contributor~1{id}/put"></a>update a contributor by id<!-- --> </h2><div class="sc-iGkqGA gYfXVD"><div html="&lt;p&gt;Updates contributor fields. External requests require an Authorization bearer token; calls from the same origin as the app may omit the header. If the role is omitted or not recognized, it is set to &lt;code&gt;Composer&lt;/code&gt;.&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR clhtbQ"><p>Updates contributor fields. External requests require an Authorization bearer token; calls from the same origin as the app may omit the header. If the role is omitted or not recognized, it is set to <code>Composer</code>.</p>
+</div></div><div class="sc-fuIRbi gxeHgZ"><div class="sc-daBvwJ jlVrFh"><h5 class="sc-iqAbSd sc-jQAyEv lSHqA hdXgTR">Authorizations:</h5><svg class="sc-dIsA-D dcXFwS" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></div><div class="sc-jUfxss jmMLYF"><span class="sc-dsXyEq gosqUc"><span class="sc-hOPghD MXusr"><i>BearerAuth</i></span></span></div></div><div><h5 class="sc-iqAbSd lSHqA">path<!-- --> Parameters</h5><table class="sc-hHEjAp iieSdO"><tbody><tr class="last "><td kind="field" title="id" class="sc-hBMVcW sc-fFSRdx hXKwrf fnJosS"><span class="sc-iemXMz jApVlU"></span><span class="property-name">id</span><div class="sc-gSYCTF sc-eJoaVA elHQG iPwTkS">required</div></td><td class="sc-bkbjAk eFCqho"><div><div><span class="sc-gSYCTF sc-laZMym elHQG dCfXjC"></span><span class="sc-gSYCTF sc-iNiQeD elHQG ljhzKQ">integer</span></div> <div><div html="&lt;p&gt;numerical id of contributor&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"><p>numerical id of contributor</p>
+</div></div></div></td></tr></tbody></table></div><h5 class="sc-iqAbSd lSHqA">Request Body schema: <span class="sc-gXfWUn iAgJCb">application/json</span><div class="sc-gSYCTF sc-eJoaVA sc-dTSxUU elHQG iPwTkS cDQkvx">required</div></h5><div html="&lt;p&gt;JSON data for the contributor&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR clhtbQ"><p>JSON data for the contributor</p>
+</div><table class="sc-hHEjAp iieSdO"><tbody><tr class=""><td kind="field" title="full_name" class="sc-hBMVcW sc-fFSRdx hXKwrf fnJosS"><span class="sc-iemXMz jApVlU"></span><span class="property-name">full_name</span><div class="sc-gSYCTF sc-eJoaVA elHQG iPwTkS">required</div></td><td class="sc-bkbjAk eFCqho"><div><div><span class="sc-gSYCTF sc-laZMym elHQG dCfXjC"></span><span class="sc-gSYCTF sc-iNiQeD elHQG ljhzKQ">string</span></div> <div><div html="" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"></div></div></div></td></tr><tr class=""><td kind="field" title="years_active" class="sc-hBMVcW sc-fFSRdx hXKwrf fnJosS"><span class="sc-iemXMz jApVlU"></span><span class="property-name">years_active</span><div class="sc-gSYCTF sc-eJoaVA elHQG iPwTkS">required</div></td><td class="sc-bkbjAk eFCqho"><div><div><span class="sc-gSYCTF sc-laZMym elHQG dCfXjC"></span><span class="sc-gSYCTF sc-iNiQeD elHQG ljhzKQ">string</span></div> <div><div html="" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"></div></div></div></td></tr><tr class=""><td kind="field" title="role" class="sc-hBMVcW sc-fFSRdx hXKwrf fnJosS"><span class="sc-iemXMz jApVlU"></span><span class="property-name">role</span></td><td class="sc-bkbjAk eFCqho"><div><div><span class="sc-gSYCTF sc-laZMym elHQG dCfXjC"></span><span class="sc-gSYCTF sc-iNiQeD elHQG ljhzKQ">string</span></div><div><span class="sc-gSYCTF elHQG"> <!-- -->Default:<!-- --> </span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Composer&quot;</span></div><div><span class="sc-gSYCTF elHQG"> <!-- -->Enum<!-- -->:</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Composer&quot;</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Copyist&quot;</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Editor&quot;</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Arranger&quot;</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Transcriber&quot;</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Realizer&quot;</span> <span class="sc-gSYCTF sc-lbVuaI elHQG hDbwkF">&quot;Orchestrator&quot;</span> </div> <div><div html="&lt;p&gt;role this contributor played for the work&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"><p>role this contributor played for the work</p>
+</div></div></div></td></tr><tr class="last "><td kind="field" title="notes" class="sc-hBMVcW sc-fFSRdx hXKwrf fnJosS"><span class="sc-iemXMz jApVlU"></span><span class="property-name">notes</span></td><td class="sc-bkbjAk eFCqho"><div><div><span class="sc-gSYCTF sc-laZMym elHQG dCfXjC"></span><span class="sc-gSYCTF sc-iNiQeD elHQG ljhzKQ">string</span></div> <div><div html="&lt;p&gt;Alternate name or alias&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"><p>Alternate name or alias</p>
+</div></div></div></td></tr></tbody></table><div><h3 class="sc-fIxnHT kKdFCJ">Responses</h3><div><button class="sc-cbeQSO hmOExS"><svg class="sc-dIsA-D dIqTyd" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">200<!-- --> </strong><div html="&lt;p&gt;updated&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>updated</p>
+</div></button></div><div><button class="sc-cbeQSO eIanEs"><svg class="sc-dIsA-D iuGtkN" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">400<!-- --> </strong><div html="&lt;p&gt;missing fields or incorrect format&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>missing fields or incorrect format</p>
+</div></button></div><div><button class="sc-cbeQSO iCbEPG" disabled=""><strong class="sc-fWWZrS fUrPxn">401<!-- --> </strong><div html="&lt;p&gt;unauthorized, lacking authorization header&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>unauthorized, lacking authorization header</p>
+</div></button></div><div><button class="sc-cbeQSO eIanEs"><svg class="sc-dIsA-D iuGtkN" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">404<!-- --> </strong><div html="&lt;p&gt;not found&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>not found</p>
+</div></button></div><div><button class="sc-cbeQSO eIanEs"><svg class="sc-dIsA-D iuGtkN" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">500<!-- --> </strong><div html="&lt;p&gt;service error&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>service error</p>
+</div></button></div></div></div><div class="sc-jSFkmN sc-gKAblk lkqCQx cMZKN"><div class="sc-fXgAFL cAZxfo"><button class="sc-jXcwIl iQdhHY"><span type="put" class="sc-eEVlDE biFwzo http-verb put">put</span><span class="sc-EZpBe jScNnR">/contributor/{id}</span><svg class="sc-dIsA-D itMstt" style="margin-right:-25px" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></button><div aria-hidden="true" class="sc-fmdMXb eQxKDz"><div class="sc-ljslrq eErHFZ"><div html="" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"></div><div tabindex="0" role="button"><div class="sc-jlZIZB eLGYTZ"><span>https://schedule.pafenorthwest.org/api</span>/contributor/{id}</div></div></div></div></div><div><h3 class="sc-kEqYlM fPTtNr"> <!-- -->Request samples<!-- --> </h3><div class="sc-cxNIbU kjnOLV" data-rttabs="true"><ul class="react-tabs__tab-list" role="tablist"><li class="react-tabs__tab react-tabs__tab--selected" role="tab" id="tab_R_155q_0" aria-selected="true" aria-disabled="false" aria-controls="panel_R_155q_0" tabindex="0" data-rttab="true">Payload</li></ul><div class="react-tabs__tab-panel react-tabs__tab-panel--selected" role="tabpanel" id="panel_R_155q_0" aria-labelledby="tab_R_155q_0"><div><div class="sc-cOigig iQJboe"><span class="sc-bBjRzb bbHlHM">Content type</span><div class="sc-dPaNSK cJauvV">application/json</div></div><div class="sc-hTRkEj ieeHxx"><div class="sc-cTJmaT TFkbX"><div class="sc-giAqnD iQrBPp"><button><div class="sc-jcwofc hWGddi">Copy</div></button></div><div tabindex="0" class="sc-iJCRLm igwipR sc-jNnnWC gzqRpf"><div class="redoc-json"><code><button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable "><span class="property token string">"full_name"</span>: <span class="token string">&quot;Johann Sebastian Bach&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"years_active"</span>: <span class="token string">&quot;1685 - 1750&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"role"</span>: <span class="token string">&quot;Composer&quot;</span><span class="token punctuation">,</span></div></li><li><div class="hoverable "><span class="property token string">"notes"</span>: <span class="token string">&quot;J. S. Bach&quot;</span></div></li></ul><span class="token punctuation">}</span></code></div></div></div></div></div></div></div></div><div><h3 class="sc-kEqYlM fPTtNr"> <!-- -->Response samples<!-- --> </h3><div class="sc-cxNIbU kjnOLV" data-rttabs="true"><ul class="react-tabs__tab-list" role="tablist"><li class="tab-success react-tabs__tab--selected" role="tab" id="tab_R_175q_0" aria-selected="true" aria-disabled="false" aria-controls="panel_R_175q_0" tabindex="0" data-rttab="true">200</li><li class="tab-error" role="tab" id="tab_R_175q_1" aria-selected="false" aria-disabled="false" aria-controls="panel_R_175q_1" data-rttab="true">400</li><li class="tab-error" role="tab" id="tab_R_175q_2" aria-selected="false" aria-disabled="false" aria-controls="panel_R_175q_2" data-rttab="true">404</li><li class="tab-error" role="tab" id="tab_R_175q_3" aria-selected="false" aria-disabled="false" aria-controls="panel_R_175q_3" data-rttab="true">500</li></ul><div class="react-tabs__tab-panel react-tabs__tab-panel--selected" role="tabpanel" id="panel_R_175q_0" aria-labelledby="tab_R_175q_0"><div><div class="sc-cOigig iQJboe"><span class="sc-bBjRzb bbHlHM">Content type</span><div class="sc-dPaNSK cJauvV">text/plain</div></div><div class="sc-hTRkEj ieeHxx"><div class="sc-ezzayM kPDcw"><div class="sc-giAqnD iQrBPp"><button><div class="sc-jcwofc hWGddi">Copy</div></button></div><pre class="sc-iJCRLm sc-bYwzbd igwipR lndqgU">OK</pre></div></div></div></div><div class="react-tabs__tab-panel" role="tabpanel" id="panel_R_175q_1" aria-labelledby="tab_R_175q_1"></div><div class="react-tabs__tab-panel" role="tabpanel" id="panel_R_175q_2" aria-labelledby="tab_R_175q_2"></div><div class="react-tabs__tab-panel" role="tabpanel" id="panel_R_175q_3" aria-labelledby="tab_R_175q_3"></div></div></div></div></div></div><div id="/paths/~1contributor~1{id}/delete" data-section-id="/paths/~1contributor~1{id}/delete" class="sc-eCApGK bHcLRs"><div class="sc-iCoHVD ckpEWu"><div class="sc-hKFyIn JqnEq"><h2 class="sc-pNWxu dhgxOD"><a class="sc-crzoUm dXzqIL" href="#/paths/~1contributor~1{id}/delete" aria-label="/paths/~1contributor~1{id}/delete"></a>remove a contributor by id<!-- --> </h2><div class="sc-iGkqGA gYfXVD"><div html="&lt;p&gt;Requires an Authorization bearer token or valid &lt;code&gt;pafe_auth&lt;/code&gt; cookie.&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR clhtbQ"><p>Requires an Authorization bearer token or valid <code>pafe_auth</code> cookie.</p>
+</div></div><div class="sc-fuIRbi gxeHgZ"><div class="sc-daBvwJ jlVrFh"><h5 class="sc-iqAbSd sc-jQAyEv lSHqA hdXgTR">Authorizations:</h5><svg class="sc-dIsA-D dcXFwS" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></div><div class="sc-jUfxss jmMLYF"><span class="sc-dsXyEq gosqUc"><span class="sc-hOPghD MXusr"><i>BearerAuth</i></span></span></div></div><div><h5 class="sc-iqAbSd lSHqA">path<!-- --> Parameters</h5><table class="sc-hHEjAp iieSdO"><tbody><tr class="last "><td kind="field" title="id" class="sc-hBMVcW sc-fFSRdx hXKwrf fnJosS"><span class="sc-iemXMz jApVlU"></span><span class="property-name">id</span><div class="sc-gSYCTF sc-eJoaVA elHQG iPwTkS">required</div></td><td class="sc-bkbjAk eFCqho"><div><div><span class="sc-gSYCTF sc-laZMym elHQG dCfXjC"></span><span class="sc-gSYCTF sc-iNiQeD elHQG ljhzKQ">integer</span></div> <div><div html="&lt;p&gt;numerical id of contributor&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"><p>numerical id of contributor</p>
+</div></div></div></td></tr></tbody></table></div><div><h3 class="sc-fIxnHT kKdFCJ">Responses</h3><div><button class="sc-cbeQSO hmOExS"><svg class="sc-dIsA-D dIqTyd" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">200<!-- --> </strong><div html="&lt;p&gt;deleted&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>deleted</p>
+</div></button></div><div><button class="sc-cbeQSO iCbEPG" disabled=""><strong class="sc-fWWZrS fUrPxn">401<!-- --> </strong><div html="&lt;p&gt;unauthorized, lacking authorization header&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>unauthorized, lacking authorization header</p>
+</div></button></div><div><button class="sc-cbeQSO eIanEs"><svg class="sc-dIsA-D iuGtkN" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">404<!-- --> </strong><div html="&lt;p&gt;not found&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>not found</p>
+</div></button></div><div><button class="sc-cbeQSO eIanEs"><svg class="sc-dIsA-D iuGtkN" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg><strong class="sc-fWWZrS fUrPxn">500<!-- --> </strong><div html="&lt;p&gt;service error&lt;/p&gt;
+" class="sc-iJCRLm sc-cBopra sc-ciSmjt igwipR Ulvia feKNOe"><p>service error</p>
+</div></button></div></div></div><div class="sc-jSFkmN sc-gKAblk lkqCQx cMZKN"><div class="sc-fXgAFL cAZxfo"><button class="sc-jXcwIl iQdhHY"><span type="delete" class="sc-eEVlDE cIOfnR http-verb delete">delete</span><span class="sc-EZpBe jScNnR">/contributor/{id}</span><svg class="sc-dIsA-D itMstt" style="margin-right:-25px" version="1.1" viewBox="0 0 24 24" x="0" xmlns="http://www.w3.org/2000/svg" y="0" aria-hidden="true"><polygon points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "></polygon></svg></button><div aria-hidden="true" class="sc-fmdMXb eQxKDz"><div class="sc-ljslrq eErHFZ"><div html="" class="sc-iJCRLm sc-cBopra igwipR dhkCIO"></div><div tabindex="0" role="button"><div class="sc-jlZIZB eLGYTZ"><span>https://schedule.pafenorthwest.org/api</span>/contributor/{id}</div></div></div></div></div><div><h3 class="sc-kEqYlM fPTtNr"> <!-- -->Response samples<!-- --> </h3><div class="sc-cxNIbU kjnOLV" data-rttabs="true"><ul class="react-tabs__tab-list" role="tablist"><li class="tab-success react-tabs__tab--selected" role="tab" id="tab_R_176a_0" aria-selected="true" aria-disabled="false" aria-controls="panel_R_176a_0" tabindex="0" data-rttab="true">200</li><li class="tab-error" role="tab" id="tab_R_176a_1" aria-selected="false" aria-disabled="false" aria-controls="panel_R_176a_1" data-rttab="true">404</li><li class="tab-error" role="tab" id="tab_R_176a_2" aria-selected="false" aria-disabled="false" aria-controls="panel_R_176a_2" data-rttab="true">500</li></ul><div class="react-tabs__tab-panel react-tabs__tab-panel--selected" role="tabpanel" id="panel_R_176a_0" aria-labelledby="tab_R_176a_0"><div><div class="sc-cOigig iQJboe"><span class="sc-bBjRzb bbHlHM">Content type</span><div class="sc-dPaNSK cJauvV">application/json</div></div><div class="sc-hTRkEj ieeHxx"><div class="sc-cTJmaT TFkbX"><div class="sc-giAqnD iQrBPp"><button><div class="sc-jcwofc hWGddi">Copy</div></button></div><div tabindex="0" class="sc-iJCRLm igwipR sc-jNnnWC gzqRpf"><div class="redoc-json"><code><button class="collapser" aria-label="collapse"></button><span class="token punctuation">{</span><span class="ellipsis"></span><ul class="obj collapsible"><li><div class="hoverable "><span class="property token string">"result"</span>: <span class="token string">&quot;success&quot;</span></div></li></ul><span class="token punctuation">}</span></code></div></div></div></div></div></div><div class="react-tabs__tab-panel" role="tabpanel" id="panel_R_176a_1" aria-labelledby="tab_R_176a_1"></div><div class="react-tabs__tab-panel" role="tabpanel" id="panel_R_176a_2" aria-labelledby="tab_R_176a_2"></div></div></div></div></div></div></div><div class="sc-ellfmx cHQCKY"></div></div></div>
+      <script>
+      const __redoc_state = {"menu":{"activeItemIdx":-1},"spec":{"data":{"openapi":"3.0.3","info":{"title":"Concert Program APIs","description":"APIs supporting Contributor updates supporting multiple roles including 'composers'","version":"0.5.0"},"servers":[{"url":"https://schedule.pafenorthwest.org/api/"}],"paths":{"/contributor":{"post":{"summary":"create a new contributor","description":"Adds a new contributor with role and years active. External clients must present an Authorization bearer token; requests from the Concert Program app may also provide the `pafe_auth` cookie issued by the service. If the role is omitted or not recognized, it is set to `Composer`. The optional `alias` value is stored in the `notes` field.\n","security":[{"BearerAuth":[]}],"requestBody":{"description":"JSON data for the contributor to create","required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ContributorCreateRequest"},"example":{"full_name":"Johann Sebastian Bach","years_active":"1685 - 1750","role":"Composer","alias":"J. S. Bach"}}}},"responses":{"201":{"description":"created","content":{"application/json":{"schema":{"$ref":"#/components/schemas/EntityCreated"},"example":{"id":123}}}},"400":{"description":"bad data, missing fields or incorrect format","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"},"example":{"result":"error","reason":"Missing Field"}}}},"401":{"description":"unauthorized, lacking authorization header"},"500":{"description":"service error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"},"example":{"result":"error","reason":"Failed to process the request"}}}}}}},"/contributor/{id}":{"parameters":[{"in":"path","name":"id","schema":{"type":"integer"},"required":true,"description":"numerical id of contributor"}],"get":{"summary":"get a contributor by id","description":"Returns the contributor row; no authorization is required.","responses":{"200":{"description":"returned","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/Contributor"}},"example":[{"id":1,"full_name":"Johann Sebastian Bach","years_active":"1685 - 1750","role":"Composer","notes":"J. S. Bach"}]}}},"404":{"description":"not found","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"},"example":{"result":"error","reason":"Not Found"}}}},"500":{"description":"service error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}}},"put":{"summary":"update a contributor by id","description":"Updates contributor fields. External requests require an Authorization bearer token; calls from the same origin as the app may omit the header. If the role is omitted or not recognized, it is set to `Composer`.\n","security":[{"BearerAuth":[]}],"requestBody":{"description":"JSON data for the contributor","required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ContributorUpdateRequest"},"example":{"full_name":"Johann Sebastian Bach","years_active":"1685 - 1750","role":"Composer","notes":"J. S. Bach"}}}},"responses":{"200":{"description":"updated","content":{"text/plain":{"schema":{"type":"string"},"example":"OK"}}},"400":{"description":"missing fields or incorrect format","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"},"example":{"result":"error","reason":"Missing Fields"}}}},"401":{"description":"unauthorized, lacking authorization header"},"404":{"description":"not found","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"},"example":{"result":"error","reason":"Not Found"}}}},"500":{"description":"service error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}}},"delete":{"summary":"remove a contributor by id","description":"Requires an Authorization bearer token or valid `pafe_auth` cookie.","security":[{"BearerAuth":[]}],"responses":{"200":{"description":"deleted","content":{"application/json":{"schema":{"$ref":"#/components/schemas/OperationSuccess"},"example":{"result":"success"}}}},"401":{"description":"unauthorized, lacking authorization header"},"404":{"description":"not found","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"},"example":{"result":"error","reason":"Not Found"}}}},"500":{"description":"service error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}}}}},"components":{"schemas":{"Contributor":{"type":"object","properties":{"id":{"type":"integer"},"full_name":{"type":"string"},"years_active":{"type":"string"},"role":{"type":"string","description":"role this contributor played for the work","enum":["Composer","Copyist","Editor","Arranger","Transcriber","Realizer","Orchestrator"],"default":"Composer"},"notes":{"type":"string","nullable":true,"description":"Alternate name or alias stored for the contributor"}},"required":["id","full_name","years_active","role"],"example":{"id":123,"full_name":"Johann Sebastian Bach","years_active":"1685 - 1750","role":"Composer","notes":"J. S. Bach"}},"ContributorCreateRequest":{"type":"object","properties":{"full_name":{"type":"string"},"years_active":{"type":"string"},"role":{"type":"string","description":"role this contributor played for the work","enum":["Composer","Copyist","Editor","Arranger","Transcriber","Realizer","Orchestrator"],"default":"Composer"},"alias":{"type":"string","description":"Alternate name stored internally as `notes`"}},"required":["full_name","years_active"],"example":{"full_name":"Johann Sebastian Bach","years_active":"1685 - 1750","role":"Composer","alias":"J. S. Bach"}},"ContributorUpdateRequest":{"type":"object","properties":{"full_name":{"type":"string"},"years_active":{"type":"string"},"role":{"type":"string","description":"role this contributor played for the work","enum":["Composer","Copyist","Editor","Arranger","Transcriber","Realizer","Orchestrator"],"default":"Composer"},"notes":{"type":"string","description":"Alternate name or alias"}},"required":["full_name","years_active"],"example":{"full_name":"Johann Sebastian Bach","years_active":"1685 - 1750","role":"Composer","notes":"J. S. Bach"}},"Error":{"type":"object","properties":{"result":{"type":"string"},"reason":{"type":"string"}},"example":{"result":"error","reason":"a database error occurred"}},"EntityCreated":{"type":"object","properties":{"id":{"type":"integer"}},"example":{"id":123}},"OperationSuccess":{"type":"object","properties":{"result":{"type":"string","enum":["success"]}},"example":{"result":"success"}}},"securitySchemes":{"BearerAuth":{"type":"http","scheme":"bearer","bearerFormat":"JWT"}}}}},"searchIndex":{"store":["/paths/~1contributor/post","/paths/~1contributor~1{id}/get","/paths/~1contributor~1{id}/put","/paths/~1contributor~1{id}/delete"],"index":{"version":"2.3.9","fields":["title","description"],"fieldVectors":[["title/0",[0,1.161,1,0.668,2,0.277]],["description/0",[1,0.5,2,0.313,3,0.869,4,0.754,5,0.869,6,0.869,7,0.5,8,0.869,9,0.869,10,0.076,11,0.258,12,0.258,13,0.5,14,0.869,15,0.869,16,0.5,17,0.869,18,0.5,19,0.5,20,0.869,21,0.869,22,0.5,23,0.5,24,0.5,25,0.5,26,0.869,27,0.869,28,0.869,29,0.869,30,0.869,31,0.5]],["title/1",[2,0.324,32,0.401]],["description/1",[2,0.391,10,0.143,33,1.637,34,1.637,35,0.485,36,0.485]],["title/2",[2,0.277,32,0.344,37,0.668]],["description/2",[2,0.262,4,0.632,7,0.632,10,0.096,11,0.325,12,0.325,13,0.632,16,0.632,22,0.894,23,0.632,24,0.632,25,0.632,31,0.632,35,0.325,36,0.325,37,0.632,38,1.098,39,1.098,40,1.098,41,1.098]],["title/3",[2,0.277,32,0.344,42,1.161]],["description/3",[10,0.134,11,0.455,12,0.455,18,0.885,19,0.885,35,0.455,36,0.455,43,1.537]]],"invertedIndex":[["activ",{"_index":6,"title":{},"description":{"0":{}}}],["add",{"_index":3,"title":{},"description":{"0":{}}}],["alia",{"_index":27,"title":{},"description":{"0":{}}}],["app",{"_index":16,"title":{},"description":{"0":{},"2":{}}}],["author",{"_index":10,"title":{},"description":{"0":{},"1":{},"2":{},"3":{}}}],["bearer",{"_index":11,"title":{},"description":{"0":{},"2":{},"3":{}}}],["call",{"_index":38,"title":{},"description":{"2":{}}}],["client",{"_index":8,"title":{},"description":{"0":{}}}],["compos",{"_index":25,"title":{},"description":{"0":{},"2":{}}}],["concert",{"_index":14,"title":{},"description":{"0":{}}}],["contributor",{"_index":2,"title":{"0":{},"1":{},"2":{},"3":{}},"description":{"0":{},"1":{},"2":{}}}],["contributor/{id",{"_index":36,"title":{},"description":{"1":{},"2":{},"3":{}}}],["cooki",{"_index":19,"title":{},"description":{"0":{},"3":{}}}],["creat",{"_index":0,"title":{"0":{}},"description":{}}],["extern",{"_index":7,"title":{},"description":{"0":{},"2":{}}}],["field",{"_index":31,"title":{},"description":{"0":{},"2":{}}}],["header",{"_index":41,"title":{},"description":{"2":{}}}],["id",{"_index":32,"title":{"1":{},"2":{},"3":{}},"description":{}}],["issu",{"_index":20,"title":{},"description":{"0":{}}}],["new",{"_index":1,"title":{"0":{}},"description":{"0":{}}}],["note",{"_index":30,"title":{},"description":{"0":{}}}],["omit",{"_index":22,"title":{},"description":{"0":{},"2":{}}}],["option",{"_index":26,"title":{},"description":{"0":{}}}],["origin",{"_index":40,"title":{},"description":{"2":{}}}],["pafe_auth",{"_index":18,"title":{},"description":{"0":{},"3":{}}}],["present",{"_index":9,"title":{},"description":{"0":{}}}],["program",{"_index":15,"title":{},"description":{"0":{}}}],["provid",{"_index":17,"title":{},"description":{"0":{}}}],["recogn",{"_index":23,"title":{},"description":{"0":{},"2":{}}}],["remov",{"_index":42,"title":{"3":{}},"description":{}}],["request",{"_index":13,"title":{},"description":{"0":{},"2":{}}}],["requir",{"_index":35,"title":{},"description":{"1":{},"2":{},"3":{}}}],["return",{"_index":33,"title":{},"description":{"1":{}}}],["role",{"_index":4,"title":{},"description":{"0":{},"2":{}}}],["row",{"_index":34,"title":{},"description":{"1":{}}}],["same",{"_index":39,"title":{},"description":{"2":{}}}],["servic",{"_index":21,"title":{},"description":{"0":{}}}],["set",{"_index":24,"title":{},"description":{"0":{},"2":{}}}],["store",{"_index":29,"title":{},"description":{"0":{}}}],["token",{"_index":12,"title":{},"description":{"0":{},"2":{},"3":{}}}],["updat",{"_index":37,"title":{"2":{}},"description":{"2":{}}}],["valid",{"_index":43,"title":{},"description":{"3":{}}}],["valu",{"_index":28,"title":{},"description":{"0":{}}}],["year",{"_index":5,"title":{},"description":{"0":{}}}]],"pipeline":[]}},"options":{}};
+
+      var container = document.getElementById('redoc');
+      Redoc.hydrate(__redoc_state, container);
+
+      </script>
+</body>
+
+</html>

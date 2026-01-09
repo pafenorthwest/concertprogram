@@ -76,7 +76,7 @@ jobs:
 
   check-all:
     runs-on: ubuntu-latest
-    needs: [lint, unit-test, integration-test]
+    needs: [lint, unit-test, integration-test, build-docs]
     steps:
       - name: All checks passed
         run: echo "✅ All checks passed!"
