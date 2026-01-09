@@ -46,11 +46,10 @@ CREATE TYPE piece_category AS ENUM (
 );
 
 CREATE TYPE division_tag AS ENUM (
-    'High-Strings',
-    'Low-Strings',
+    'Violin Viola',
+    'Cello Bass',
     'Piano',
-    'Woodwinds',
-    'Ensembles'
+    'Woodwinds'
 );
 
 CREATE TYPE review_status AS ENUM (
