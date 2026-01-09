@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Concert Program APIs
-  description: APIs supporting Concert Program and Scheduling
+  description: APIs supporting Contributor updates supporting multiple roles including 'composers'
   version: 0.5.0
 servers:
   - url: 'https://schedule.pafenorthwest.org/api/'

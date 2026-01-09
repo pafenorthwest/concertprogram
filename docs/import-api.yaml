@@ -1,0 +1,302 @@
+openapi: 3.0.3
+info:
+  title: Concert Program Import APIs
+  description: >
+    Endpoints used to import performance submissions from external systems. Accepts either the
+    Authorization bearer token (`Authorization: Bearer ${auth_code}`) or the `pafe_auth` session
+    cookie used by the Concert Program app.
+  version: 0.5.0
+servers:
+  - url: 'https://schedule.pafenorthwest.org/api/'
+
+paths:
+  /import:
+    put:
+      summary: create or update a performance import
+      description: >
+        Creates or updates the performer, performance, musical piece, contributor, and accompanist
+        records based on the incoming payload. Returns 201 when a new performer + performance is
+        created, otherwise returns 200 for updates.
+      security:
+        - PafeAuthCookie: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportPerformanceRequest'
+            example:
+              class_name: 'WS.9-10.A'
+              performer: 'Natasja Filipek'
+              lottery: 123456
+              age: 15
+              concert_series: 'Eastside'
+              instrument: 'Flute'
+              musical_piece:
+                - title: 'Poem'
+                  contributors:
+                    - name: 'Charles Griffes'
+                      yearsActive: '1884 - 1920'
+                      role: 'Composer'
+              accompanist: 'Tu, Shi'
+              email: 'bPkR@example.com'
+              phone: '206-555-0101'
+      responses:
+        200:
+          description: updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportSuccess'
+              example:
+                result: 'success'
+                performerId: 12
+                performanceId: 455
+        201:
+          description: created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportSuccess'
+              example:
+                result: 'success'
+                performerId: 12
+                performanceId: 455
+        400:
+          description: missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportError'
+              example:
+                result: 'error'
+                reason: 'Missing Field'
+        401:
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportError'
+              example:
+                result: 'error'
+                reason: 'Unauthorized'
+        500:
+          description: service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportError'
+              example:
+                result: 'error'
+                reason: 'Unable to process request'
+
+    delete:
+      summary: remove an imported performance
+      description: >
+        Deletes the performer and associated performance using the lookup fields. Note that this
+        request uses `performer_name` (snake case) instead of the `performer` field used in PUT.
+      security:
+        - PafeAuthCookie: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportDeleteRequest'
+            example:
+              class_name: 'WS.9-10.A'
+              performer_name: 'Natasja Filipek'
+              age: 15
+              concert_series: 'Eastside'
+              instrument: 'Flute'
+      responses:
+        200:
+          description: deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportSuccess'
+              example:
+                result: 'success'
+                performerId: 12
+                performanceId: 455
+        400:
+          description: missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportError'
+              example:
+                result: 'error'
+                reason: 'Missing Field'
+        401:
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportError'
+              example:
+                result: 'error'
+                reason: 'Unauthorized'
+        404:
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportError'
+              example:
+                result: 'error'
+                reason: 'Not Found'
+        500:
+          description: service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportError'
+              example:
+                result: 'error'
+                reason: 'Unable to process request'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    PafeAuthCookie:
+      type: apiKey
+      in: cookie
+      name: pafe_auth
+
+  schemas:
+    ImportContributor:
+      type: object
+      properties:
+        name:
+          type: string
+        yearsActive:
+          type: string
+          description: 'Format: "birthYear - deathYear" or "None"'
+        role:
+          type: string
+          enum:
+            - Composer
+            - Copyist
+            - Editor
+            - Arranger
+            - Transcriber
+            - Realizer
+            - Orchestrator
+          default: Composer
+        notes:
+          type: string
+          nullable: true
+      required:
+        - name
+        - yearsActive
+
+    ImportMusicalPiece:
+      type: object
+      properties:
+        title:
+          type: string
+        contributors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportContributor'
+          minItems: 1
+      required:
+        - title
+        - contributors
+
+    ImportPerformanceRequest:
+      type: object
+      properties:
+        class_name:
+          type: string
+        performer:
+          type: string
+        lottery:
+          type: integer
+          description: 6 digit lottery code
+        age:
+          type: integer
+        concert_series:
+          type: string
+          nullable: true
+          description: 'Examples: Eastside, Concerto'
+        instrument:
+          type: string
+        musical_piece:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportMusicalPiece'
+          minItems: 1
+        accompanist:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+      required:
+        - class_name
+        - performer
+        - lottery
+        - age
+        - instrument
+        - musical_piece
+
+    ImportDeleteRequest:
+      type: object
+      properties:
+        class_name:
+          type: string
+        performer_name:
+          type: string
+        age:
+          type: integer
+        concert_series:
+          type: string
+        instrument:
+          type: string
+      required:
+        - class_name
+        - performer_name
+        - age
+        - concert_series
+        - instrument
+
+    ImportSuccess:
+      type: object
+      properties:
+        result:
+          type: string
+          enum:
+            - success
+        performerId:
+          type: integer
+        performanceId:
+          type: integer
+      required:
+        - result
+        - performerId
+        - performanceId
+
+    ImportError:
+      type: object
+      properties:
+        result:
+          type: string
+          enum:
+            - error
+        reason:
+          type: string
+      required:
+        - result
+        - reason
