@@ -46,9 +46,10 @@ export function parseDivisionTags(input: unknown): {
 	tags: DivisionTag[];
 	invalid: string[];
 } {
-	const values = dedupeStrings(normalizeTagStrings(asStringArray(input)));
+	const parsed = parseTagInputs(input);
+	const values = dedupeStrings(normalizeTagStrings(parsed.strings));
 	const tags = values.filter(isValidDivisionTag);
-	const invalid = values.filter((value) => !isValidDivisionTag(value));
+	const invalid = parsed.invalid.concat(values.filter((value) => !isValidDivisionTag(value)));
 	return { tags, invalid };
 }
 
@@ -56,9 +57,10 @@ export function parsePieceCategories(input: unknown): {
 	tags: PieceCategory[];
 	invalid: string[];
 } {
-	const values = dedupeStrings(normalizeTagStrings(asStringArray(input)));
+	const parsed = parseTagInputs(input);
+	const values = dedupeStrings(normalizeTagStrings(parsed.strings));
 	const tags = values.filter(isValidPieceCategory);
-	const invalid = values.filter((value) => !isValidPieceCategory(value));
+	const invalid = parsed.invalid.concat(values.filter((value) => !isValidPieceCategory(value)));
 	return { tags, invalid };
 }
 
@@ -98,6 +100,49 @@ function asStringArray(value: unknown): string[] {
 		}
 	}
 	return [];
+}
+
+function describeInvalidTag(value: unknown): string {
+	try {
+		const serialized = JSON.stringify(value);
+		if (serialized !== undefined) {
+			return serialized;
+		}
+	} catch {
+		// Fall back to string coercion for non-serializable values.
+	}
+	return String(value);
+}
+
+function parseTagInputs(value: unknown): { strings: string[]; invalid: string[] } {
+	const strings: string[] = [];
+	const invalid: string[] = [];
+	const collect = (entry: unknown) => {
+		if (typeof entry === 'string') {
+			strings.push(entry);
+		} else {
+			invalid.push(describeInvalidTag(entry));
+		}
+	};
+
+	if (Array.isArray(value)) {
+		value.forEach(collect);
+		return { strings, invalid };
+	}
+
+	if (typeof value === 'string') {
+		try {
+			const parsed = JSON.parse(value);
+			if (Array.isArray(parsed)) {
+				parsed.forEach(collect);
+				return { strings, invalid };
+			}
+		} catch {
+			return { strings, invalid };
+		}
+	}
+
+	return { strings, invalid };
 }
 
 export async function fetchReviewQueue(
