@@ -192,7 +192,8 @@ describe('Test MusicalPiece HTTP APIs', () => {
 				all_movements: 'Movement 1',
 				second_contributor_id: 2,
 				third_contributor_id: 3,
-				rm_division_tags: ['Piano']
+				rm_division_tags: ['Piano'],
+				division_tags: []
 			})
 		});
 		expect(removeDivisionResponse.status).toBe(200);
@@ -212,7 +213,8 @@ describe('Test MusicalPiece HTTP APIs', () => {
 				all_movements: 'Movement 1',
 				second_contributor_id: 2,
 				third_contributor_id: 3,
-				rm_category_tags: ['Solo']
+				rm_category_tags: ['Solo'],
+				category_tags: []
 			})
 		});
 		expect(removeCategoryResponse.status).toBe(200);
@@ -231,6 +233,20 @@ describe('Test MusicalPiece HTTP APIs', () => {
 	});
 
 	it('It should reject invalid tag values and invalid removals', async () => {
+		const invalidTypeResponse = await fetch(`${baseUrl}/`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${auth_code}`
+			},
+			body: JSON.stringify({
+				printed_name: 'Invalid Tag Type',
+				first_contributor_id: 1,
+				division_tags: ['Piano', 123]
+			})
+		});
+		expect(invalidTypeResponse.status).toBe(400);
+
 		const invalidCreateResponse = await fetch(`${baseUrl}/`, {
 			method: 'POST',
 			headers: {

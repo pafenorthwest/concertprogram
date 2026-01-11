@@ -38,15 +38,6 @@ export async function PUT({ url, params, request, cookies }) {
 
 	try {
 		const body = await request.json();
-		const hasAddTags = body.division_tags !== undefined || body.category_tags !== undefined;
-		const hasRemoveCategory = body.rm_category_tags !== undefined;
-		const hasRemoveDivision = body.rm_division_tags !== undefined;
-		if ((hasRemoveCategory || hasRemoveDivision) && hasAddTags) {
-			return json(
-				{ status: 'error', reason: 'Removal tags cannot be combined with add tags' },
-				{ status: 400 }
-			);
-		}
 		const toNullableString = (value: unknown) => {
 			if (value === null || value === undefined) return null;
 			const trimmed = String(value).trim();
@@ -71,6 +62,9 @@ export async function PUT({ url, params, request, cookies }) {
 		const { tags: rmCategoryTags, invalid: rmCategoryInvalid } = parsePieceCategories(
 			body.rm_category_tags
 		);
+		const hasAddTags = divisionTags.length > 0 || categoryTags.length > 0;
+		const hasRemoveCategory = rmCategoryTags.length > 0;
+		const hasRemoveDivision = rmDivisionTags.length > 0;
 		const shouldApplyDivisionTags = body.division_tags !== undefined && divisionTags.length > 0;
 		const shouldApplyCategoryTags = body.category_tags !== undefined && categoryTags.length > 0;
 		const shouldRemoveDivisionTags =
@@ -97,6 +91,12 @@ export async function PUT({ url, params, request, cookies }) {
 			rmCategoryInvalid.length > 0
 		) {
 			return json({ status: 'error', reason: 'Invalid tag values' }, { status: 400 });
+		}
+		if ((hasRemoveCategory || hasRemoveDivision) && hasAddTags) {
+			return json(
+				{ status: 'error', reason: 'Removal tags cannot be combined with add tags' },
+				{ status: 400 }
+			);
 		}
 		if (categoryTags.includes('Not Appropriate') && categoryTags.length > 1) {
 			return json(
