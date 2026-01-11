@@ -19,6 +19,8 @@
 
 	async function handleSave(musicalPiece) {
 		try {
+			const categoryTag = normalizeText(musicalPiece.category_tag);
+			const divisionTag = normalizeText(musicalPiece.division_tag);
 			const payload = {
 				...musicalPiece,
 				first_contributor_id: Number(musicalPiece.first_contributor_id),
@@ -29,7 +31,9 @@
 				comments: normalizeText(musicalPiece.comments),
 				flag_for_discussion: !!musicalPiece.flag_for_discussion,
 				discussion_notes: normalizeText(musicalPiece.discussion_notes),
-				is_not_appropriate: !!musicalPiece.is_not_appropriate
+				is_not_appropriate: !!musicalPiece.is_not_appropriate,
+				category_tags: categoryTag ? [categoryTag] : undefined,
+				division_tags: divisionTag ? [divisionTag] : undefined
 			};
 			const response = await fetch(`/api/musicalpiece/${musicalPiece.id}`, {
 				method: 'PUT',
@@ -101,6 +105,20 @@
 				<label class="checkbox-label" for="isNotAppropriate">
 					<input type="checkbox" id="isNotAppropriate" name="isNotAppropriate" /> Not Appropriate
 				</label>
+				<label for="categoryTag">Category Tag:</label>
+				<select id="categoryTag" name="categoryTag">
+					<option value="">Select a category</option>
+					{#each data.categoryOptions as category}
+						<option value={category}>{category}</option>
+					{/each}
+				</select>
+				<label for="divisionTag">Division Tag:</label>
+				<select id="divisionTag" name="divisionTag">
+					<option value="">Select a division</option>
+					{#each data.divisionOptions as division}
+						<option value={division}>{division}</option>
+					{/each}
+				</select>
 			</div>
 			<div class="form-group">
 				<button type="submit" disabled={disableStatus}>Submit</button>
@@ -108,12 +126,18 @@
 		</form>
 	</div>
 	<h3>Listing</h3>
+	<p class="note">
+		Multi-tag updates are supported in the API only. Saving from this UI will overwrite tags with
+		the single selection shown here.
+	</p>
 	<table class="table">
 		<thead>
 			<tr>
 				{#each data.musical_piece_fields as field}
 					<th>{field}</th>
 				{/each}
+				<th>Category Tag</th>
+				<th>Division Tag</th>
 				<th>Edit</th>
 				<th>Delete</th>
 			</tr>
@@ -232,6 +256,36 @@
 					</td>
 					<td>
 						{musicalPiece.updated_at ? new Date(musicalPiece.updated_at).toLocaleString() : ''}
+					</td>
+					<td>
+						{#if editing.id === musicalPiece.id}
+							<select
+								value={editing.category_tag ?? ''}
+								on:change={(event) => handleInputChange(event, 'category_tag')}
+							>
+								<option value="">Select a category</option>
+								{#each data.categoryOptions as category}
+									<option value={category}>{category}</option>
+								{/each}
+							</select>
+						{:else}
+							{musicalPiece.category_tag ?? ''}
+						{/if}
+					</td>
+					<td>
+						{#if editing.id === musicalPiece.id}
+							<select
+								value={editing.division_tag ?? ''}
+								on:change={(event) => handleInputChange(event, 'division_tag')}
+							>
+								<option value="">Select a division</option>
+								{#each data.divisionOptions as division}
+									<option value={division}>{division}</option>
+								{/each}
+							</select>
+						{:else}
+							{musicalPiece.division_tag ?? ''}
+						{/if}
 					</td>
 					<td>
 						{#if editing.id === musicalPiece.id}

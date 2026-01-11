@@ -5,7 +5,7 @@ info:
     CRUD endpoints for musical pieces used by the Concert Program app. External clients must provide
     an Authorization bearer token; first-party calls from the same origin may instead use the
     `pafe_auth` cookie issued by the service.
-  version: 0.5.0
+  version: 0.6.0
 servers:
   - url: 'https://schedule.pafenorthwest.org/api/'
 
@@ -15,8 +15,10 @@ paths:
       summary: create a new musical piece
       description: >
         Adds a musical piece. Requires `printed_name` and `first_contributor_id`; other fields are
-        optional. External clients must send an Authorization bearer token while same-origin calls
-        may rely on the `pafe_auth` cookie.
+        optional. Optional `division_tags` and `category_tags` are validated against enums. If
+        `category_tags` includes `Not Appropriate`, no other categories are permitted. External
+        clients must send an Authorization bearer token while same-origin calls may rely on the
+        `pafe_auth` cookie.
       security:
         - PafeAuthCookie: []
         - BearerAuth: []
@@ -37,6 +39,10 @@ paths:
               flag_for_discussion: false
               discussion_notes: null
               is_not_appropriate: false
+              division_tags:
+                - Piano
+              category_tags:
+                - Solo
       responses:
         201:
           description: created
@@ -48,7 +54,7 @@ paths:
                 id: 42
                 message: 'Update successful'
         400:
-          description: missing required fields
+          description: missing required fields or invalid tag values
           content:
             application/json:
               schema:
@@ -117,7 +123,10 @@ paths:
       description: >
         Updates musical piece fields. External requests require an Authorization bearer token; calls
         from the same origin as the app may omit the header and use the `pafe_auth` cookie instead.
-        `printed_name` and `first_contributor_id` are required.
+        `printed_name` and `first_contributor_id` are required. Optional `division_tags` and
+        `category_tags` replace existing tags when provided (non-empty arrays). Optional
+        `rm_division_tags` and `rm_category_tags` remove tags (non-empty arrays) and cannot be used
+        with add tags in the same request. `rm_category_tags` cannot include `Not Appropriate`.
       security:
         - PafeAuthCookie: []
         - BearerAuth: []
@@ -138,6 +147,10 @@ paths:
               flag_for_discussion: true
               discussion_notes: 'Check edition with orchestra reduction'
               is_not_appropriate: false
+              division_tags:
+                - Piano
+              category_tags:
+                - Solo
       responses:
         200:
           description: updated
@@ -302,11 +315,20 @@ components:
         is_not_appropriate:
           type: boolean
           default: false
+        division_tags:
+          $ref: '#/components/schemas/DivisionTagList'
+        category_tags:
+          $ref: '#/components/schemas/PieceCategoryList'
 
     MusicalPieceUpdateRequest:
       allOf:
         - $ref: '#/components/schemas/MusicalPieceCreateRequest'
       description: Fields accepted by the update endpoint.
+      properties:
+        rm_division_tags:
+          $ref: '#/components/schemas/DivisionTagList'
+        rm_category_tags:
+          $ref: '#/components/schemas/PieceCategoryList'
 
     EntityCreated:
       type: object
@@ -351,3 +373,29 @@ components:
         message:
           type: string
           nullable: true
+
+    DivisionTagList:
+      type: array
+      items:
+        $ref: '#/components/schemas/DivisionTag'
+
+    PieceCategoryList:
+      type: array
+      items:
+        $ref: '#/components/schemas/PieceCategory'
+
+    DivisionTag:
+      type: string
+      enum:
+        - Violin Viola
+        - Cello Bass
+        - Piano
+        - Woodwinds
+
+    PieceCategory:
+      type: string
+      enum:
+        - Concerto
+        - Solo
+        - Ensemble
+        - Not Appropriate
