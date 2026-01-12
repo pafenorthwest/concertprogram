@@ -60,7 +60,7 @@ For each `(class_name, concert_series, year)`:
 
 - Exactly one `FIRST`
 - Exactly one `SECOND`
-- `HONORABLE_MENTION` count ≤ 4
+- `HONORABLE_MENTION` count ≤ 5
 - No ties for FIRST
 
 Placements are assigned **to the performer’s adjudicated class entry**, independent of piece/excerpt.
