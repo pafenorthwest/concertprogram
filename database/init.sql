@@ -217,7 +217,8 @@ EXECUTE FUNCTION sync_not_appropriate_flag();
 CREATE TABLE performance_pieces (
     performance_id INTEGER NOT NULL,
     musical_piece_id INTEGER NOT NULL,
-    movement VARCHAR(255) NULL
+    movement VARCHAR(255) NULL,
+    is_merged BOOLEAN NOT NULL DEFAULT FALSE
 );
 CREATE UNIQUE INDEX performance_pieces_idx ON performance_pieces(performance_id,musical_piece_id);
 

@@ -80,6 +80,7 @@ export interface PerformancePieceInterface {
 	performance_id: number;
 	musical_piece_id: number;
 	movement: string | null;
+	is_merged?: boolean;
 }
 
 export interface ClassLotteryInterface {

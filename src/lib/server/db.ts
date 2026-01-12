@@ -311,25 +311,45 @@ export async function mergePerformancePiecesForPerformerSeries(
 		);
 
 		if (!performancesResult.rowCount || performancesResult.rowCount < 2) {
+			if (performancesResult.rowCount === 1) {
+				await connection.query(
+					'DELETE FROM performance_pieces WHERE performance_id = $1 AND is_merged = true',
+					[performancesResult.rows[0].id]
+				);
+			}
 			return;
 		}
 
 		const primaryPerformanceId = performancesResult.rows[0].id;
-		const performanceIds = performancesResult.rows.map((row) => row.id);
+		const secondaryPerformanceIds = performancesResult.rows
+			.slice(1)
+			.map((row) => row.id)
+			.filter((id) => id != null);
 
 		await connection.query(
-			`INSERT INTO performance_pieces (performance_id, musical_piece_id, movement)
-       SELECT $1, merged.musical_piece_id, merged.movement
+			'DELETE FROM performance_pieces WHERE performance_id = $1 AND is_merged = true',
+			[primaryPerformanceId]
+		);
+
+		if (secondaryPerformanceIds.length === 0) {
+			return;
+		}
+
+		await connection.query(
+			`INSERT INTO performance_pieces (performance_id, musical_piece_id, movement, is_merged)
+       SELECT $1, merged.musical_piece_id, merged.movement, true
          FROM (
            SELECT pp.musical_piece_id,
                   MAX(pp.movement) AS movement
              FROM performance_pieces pp
             WHERE pp.performance_id = ANY($2)
+              AND pp.is_merged = false
             GROUP BY pp.musical_piece_id
          ) AS merged
        ON CONFLICT (performance_id, musical_piece_id)
-       DO UPDATE SET movement = COALESCE(performance_pieces.movement, EXCLUDED.movement)`,
-			[primaryPerformanceId, performanceIds]
+       DO UPDATE SET movement = COALESCE(performance_pieces.movement, EXCLUDED.movement),
+                     is_merged = performance_pieces.is_merged`,
+			[primaryPerformanceId, secondaryPerformanceIds]
 		);
 	} finally {
 		connection.release();
@@ -864,9 +884,10 @@ export async function insertPerformancePieceMap(performancePieceMap: Performance
 	try {
 		const connection = await pool.connect();
 
+		const isMerged = performancePieceMap.is_merged === true ? 'true' : 'false';
 		let insertSQL = 'INSERT INTO performance_pieces ';
 		if (performancePieceMap.movement != null) {
-			insertSQL = insertSQL + '(performance_id, musical_piece_id, movement) ';
+			insertSQL = insertSQL + '(performance_id, musical_piece_id, movement, is_merged) ';
 			insertSQL =
 				insertSQL +
 				'VALUES (' +
@@ -875,15 +896,19 @@ export async function insertPerformancePieceMap(performancePieceMap: Performance
 				performancePieceMap.musical_piece_id +
 				", '" +
 				performancePieceMap.movement +
-				"' )";
+				"', " +
+				isMerged +
+				' )';
 		} else {
-			insertSQL = insertSQL + '(performance_id, musical_piece_id) ';
+			insertSQL = insertSQL + '(performance_id, musical_piece_id, is_merged) ';
 			insertSQL =
 				insertSQL +
 				'VALUES (' +
 				performancePieceMap.performance_id +
 				', ' +
 				performancePieceMap.musical_piece_id +
+				', ' +
+				isMerged +
 				' )';
 		}
 		const result = await connection.query(insertSQL);
