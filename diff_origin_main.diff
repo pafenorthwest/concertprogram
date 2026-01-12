@@ -1,0 +1,1177 @@
+diff --git a/docs/2027-schedule-refactor.md b/docs/2027-schedule-refactor.md
+new file mode 100644
+index 0000000..62b2da3
+--- /dev/null
++++ b/docs/2027-schedule-refactor.md
+@@ -0,0 +1,499 @@
++## Product specification: Adjudicated classes + winners concert scheduling (Eastside + Concerto as distinct series)
++
++### Document status
++
++Implementation-ready product spec reflecting your final clarifications:
++
++- Eastside Concerts and Concerto Playoff are **distinct `concert_series` values**
++- A performer may perform once per **series per year** (so potentially once in each)
++- Eastside has **multiple events**; Concerto has **single event**
++- Winners must **opt in** to participate; they can decline selectively
++- Lottery codes are **pre-generated** (before registration), 6-digit integers
++- Pieces are **pre-reviewed/flagged** before festival start
++- WordPress posting occurs **per placement save** (immediate), so we must be idempotent and resilient
++
++---
++
++# 1) Summary
++
++This update introduces a robust separation between:
++
++1. **Adjudicated competition participation** (“adjudicated class entries”) where performers compete in classes and may submit multiple pieces/excerpts, and where placements (1st, 2nd, up to four honorable mentions) and special division awards are recorded.
++
++2. **Winners concert participation and scheduling** (“concert performance”) where first-place winners can opt in to perform in a winners concert for a given concert series/year (Eastside or Concerto), must choose exactly one eligible piece/excerpt from their competition repertoire for that same series/year, and rank preferred performance times. Multiple first-place wins create multiple lottery codes, but all codes for a performer in the same concert series/year must resolve to a **single** winners-concert performance schedule.
++
++---
++
++# 2) Goals and non-goals
++
++## Goals
++
++- Model adjudicated classes as first-class entries, with canonical pieces reused across history.
++- Record placements with hard constraints:
++  - exactly one 1st, exactly one 2nd, up to four honorable mentions per class/series/year.
++
++- Determine winners for Eastside and Concerto using the existing age/class rules.
++- Support winners concert scheduling via **6-digit integer lottery codes**.
++- Ensure multiple winner codes per performer map to **one** winners-concert performance per concert series/year.
++- Require opt-in participation; allow winners to decline participation per series/year.
++- Allow selection of exactly one concert piece/excerpt from eligible adjudicated pieces in that series/year.
++- Support multiple Eastside events, single Concerto event.
++
++## Non-goals
++
++- Printouts/certificates overhaul (explicitly out of scope)
++- Digital audit trail matching paper process (out of scope)
++- Data migration/backfill (not required)
++
++---
++
++# 3) Key business rules
++
++## 3.1 Class/series mapping
++
++- Each class belongs to exactly one concert series.
++- The first two letters of `class_name` indicate division/series (existing convention).
++
++## 3.2 Placements
++
++For each `(class_name, concert_series, year)`:
++
++- Exactly one `FIRST`
++- Exactly one `SECOND`
++- `HONORABLE_MENTION` count ≤ 4
++- No ties for FIRST
++
++Placements are assigned **to the performer’s adjudicated class entry**, independent of piece/excerpt.
++
++## 3.3 Winners eligibility algorithm
++
++Eligibility is computed when placements are saved (or when results are prepared), based on:
++
++- `class_name` prefix
++- performer age
++- `concert_series` (Eastside vs Concerto series values)
++- year
++- placement = FIRST
++
++Outcome: a performer becomes _eligible_ for winners concert participation in:
++
++- **Eastside** (multiple events), or
++- **Concerto Playoff** (single event)
++
++As clarified: Eastside and Concerto are distinct `concert_series` values.
++
++## 3.4 Winners concert performance constraint
++
++A performer may perform **once per concert_series per year**:
++
++- Unique constraint: `(performer_id, concert_series, year)` on winners-concert performance records.
++
++A performer can therefore perform once in Eastside and once in Concerto in the same year if eligible.
++
++## 3.5 Lottery codes
++
++- Lottery codes are **6-digit integers**.
++- They are **generated prior to registration** “with the classes.”
++- Lottery codes are assigned per _winning class_ (i.e., per first-place adjudicated class entry), but must resolve to a single winners-concert performance per performer per series/year.
++
++## 3.6 Opt-in participation
++
++- Winners must explicitly opt in (participation confirmed).
++- A winner may decline participation for one series and still participate in the other.
++
++## 3.7 Concert piece selection
++
++- Winners concert piece must be chosen from **pieces/excerpts already used** in adjudicated entries for the **same concert_series + year**.
++- Exactly one piece/excerpt is selected for the winners concert performance.
++
++## 3.8 Piece permissibility
++
++- Pieces are reviewed before competition; the system must support:
++  - flagging pieces as “not permissible”
++  - preventing selection (or warning) as part of entry creation
++  - reporting to staff before festival start
++
++(Recommended: block selection by default; allow admin override if needed.)
++
++## 3.9 WordPress publishing
++
++- Posting occurs **once per placement save** (immediate).
++- Must be idempotent and resilient to retries (network failures, double-submits).
++
++---
++
++# 4) User journeys
++
++## 4.1 Registrar: build adjudicated entries and pieces
++
++1. Create adjudicated class entry for performer (class_name, age, division, series, year, accompanist).
++2. Attach one or more pieces/excerpts.
++3. If a piece is flagged “not permissible,” registrar sees warning/block.
++
++## 4.2 Registrar: enter placements and publish immediately
++
++1. Save placement for an adjudicated class entry.
++2. System validates constraints (no extra FIRST/SECOND; max HM).
++3. System posts updated results to WordPress (immediate).
++4. If placement creates a FIRST:
++   - system updates eligibility and ensures winners performance object exists (opt-in still pending)
++   - system ensures a lottery code exists (or links the pre-generated code)
++
++## 4.3 Winner: schedule via lottery code
++
++1. Winner enters a **6-digit code** on the scheduling site.
++2. System resolves code → performer + series + year.
++3. If performer already has a winners concert performance record for that series/year:
++   - show existing state (participation choice, chosen piece, existing preferences)
++
++4. Winner chooses:
++   - Participate (Yes/No)
++   - If Yes:
++     - choose an event (Eastside only; Concerto auto-select)
++     - rank preferred performance times
++     - select exactly one eligible piece/excerpt
++     - confirm attendance
++
++## 4.4 Multi-win mapping behavior
++
++- If a performer wins multiple classes in the same series/year:
++  - each class has its own lottery code
++  - entering any code lands on the same winners performance schedule
++  - no duplicate scheduling records are created
++
++---
++
++# 5) Data model
++
++## 5.1 Performers (idempotent import key)
++
++```sql
++CREATE TABLE performer (
++  id SERIAL PRIMARY KEY,
++  external_id INTEGER UNIQUE NULL, -- idempotent import key
++  full_name VARCHAR(255) NOT NULL,
++  instrument instrument_list NULL,
++  created_at TIMESTAMP NOT NULL DEFAULT now()
++);
++```
++
++## 5.2 Adjudicated class entries (replaces current “performance” semantics)
++
++Your table, with necessary additions (notably `age`, and remove “duration default 0 NOT NULL” if you want unknown; I kept your pattern).
++
++```sql
++CREATE TABLE adjudicated_class_entry (
++  id SERIAL PRIMARY KEY,
++  performer_id INTEGER NOT NULL REFERENCES performer(id),
++  class_name VARCHAR(255) NOT NULL,
++  division VARCHAR(255) NOT NULL,
++  concert_series VARCHAR(255) NOT NULL,
++  year INTEGER NOT NULL,
++  age INTEGER NOT NULL,
++  duration_seconds INTEGER NOT NULL DEFAULT 0,
++  accompanist_id INTEGER NULL,
++  instrument instrument_list NULL,
++  comment VARCHAR(500) NULL
++);
++
++CREATE UNIQUE INDEX adjudicated_entry_unique
++  ON adjudicated_class_entry(performer_id, class_name, concert_series, year);
++```
++
++## 5.3 Canonical pieces (historical reuse + permissibility)
++
++```sql
++CREATE TABLE musical_piece (
++  id SERIAL PRIMARY KEY,
++  title VARCHAR(255) NOT NULL,
++  composer VARCHAR(255) NOT NULL,
++  imslp_url VARCHAR(500) NULL,
++  is_permissible BOOLEAN NOT NULL DEFAULT true,
++  review_status VARCHAR(32) NOT NULL DEFAULT 'UNREVIEWED', -- UNREVIEWED|APPROVED|FLAGGED
++  review_notes VARCHAR(500) NULL
++);
++
++CREATE UNIQUE INDEX musical_piece_title_composer_uq
++  ON musical_piece(lower(title), lower(composer));
++```
++
++## 5.4 Entry → pieces + excerpt
++
++```sql
++CREATE TABLE adjudicated_entry_piece (
++  id SERIAL PRIMARY KEY,
++  adjudicated_entry_id INTEGER NOT NULL REFERENCES adjudicated_class_entry(id) ON DELETE CASCADE,
++  musical_piece_id INTEGER NOT NULL REFERENCES musical_piece(id),
++  excerpt VARCHAR(500) NULL,
++  duration_seconds INTEGER NULL
++);
++
++CREATE INDEX adjudicated_entry_piece_entry_idx
++  ON adjudicated_entry_piece(adjudicated_entry_id);
++```
++
++## 5.5 Placements (with constraints)
++
++```sql
++CREATE TYPE placement_rank AS ENUM ('FIRST', 'SECOND', 'HONORABLE_MENTION');
++
++CREATE TABLE placement (
++  id SERIAL PRIMARY KEY,
++  adjudicated_entry_id INTEGER NOT NULL REFERENCES adjudicated_class_entry(id) ON DELETE CASCADE,
++  year INTEGER NOT NULL,
++  concert_series VARCHAR(255) NOT NULL,
++  class_name VARCHAR(255) NOT NULL,
++  rank placement_rank NOT NULL,
++  created_at TIMESTAMP NOT NULL DEFAULT now()
++);
++
++CREATE UNIQUE INDEX placement_first_second_unique
++  ON placement(year, concert_series, class_name, rank)
++  WHERE rank IN ('FIRST','SECOND');
++```
++
++Honorable mention max=4 enforced in application logic (transactionally).
++
++## 5.6 Special awards (per division)
++
++```sql
++CREATE TABLE special_award (
++  id SERIAL PRIMARY KEY,
++  year INTEGER NOT NULL,
++  division VARCHAR(255) NOT NULL,
++  name VARCHAR(255) NOT NULL,
++  performer_id INTEGER NOT NULL REFERENCES performer(id),
++  class_name VARCHAR(255) NOT NULL,
++  age INTEGER NOT NULL,
++  created_at TIMESTAMP NOT NULL DEFAULT now()
++);
++
++CREATE TABLE special_award_piece (
++  id SERIAL PRIMARY KEY,
++  special_award_id INTEGER NOT NULL REFERENCES special_award(id) ON DELETE CASCADE,
++  musical_piece_id INTEGER NOT NULL REFERENCES musical_piece(id),
++  excerpt VARCHAR(500) NULL
++);
++```
++
++## 5.7 Winners concert events
++
++Eastside has many; Concerto has one.
++
++```sql
++CREATE TABLE winners_concert_event (
++  id SERIAL PRIMARY KEY,
++  year INTEGER NOT NULL,
++  concert_series VARCHAR(255) NOT NULL, -- 'Eastside' or 'Concerto' series values
++  name VARCHAR(255) NOT NULL,
++  venue VARCHAR(255) NULL,
++  start_time TIMESTAMP NOT NULL
++);
++
++CREATE INDEX winners_event_lookup
++  ON winners_concert_event(year, concert_series, start_time);
++```
++
++## 5.8 Winners concert performance (one per performer per series/year)
++
++```sql
++CREATE TABLE winners_concert_performance (
++  id SERIAL PRIMARY KEY,
++  performer_id INTEGER NOT NULL REFERENCES performer(id),
++  year INTEGER NOT NULL,
++  concert_series VARCHAR(255) NOT NULL, -- Eastside vs Concerto series values
++  participating BOOLEAN NOT NULL DEFAULT false,
++  participation_decided_at TIMESTAMP NULL,
++  selected_entry_piece_id INTEGER NULL REFERENCES adjudicated_entry_piece(id),
++  attendance_confirmed BOOLEAN NOT NULL DEFAULT false,
++  created_at TIMESTAMP NOT NULL DEFAULT now()
++);
++
++CREATE UNIQUE INDEX winners_perf_unique
++  ON winners_concert_performance(performer_id, year, concert_series);
++```
++
++## 5.9 Lottery codes (pre-generated 6-digit integers)
++
++Key change: codes exist prior to placements; placements later “activate” them.
++
++```sql
++CREATE TABLE lottery_code (
++  id SERIAL PRIMARY KEY,
++  code INTEGER NOT NULL UNIQUE CHECK (code BETWEEN 100000 AND 999999),
++  year INTEGER NOT NULL,
++  concert_series VARCHAR(255) NOT NULL,
++  class_name VARCHAR(255) NOT NULL,
++  -- assigned once winner determined:
++  performer_id INTEGER NULL REFERENCES performer(id),
++  adjudicated_entry_id INTEGER NULL REFERENCES adjudicated_class_entry(id),
++  winners_concert_performance_id INTEGER NULL REFERENCES winners_concert_performance(id),
++  status VARCHAR(32) NOT NULL DEFAULT 'RESERVED', -- RESERVED|ASSIGNED|REVOKED
++  created_at TIMESTAMP NOT NULL DEFAULT now()
++);
++
++CREATE INDEX lottery_code_lookup
++  ON lottery_code(year, concert_series, class_name);
++```
++
++**Important mapping requirement:** When a performer has multiple winning classes in the same series/year, each code must point to the _same_ `winners_concert_performance_id`.
++
++## 5.10 Schedule assignment (ties to existing scheduling)
++
++```sql
++CREATE TABLE winners_concert_schedule_assignment (
++  id SERIAL PRIMARY KEY,
++  winners_concert_performance_id INTEGER NOT NULL UNIQUE
++    REFERENCES winners_concert_performance(id),
++  winners_concert_event_id INTEGER NOT NULL REFERENCES winners_concert_event(id),
++  scheduled_start_time TIMESTAMP NOT NULL,
++  created_at TIMESTAMP NOT NULL DEFAULT now()
++);
++```
++
++Your existing “rank preferred times” table(s) should reference `winners_concert_performance_id`.
++
++---
++
++# 6) Core logic requirements
++
++## 6.1 Placement save transaction (high-level)
++
++On save of placement `P` for adjudicated entry `E`:
++
++1. Validate placement constraints for `(E.class_name, E.concert_series, E.year)`:
++   - FIRST/SECOND uniqueness
++   - HM count ≤ 4
++
++2. Persist placement.
++3. **Post to WordPress** immediately (per requirement) with idempotency key.
++4. If rank = FIRST:
++   - Determine winners concert series eligibility (Eastside vs Concerto) using your rules.
++   - Upsert winners_concert_performance `(performer_id, year, winners_series)`
++   - Find the pre-generated lottery_code row for `(year, winners_series, class_name)` and assign:
++     - performer_id
++     - adjudicated_entry_id
++     - winners_concert_performance_id
++     - status = ASSIGNED
++
++   - If performer already has an assigned winners_concert_performance_id for the same series/year:
++     - ensure this lottery code points to that same performance
++
++### Idempotency and concurrency
++
++- Placement save must be safe against double-submit:
++  - use DB uniqueness for FIRST/SECOND
++  - WordPress post must include an idempotency key (see below)
++
++- Mapping of codes must be transactionally consistent (serializable or use `SELECT ... FOR UPDATE` on winners_concert_performance + relevant lottery_code rows).
++
++## 6.2 WordPress posting (per placement save)
++
++Because you post on every placement save, implement:
++
++- An `idempotency_key` per placement action (e.g., `placement:{placement_id}:{updated_at}` or a hash of canonical payload + placement id).
++- A local `wordpress_publish_log` table to record:
++  - idempotency_key
++  - payload_hash
++  - response status
++  - timestamp
++
++If a retry occurs, you re-send but prevent duplicate “logical publishes” on your side and allow WordPress to dedupe (if possible).
++
++---
++
++# 7) Scheduling experience details
++
++## 7.1 Code entry
++
++- Input is 6-digit integer.
++- Lookup `lottery_code` by code.
++- If `status != ASSIGNED`, show a friendly error:
++  - “This code is not active yet” (RESERVED) or “Invalid” (no match).
++
++## 7.2 Participation decision
++
++- If performer declines:
++  - set `participating=false`, `participation_decided_at=now()`
++  - do not allow slot ranking or piece selection (or allow view-only)
++
++- If performer opts in:
++  - set `participating=true`
++  - require:
++    - event selection (Eastside only; Concerto preselected)
++    - slot rankings
++    - piece selection
++    - attendance confirmation
++
++## 7.3 Eligible piece list
++
++Eligible options = all `adjudicated_entry_piece` where:
++
++- performer matches
++- year matches
++- concert_series matches the winners series (Eastside or Concerto)
++
++System must enforce:
++
++- exactly one selection
++- selection must belong to the eligible set
++
++---
++
++# 8) Reporting and admin tooling (in scope)
++
++Even though printouts are out of scope, the following admin views are needed to operate:
++
++- “Winners dashboard” per year/series:
++  - list first-place winners, their codes, participation status, selected piece, scheduled slot (if assigned)
++
++- “Pieces review dashboard”:
++  - list flagged/unreviewed pieces by year/series/class usage (support pre-festival review)
++
++---
++
++# 9) Acceptance criteria
++
++## A) Data integrity
++
++- Cannot create two FIRST placements for same `(class_name, concert_series, year)`.
++- Cannot create more than 4 HM placements for same `(class_name, concert_series, year)`.
++- A performer has at most one `winners_concert_performance` per `(concert_series, year)`.
++
++## B) Multi-win mapping
++
++- If performer wins FIRST in two classes in Eastside 2026, they receive two codes.
++- Entering either code shows the same winners performance record and the same scheduled slot (once assigned).
++
++## C) Scheduling constraints
++
++- Winner cannot confirm attendance without selecting exactly one eligible piece.
++- Winner cannot select a piece outside eligible set.
++
++## D) Lottery codes lifecycle
++
++- Codes exist pre-registration as 6-digit integers tied to `(year, series, class_name)`.
++- After FIRST placement is recorded, the code becomes ASSIGNED with performer linkage.
++
++## E) WordPress posting
++
++- Saving a placement triggers one logical post operation.
++- Re-saving (edit) triggers another post, but retries do not create uncontrolled duplicates (idempotency log works).
++
++---
++
++# 10) Recommended delivery sequence (pragmatic)
++
++1. **Schema + basic CRUD** for adjudicated entries, canonical pieces, entry-piece linking.
++2. **Placement entry** with constraints + immediate WordPress post + publish log.
++3. **Lottery code pre-generation** tooling (admin command / job) for a given year:
++   - generate per class_name + series using 6-digit uniqueness
++
++4. **Eligibility + code assignment** on FIRST placement save.
++5. **Winners concert performance + scheduling integration**:
++   - code lookup → resolve winners performance
++   - participation decision
++   - eligible piece selection
++   - slot preferences and schedule assignment per winners performance
++
++6. **Pieces review dashboard** (flagged/unreviewed) to support pre-festival review.
+diff --git a/docs/schedule-refactor.md b/docs/schedule-refactor.md
+deleted file mode 100644
+index 0dd28c2..0000000
+--- a/docs/schedule-refactor.md
++++ /dev/null
+@@ -1,68 +0,0 @@
+-# Schedule Flow Refactor Scope
+-
+-## Goals
+-
+-- Refactor schedule flow to reduce redundancy, improve testability, and encapsulate logic in server-side classes.
+-- Drive UI mode (confirm-only vs rank-choice) by slot count, not series name.
+-- Support rank-choice for up to 10 slots; allow partial rankings but require exactly one rank 1, no duplicate ranks.
+-- Treat “not available” as first-class persisted data.
+-- Introduce row-per-slot storage for schedule choices in a new table.
+-- Keep existing query params stable; form field names may change.
+-
+-## Non-Goals
+-
+-- Do not change performer lookup query params or URL structure.
+-- Do not remove caching or CORS behavior in hooks unless required.
+-- Do not implement client-only validation as the sole guard; server validation must remain authoritative.
+-- Do not rely on series name to pick mode.
+-- Legacy support is not a goal.
+-- Backwards compatibility is not a goal.
+-
+-## Task List
+-
+-### Design domain & storage
+-
+-- Define new table schema (migration) for row-per-slot schedule choices: performer_id, concert_series, year, slot_id (concert_times ref), rank (nullable), not_available (bool), timestamps.
+-- Decide slot identifier mapping (e.g., from concert_times via cache) and ordering by concert_number_in_series.
+-
+-### Implement repository layer
+-
+-- Add ScheduleRepository for reading/writing schedules using the new table and performance duration/comment updates.
+-- Ensure methods handle partial ranks, enforce unique ranks, at least one rank 1, and persist not_available.
+-
+-### Slot service
+-
+-- Build SlotCatalog that loads slots for a series/year (from cache/DB), sorts by concert_number_in_series, and exposes slotCount plus display/normalized times.
+-
+-### Lookup service
+-
+-- Create PerformerLookup wrapping code/details search with sanitization and status mapping, preserving existing query params.
+-
+-### Mapping & validation
+-
+-- Add ScheduleMapper to translate repository rows to/from UI form model for both modes (confirm-only when slotCount === 1; rank-choice otherwise, up to 10 slots).
+-- Add ScheduleValidator enforcing: at least one rank 1, ranks unique, rank range 1..slotCount, allow partial ranks, allow not_available, confirm-only requires explicit confirmation.
+-
+-### Refactor server load/action (+page.server.ts)
+-
+-- In load: sanitize inputs, lookup performer, build schedule context from slots, fetch saved schedule, map to view model; return consistent status payloads.
+-- In actions.add: parse form (field names can change), validate via ScheduleValidator, persist via ScheduleRepository, redirect on success. Remove series-name branching; branch on slotCount.
+-
+-### Update Svelte page (+page.svelte)
+-
+-- Render dynamically from mode and slots; no hard-coded 4-slot UI. Generate rank selects (1..slotCount) and not-available checkboxes per slot. Allow partial ranks; keep/adjust minimal client feedback consistent with server rules.
+-- Maintain existing query params usage; update form field names to align with new server expectations.
+-
+-### Common utilities
+-
+-- Replace legacy helpers (parseRankChoice, hard-coded timestamp transforms) with generalized utilities for variable slot counts and display formatting.
+-
+-### Tests
+-
+-- Expand schedule-page.test.ts for confirm-only (any single-slot series) and rank-choice with 2, 4, 10 slots; cover partial ranks, duplicate-rank rejection, missing rank-1 rejection, not-available persistence, hydration of saved data.
+-- Add unit tests for ScheduleValidator, ScheduleMapper, SlotCatalog, ScheduleRepository behaviors.
+-
+-### Docs & cleanup
+-
+-- Update developernotes.md/README with new flow, schema, validation rules, and form field changes.
+-- Remove dead code/duplicate helpers once new path is in place.
+diff --git a/src/lib/server/db.ts b/src/lib/server/db.ts
+index 074f249..41d2678 100644
+--- a/src/lib/server/db.ts
++++ b/src/lib/server/db.ts
+@@ -1110,34 +1110,43 @@ export async function searchMusicalPiece(printed_name: string, first_contributor
+ 	}
+ }
+ 
+-export async function searchPerformanceByPerformer(
++export async function searchPerformanceByPerformerAndClass(
+ 	performer_id: number,
++	class_name: string,
+ 	concert_series: string,
+ 	year: number
+ ) {
+ 	try {
+ 		const connection = await pool.connect();
+ 
+-		const searchSQL =
+-			'SELECT performance.id, performer.full_name as performer_name, \n' +
+-			'musical_piece.printed_name as musical_piece_printed_name, \n' +
+-			'performance.performer_id, performance.performance_order, \n' +
+-			'performance.concert_series, performance.year, performance.duration, performance.accompanist_id, \n' +
+-			'performance.comment, performance.instrument, warm_up_room_name, warm_up_room_start, warm_up_room_end \n' +
+-			'FROM performance \n' +
+-			'JOIN performance_pieces ON performance.id = performance_pieces.performance_id \n' +
+-			'JOIN musical_piece ON performance_pieces.musical_piece_id = musical_piece.id \n' +
+-			'JOIN performer ON performance.performer_id = performer.id \n' +
+-			'WHERE performer_id = ' +
+-			performer_id +
+-			'\n   ' +
+-			"    AND LOWER(concert_series) = '" +
+-			concert_series.toLowerCase() +
+-			"' \n" +
+-			'    AND year = ' +
+-			year;
+-
+-		const result = await connection.query(searchSQL);
++		const searchSQL = `
++			SELECT
++				p.id,
++				perf.full_name AS performer_name,
++				mp.printed_name AS musical_piece_printed_name,
++				p.performer_id,
++				p.performance_order,
++				p.class_name,
++				p.concert_series,
++				p.year,
++				p.duration,
++				p.accompanist_id,
++				p.comment,
++				p.instrument,
++				p.warm_up_room_name,
++				p.warm_up_room_start,
++				p.warm_up_room_end
++			FROM performance p
++			JOIN performer perf ON p.performer_id = perf.id
++			JOIN performance_pieces pp ON p.id = pp.performance_id
++			JOIN musical_piece mp ON pp.musical_piece_id = mp.id
++			WHERE p.performer_id = $1
++				AND p.class_name = $2
++				AND LOWER(p.concert_series) = LOWER($3)
++				AND p.year = $4;
++			`;
++
++		const result = await connection.query(searchSQL, [performer_id, class_name, concert_series, year]);
+ 
+ 		// Release the connection back to the pool
+ 		connection.release();
+diff --git a/src/lib/server/import.ts b/src/lib/server/import.ts
+index bc3ec4b..d36e545 100644
+--- a/src/lib/server/import.ts
++++ b/src/lib/server/import.ts
+@@ -28,7 +28,7 @@ import {
+ 	searchContributor,
+ 	searchMusicalPiece,
+ 	searchPerformer,
+-	searchPerformanceByPerformer,
++	searchPerformanceByPerformerAndClass,
+ 	insertPerformance,
+ 	insertPerformancePieceMap,
+ 	deleteById,
+@@ -412,15 +412,22 @@ export class Performance {
+ 		if (performer?.id == null) {
+ 			throw new PerformerError("Can't process Performance with null performer");
+ 		}
+-		const res = await searchPerformanceByPerformer(performer.id, concert_series, year());
++		const normalizedClass = class_name.trim();
++		const normalizedSeries = concert_series.trim();
++		const res = await searchPerformanceByPerformerAndClass(
++			performer.id,
++			normalizedClass,
++			normalizedSeries,
++			year()
++		);
+ 		if (res.rowCount == null || res.rowCount < 1) {
+ 			const thisPerformance: PerformanceInterfaceTagCreate = {
+ 				id: null,
+-				class: class_name,
++				class: normalizedClass,
+ 				performer_name: performer.full_name,
+ 				duration: null,
+ 				accompanist_id: accompanist_id,
+-				concert_series: concert_series,
++				concert_series: normalizedSeries,
+ 				year: year(),
+ 				instrument: performer.instrument,
+ 				created: true
+@@ -444,10 +451,10 @@ export class Performance {
+ 		return {
+ 			id: res.rows[0].id,
+ 			performer_name: res.rows[0].performer_name,
+-			class: class_name,
++			class: res.rows[0].class_name ?? normalizedClass,
+ 			duration: res.rows[0].duration,
+ 			accompanist_id: res.rows[0].accompanist_id,
+-			concert_series: res.rows[0].concert_series,
++			concert_series: res.rows[0].concert_series ?? normalizedSeries,
+ 			year: res.rows[0].year,
+ 			instrument: res.rows[0].instrument,
+ 			created: false
+diff --git a/src/routes/admin/+page.server.ts b/src/routes/admin/+page.server.ts
+index 729db60..76fe44f 100644
+--- a/src/routes/admin/+page.server.ts
++++ b/src/routes/admin/+page.server.ts
+@@ -70,13 +70,49 @@ export const actions = {
+ 				});
+ 			}
+ 
++			const rawClassName = formData.get('class');
++			if (rawClassName == null || rawClassName === '') {
++				throw new Error('Class Name is required');
++			}
++			const className = String(rawClassName).trim();
++
++			const rawPerformer = formData.get('performer-name');
++			if (rawPerformer == null || rawPerformer === '') {
++				throw new Error('Performer  is required');
++			}
++			const performer = String(rawPerformer).trim();
++
++			const rawAge = formData.get('age');
++			if (rawAge == null || rawAge === '') {
++				throw new Error('Age is required');
++			}
++			const age = Number(rawAge);
++
++			const rawLottery = formData.get('lottery');
++			if (rawLottery == null || rawLottery === '') {
++				throw new Error('Lottery is required');
++			}
++			const lottery = Number(rawLottery);
++
++			const rawConcertSeries = formData.get('concert-series');
++			if (rawConcertSeries == null || rawConcertSeries == '') {
++				throw new Error('Concert Series is required');
++			}
++			const concertSeries = String(rawConcertSeries).trim();
++
++			const rawInstrument = formData.get('instrument');
++			if (rawInstrument == null || rawInstrument == '') {
++				throw new Error('Instrument is required');
++			}
++			const instrument = String(rawInstrument).trim();
++
+ 			const imported: ImportPerformanceInterface = {
+-				class_name: formData.get('class'),
+-				performer: formData.get('performer-name'),
+-				age: formData.get('age'),
+-				lottery: formData.get('lottery'),
+-				instrument: formData.get('instrument'),
+-				concert_series: formData.get('concert-series'),
++				class_name: className,
++				performer: performer,
++				age: age,
++				lottery: lottery,
++				instrument: instrument,
++				concert_series: concertSeries,
+ 				musical_piece: importMusicalTitle,
+ 				...(formData.get('accompanist') != null && formData.get('accompanist') !== ''
+ 					? { accompanist: formData.get('accompanist') }
+diff --git a/src/routes/schedule/+page.server.ts b/src/routes/schedule/+page.server.ts
+index a99afe8..b98e682 100644
+--- a/src/routes/schedule/+page.server.ts
++++ b/src/routes/schedule/+page.server.ts
+@@ -25,6 +25,8 @@ async function getSortedConcertTimes(): Promise<ConcertRow[] | null> {
+ }
+ 
+ export async function load({ url }) {
++	/* console.log('[schedule.load] url=', url.toString()); */
++
+ 	const performerLookup = PerformerLookup.create();
+ 	let performerSearchResults: PerformerSearchResultsInterface = {
+ 		status: 'ERROR',
+@@ -42,6 +44,15 @@ export async function load({ url }) {
+ 	let slots: Slot[] = [];
+ 
+ 	const concertStartTimes = await getSortedConcertTimes();
++	/*
++	console.log(
++		'[schedule.load] concertStartTimes?',
++		!!concertStartTimes,
++		'count=',
++		concertStartTimes?.length
++	);
++	*/
++
+ 	if (concertStartTimes == null) {
+ 		return {
+ 			status: 'NOTFOUND',
+@@ -59,6 +70,8 @@ export async function load({ url }) {
+ 	}
+ 
+ 	performerSearchResults = await performerLookup.lookupFromUrl(url);
++	/* console.log('[schedule.load] performerSearchResults=', performerSearchResults); */
++
+ 	if (performerSearchResults.status === 'OK') {
+ 		const slotCatalog = await SlotCatalog.load(performerSearchResults.concert_series, year());
+ 		slotCount = slotCatalog.slotCount;
+@@ -77,6 +90,14 @@ export async function load({ url }) {
+ 				console.error('Error performing fetchSchedule');
+ 			}
+ 		}
++		/*
++		console.log(
++			'[schedule.load] slotCount=',
++			slotCount,
++			'concert_series=',
++			performerSearchResults.concert_series
++		);
++		*/
+ 	}
+ 	return {
+ 		status: performerSearchResults.status,
+diff --git a/src/test/db/lookupByCode-multi-class.test.ts b/src/test/db/lookupByCode-multi-class.test.ts
+new file mode 100644
+index 0000000..810bc4a
+--- /dev/null
++++ b/src/test/db/lookupByCode-multi-class.test.ts
+@@ -0,0 +1,358 @@
++import { describe, expect, it, vi } from 'vitest';
++import { refreshCachedTimeStamps } from '$lib/cache';
++import { Performance } from '$lib/server/import';
++import { parseMusicalPiece, type ImportPerformanceInterface, year } from '$lib/server/common';
++import { lookupByCode, pool } from '$lib/server/db';
++import { SlotCatalog } from '$lib/server/slotCatalog';
++import { ScheduleMapper } from '$lib/server/scheduleMapper';
++import { ScheduleRepository } from '$lib/server/scheduleRepository';
++
++vi.mock('$lib/server/common', async () => {
++	const actual = await vi.importActual<typeof import('$lib/server/common')>('$lib/server/common');
++	return {
++		...actual,
++		year: () => TEST_YEAR
++	};
++});
++
++import { load } from '../../routes/schedule/+page.server';
++
++const TEST_YEAR = 2026;
++
++async function fetchPerformerEmail(performerId: number) {
++	const result = await pool.query('SELECT id, email, full_name FROM performer WHERE id = $1', [
++		performerId
++	]);
++	return result.rows[0];
++}
++
++async function fetchPieceAndComposer(performanceId: number) {
++	const result = await pool.query(
++		`SELECT mp.printed_name, c.full_name AS composer_name
++     FROM performance_pieces pp
++     JOIN musical_piece mp ON mp.id = pp.musical_piece_id
++     JOIN contributor c ON c.id = mp.first_contributor_id
++     WHERE pp.performance_id = $1`,
++		[performanceId]
++	);
++	return result.rows[0];
++}
++
++async function cleanupDb({
++	performanceIds,
++	musicalPieceIds,
++	classNames,
++	concertSeries,
++	scheduleYear,
++	performerId
++}: {
++	performanceIds: number[];
++	musicalPieceIds: number[];
++	classNames: string[];
++	concertSeries: string[];
++	scheduleYear: number;
++	performerId: number | null;
++}) {
++	const client = await pool.connect();
++	try {
++		if (performanceIds.length > 0) {
++			await client.query('DELETE FROM performance_pieces WHERE performance_id = ANY($1)', [
++				performanceIds
++			]);
++			await client.query('DELETE FROM performance WHERE id = ANY($1)', [performanceIds]);
++		}
++		if (classNames.length > 0) {
++			await client.query('DELETE FROM class_lottery WHERE class_name = ANY($1)', [classNames]);
++		}
++		if (musicalPieceIds.length > 0) {
++			await client.query('DELETE FROM musical_piece WHERE id = ANY($1)', [musicalPieceIds]);
++		}
++		if (concertSeries.length > 0) {
++			await client.query('DELETE FROM concert_times WHERE concert_series = ANY($1) AND year = $2', [
++				concertSeries,
++				scheduleYear
++			]);
++			if (performerId != null) {
++				await client.query(
++					`DELETE FROM schedule_slot_choice
++           WHERE performer_id = $1
++             AND concert_series = ANY($2)
++             AND year = $3`,
++					[performerId, concertSeries, scheduleYear]
++				);
++			}
++		}
++		if (performerId != null) {
++			await client.query('DELETE FROM performer WHERE id = $1', [performerId]);
++		}
++	} finally {
++		client.release();
++	}
++}
++
++async function seedConcertTimes(seriesList: string[], scheduleYear: number) {
++	const client = await pool.connect();
++	try {
++		for (const series of seriesList) {
++			await client.query('DELETE FROM concert_times WHERE concert_series = $1 AND year = $2', [
++				series,
++				scheduleYear
++			]);
++			await client.query(
++				`INSERT INTO concert_times (concert_series, year, concert_number_in_series, start_time)
++         VALUES ($1, $2, 1, $3),
++                ($1, $2, 2, $4)
++         ON CONFLICT (concert_series, year, concert_number_in_series) DO NOTHING`,
++				[series, scheduleYear, `${scheduleYear}-05-01 10:00:00`, `${scheduleYear}-05-02 10:00:00`]
++			);
++		}
++	} finally {
++		client.release();
++	}
++	await refreshCachedTimeStamps();
++}
++
++async function setupMultiClassFixtures() {
++	const basePerformer = {
++		fullName: 'Lookup Code Performer',
++		age: 16,
++		instrument: 'Piano',
++		email: 'lookup.code.performer@example.com',
++		phone: '555-0101'
++	};
++
++	const firstImport: ImportPerformanceInterface = {
++		class_name: 'TST.LOOKUP.1',
++		performer: basePerformer.fullName,
++		lottery: 43210,
++		age: basePerformer.age,
++		email: basePerformer.email,
++		phone: basePerformer.phone,
++		accompanist: 'First Accompanist',
++		instrument: basePerformer.instrument,
++		musical_piece: [
++			{
++				title: 'Midnight Rhapsody in G minor',
++				contributors: [{ name: 'Composer Alpha', yearsActive: '1900-1980' }]
++			}
++		],
++		concert_series: 'LookupSeriesA'
++	};
++
++	const secondImport: ImportPerformanceInterface = {
++		class_name: 'TST.LOOKUP.2',
++		performer: basePerformer.fullName,
++		lottery: 98765,
++		age: basePerformer.age,
++		email: basePerformer.email,
++		phone: basePerformer.phone,
++		accompanist: 'Second Accompanist',
++		instrument: basePerformer.instrument,
++		musical_piece: [
++			{
++				title: 'Dawn Etude in D major',
++				contributors: [{ name: 'Composer Beta', yearsActive: '1880-1950' }]
++			}
++		],
++		concert_series: 'LookupSeriesB'
++	};
++
++	const firstPerformance = new Performance();
++	const secondPerformance = new Performance();
++	const performanceIds: number[] = [];
++	const musicalPieceIds: number[] = [];
++	const classNames: string[] = [firstImport.class_name, secondImport.class_name];
++	const concertSeries = [firstImport.concert_series!, secondImport.concert_series!];
++	const scheduleYear = year();
++	let performerId: number | null = null;
++
++	await seedConcertTimes(concertSeries, scheduleYear);
++
++	await firstPerformance.initialize(firstImport);
++	await secondPerformance.initialize(secondImport);
++
++	if (firstPerformance.performer?.id != null) {
++		performerId = firstPerformance.performer.id;
++	}
++	if (secondPerformance.performer?.id != null && performerId == null) {
++		performerId = secondPerformance.performer.id;
++	}
++	if (firstPerformance.performance?.id != null) {
++		performanceIds.push(firstPerformance.performance.id);
++	}
++	if (secondPerformance.performance?.id != null) {
++		performanceIds.push(secondPerformance.performance.id);
++	}
++	if (firstPerformance.musical_piece_1?.id != null) {
++		musicalPieceIds.push(firstPerformance.musical_piece_1.id);
++	}
++	if (secondPerformance.musical_piece_1?.id != null) {
++		musicalPieceIds.push(secondPerformance.musical_piece_1.id);
++	}
++
++	const firstLookup = await lookupByCode(String(firstImport.lottery));
++	const secondLookup = await lookupByCode(String(secondImport.lottery));
++
++	if (firstLookup == null || secondLookup == null) {
++		throw new Error('Failed to look up performer by lottery code.');
++	}
++
++	const performerRow = await fetchPerformerEmail(firstLookup.performer_id);
++	const expectedFirstTitle = parseMusicalPiece(
++		firstImport.musical_piece[0].title
++	).titleWithoutMovement;
++	const expectedSecondTitle = parseMusicalPiece(
++		secondImport.musical_piece[0].title
++	).titleWithoutMovement;
++
++	return {
++		basePerformer,
++		firstImport,
++		secondImport,
++		firstLookup,
++		secondLookup,
++		performerRow,
++		expectedFirstTitle,
++		expectedSecondTitle,
++		performanceIds,
++		musicalPieceIds,
++		classNames,
++		concertSeries,
++		scheduleYear,
++		performerId
++	};
++}
++
++describe('dbOnly lookupByCode with performer in multiple classes', () => {
++	it('returns performer and musical details for each class lottery', async () => {
++		const fixtures = await setupMultiClassFixtures();
++		const scheduleRepository = new ScheduleRepository();
++
++		try {
++			expect(fixtures.firstLookup).not.toBeNull();
++			expect(fixtures.secondLookup).not.toBeNull();
++
++			expect(fixtures.firstLookup!.performer_id).toBe(fixtures.performerRow.id);
++			expect(fixtures.secondLookup!.performer_id).toBe(fixtures.performerRow.id);
++			expect(fixtures.performerRow.full_name).toBe(fixtures.basePerformer.fullName);
++			expect(fixtures.performerRow.email).toBe(fixtures.basePerformer.email);
++			expect(fixtures.firstLookup!.lottery_code).toBe(fixtures.firstImport.lottery);
++			expect(fixtures.secondLookup!.lottery_code).toBe(fixtures.secondImport.lottery);
++
++			expect(fixtures.firstLookup!.performer_name).toBe(fixtures.basePerformer.fullName);
++			expect(fixtures.firstLookup!.musical_piece).toBe(fixtures.expectedFirstTitle);
++			expect(fixtures.secondLookup!.performer_name).toBe(fixtures.basePerformer.fullName);
++			expect(fixtures.secondLookup!.musical_piece).toBe(fixtures.expectedSecondTitle);
++
++			const firstSlotCatalog = await SlotCatalog.load(
++				fixtures.firstLookup!.concert_series,
++				fixtures.scheduleYear
++			);
++			const firstScheduleChoice = await scheduleRepository.fetchChoices(
++				fixtures.performerRow.id,
++				fixtures.firstLookup!.concert_series,
++				fixtures.scheduleYear
++			);
++			const firstViewModel = ScheduleMapper.toViewModel(
++				firstSlotCatalog.slots,
++				firstScheduleChoice
++			);
++			expect(firstViewModel.mode).toBe('rank-choice');
++			expect(firstViewModel.slotCount).toBe(firstSlotCatalog.slots.length);
++			expect(firstViewModel.slots.every((slot) => slot.rank === null)).toBe(true);
++			expect(firstViewModel.slots.every((slot) => slot.notAvailable === false)).toBe(true);
++
++			const secondSlotCatalog = await SlotCatalog.load(
++				fixtures.secondLookup!.concert_series,
++				fixtures.scheduleYear
++			);
++			const secondScheduleChoice = await scheduleRepository.fetchChoices(
++				fixtures.performerRow.id,
++				fixtures.secondLookup!.concert_series,
++				fixtures.scheduleYear
++			);
++			const secondViewModel = ScheduleMapper.toViewModel(
++				secondSlotCatalog.slots,
++				secondScheduleChoice
++			);
++			expect(secondViewModel.mode).toBe('rank-choice');
++			expect(secondViewModel.slotCount).toBe(secondSlotCatalog.slots.length);
++			expect(secondViewModel.slots.every((slot) => slot.rank === null)).toBe(true);
++			expect(secondViewModel.slots.every((slot) => slot.notAvailable === false)).toBe(true);
++
++			const firstPieceRow = await fetchPieceAndComposer(fixtures.firstLookup!.performance_id);
++			const secondPieceRow = await fetchPieceAndComposer(fixtures.secondLookup!.performance_id);
++
++			expect(firstPieceRow.printed_name).toBe(fixtures.expectedFirstTitle);
++			expect(firstPieceRow.composer_name).toBe(
++				fixtures.firstImport.musical_piece[0].contributors[0].name
++			);
++			expect(secondPieceRow.printed_name).toBe(fixtures.expectedSecondTitle);
++			expect(secondPieceRow.composer_name).toBe(
++				fixtures.secondImport.musical_piece[0].contributors[0].name
++			);
++		} finally {
++			await cleanupDb({
++				performanceIds: fixtures.performanceIds,
++				musicalPieceIds: fixtures.musicalPieceIds,
++				classNames: fixtures.classNames,
++				concertSeries: fixtures.concertSeries,
++				scheduleYear: fixtures.scheduleYear,
++				performerId: fixtures.performerId
++			});
++		}
++	});
++
++	it.each([
++		{ which: 'first', pick: (f: any) => ({ imp: f.firstImport, lookup: f.firstLookup }) },
++		{ which: 'second', pick: (f: any) => ({ imp: f.secondImport, lookup: f.secondLookup }) }
++	])(
++		'returns status OK and view model for schedule load with lookup code (%s)',
++		async ({ which, pick }) => {
++			const fixtures = await setupMultiClassFixtures();
++			const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
++
++			try {
++				const { imp, lookup } = pick(fixtures);
++
++				const url = new URL(`http://localhost:8888/schedule?code=${imp.lottery}`);
++				const data = await load({
++					url,
++					params: {},
++					locals: {},
++					parent: async () => ({}),
++					depends: () => {}
++				} as any);
++
++				// Core gate
++				expect(data.status).toBe('OK');
++				expect(data.viewModel).toBeTruthy();
++				expect(errSpy).not.toHaveBeenCalled();
++
++				// Diagnostics / correctness
++				expect(data.lottery_code).toBe(imp.lottery);
++				expect(data.concert_series).toBe(imp.concert_series);
++				expect(data.performance_id).toBe(lookup.performance_id);
++				expect(data.performer_name).toBe(fixtures.basePerformer.fullName);
++
++				expect(Array.isArray(data.concertTimes)).toBe(true);
++				expect(data.concertTimes.length).toBeGreaterThan(0);
++
++				expect(data.slotCount).toBeGreaterThan(0);
++				expect(data.slots.length).toBe(data.slotCount);
++				expect(data.viewModel.slotCount).toBe(data.slotCount);
++				expect(data.viewModel.slots.length).toBe(data.slotCount);
++			} finally {
++				errSpy.mockRestore();
++				await cleanupDb({
++					performanceIds: fixtures.performanceIds,
++					musicalPieceIds: fixtures.musicalPieceIds,
++					classNames: fixtures.classNames,
++					concertSeries: fixtures.concertSeries,
++					scheduleYear: fixtures.scheduleYear,
++					performerId: fixtures.performerId
++				});
++			}
++		}
++	);
++});

@@ -1146,7 +1146,12 @@ export async function searchPerformanceByPerformerAndClass(
 				AND p.year = $4;
 			`;
 
-		const result = await connection.query(searchSQL, [performer_id, class_name, concert_series, year]);
+		const result = await connection.query(searchSQL, [
+			performer_id,
+			class_name,
+			concert_series,
+			year
+		]);
 
 		// Release the connection back to the pool
 		connection.release();

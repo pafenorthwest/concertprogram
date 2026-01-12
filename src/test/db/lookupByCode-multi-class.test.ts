@@ -18,6 +18,8 @@ vi.mock('$lib/server/common', async () => {
 import { load } from '../../routes/schedule/+page.server';
 
 const TEST_YEAR = 2026;
+type MultiClassFixtures = Awaited<ReturnType<typeof setupMultiClassFixtures>>;
+type LookupResult = NonNullable<Awaited<ReturnType<typeof lookupByCode>>>;
 
 async function fetchPerformerEmail(performerId: number) {
 	const result = await pool.query('SELECT id, email, full_name FROM performer WHERE id = $1', [
@@ -304,11 +306,23 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 	});
 
 	it.each([
-		{ which: 'first', pick: (f: any) => ({ imp: f.firstImport, lookup: f.firstLookup }) },
-		{ which: 'second', pick: (f: any) => ({ imp: f.secondImport, lookup: f.secondLookup }) }
+		{
+			which: 'first',
+			pick: (f: MultiClassFixtures): { imp: ImportPerformanceInterface; lookup: LookupResult } => ({
+				imp: f.firstImport,
+				lookup: f.firstLookup
+			})
+		},
+		{
+			which: 'second',
+			pick: (f: MultiClassFixtures): { imp: ImportPerformanceInterface; lookup: LookupResult } => ({
+				imp: f.secondImport,
+				lookup: f.secondLookup
+			})
+		}
 	])(
 		'returns status OK and view model for schedule load with lookup code (%s)',
-		async ({ which, pick }) => {
+		async ({ pick }) => {
 			const fixtures = await setupMultiClassFixtures();
 			const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -322,7 +336,7 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 					locals: {},
 					parent: async () => ({}),
 					depends: () => {}
-				} as any);
+				} as Parameters<typeof load>[0]);
 
 				// Core gate
 				expect(data.status).toBe('OK');
