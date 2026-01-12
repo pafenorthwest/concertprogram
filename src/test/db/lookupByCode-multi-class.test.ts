@@ -19,6 +19,7 @@ import { load } from '../../routes/schedule/+page.server';
 
 const TEST_YEAR = 2026;
 type MultiClassFixtures = Awaited<ReturnType<typeof setupMultiClassFixtures>>;
+type SameSeriesFixtures = Awaited<ReturnType<typeof setupSameSeriesFixtures>>;
 type LookupResult = NonNullable<Awaited<ReturnType<typeof lookupByCode>>>;
 
 async function fetchPerformerEmail(performerId: number) {
@@ -38,6 +39,17 @@ async function fetchPieceAndComposer(performanceId: number) {
 		[performanceId]
 	);
 	return result.rows[0];
+}
+
+async function fetchPieceTitles(performanceId: number) {
+	const result = await pool.query(
+		`SELECT mp.printed_name
+     FROM performance_pieces pp
+     JOIN musical_piece mp ON mp.id = pp.musical_piece_id
+     WHERE pp.performance_id = $1`,
+		[performanceId]
+	);
+	return result.rows.map((row) => row.printed_name);
 }
 
 async function cleanupDb({
@@ -225,6 +237,123 @@ async function setupMultiClassFixtures() {
 	};
 }
 
+async function setupSameSeriesFixtures() {
+	const basePerformer = {
+		fullName: 'Same Series Performer',
+		age: 15,
+		instrument: 'Violin',
+		email: 'same.series.performer@example.com',
+		phone: '555-0202'
+	};
+
+	const concertSeries = 'LookupSeriesShared';
+	const firstImport: ImportPerformanceInterface = {
+		class_name: 'TST.SAME.1',
+		performer: basePerformer.fullName,
+		lottery: 22222,
+		age: basePerformer.age,
+		email: basePerformer.email,
+		phone: basePerformer.phone,
+		accompanist: 'Primary Accompanist',
+		instrument: basePerformer.instrument,
+		musical_piece: [
+			{
+				title: 'Moonlit Sonata',
+				contributors: [{ name: 'Composer Gamma', yearsActive: '1770-1827' }]
+			}
+		],
+		concert_series: concertSeries
+	};
+
+	const secondImport: ImportPerformanceInterface = {
+		class_name: 'TST.SAME.2',
+		performer: basePerformer.fullName,
+		lottery: 11111,
+		age: basePerformer.age,
+		email: basePerformer.email,
+		phone: basePerformer.phone,
+		accompanist: 'Secondary Accompanist',
+		instrument: basePerformer.instrument,
+		musical_piece: [
+			{
+				title: 'Sunrise Caprice',
+				contributors: [{ name: 'Composer Delta', yearsActive: '1870-1930' }]
+			}
+		],
+		concert_series: concertSeries
+	};
+
+	const firstPerformance = new Performance();
+	const secondPerformance = new Performance();
+	const performanceIds: number[] = [];
+	const musicalPieceIds: number[] = [];
+	const classNames: string[] = [firstImport.class_name, secondImport.class_name];
+	const scheduleYear = year();
+	let performerId: number | null = null;
+
+	await seedConcertTimes([concertSeries], scheduleYear);
+
+	await firstPerformance.initialize(firstImport);
+	await secondPerformance.initialize(secondImport);
+
+	if (firstPerformance.performer?.id != null) {
+		performerId = firstPerformance.performer.id;
+	}
+	if (secondPerformance.performer?.id != null && performerId == null) {
+		performerId = secondPerformance.performer.id;
+	}
+	if (firstPerformance.performance?.id != null) {
+		performanceIds.push(firstPerformance.performance.id);
+	}
+	if (secondPerformance.performance?.id != null) {
+		performanceIds.push(secondPerformance.performance.id);
+	}
+	if (firstPerformance.musical_piece_1?.id != null) {
+		musicalPieceIds.push(firstPerformance.musical_piece_1.id);
+	}
+	if (secondPerformance.musical_piece_1?.id != null) {
+		musicalPieceIds.push(secondPerformance.musical_piece_1.id);
+	}
+
+	const firstLookup = await lookupByCode(String(firstImport.lottery));
+	const secondLookup = await lookupByCode(String(secondImport.lottery));
+
+	if (firstLookup == null || secondLookup == null) {
+		throw new Error('Failed to look up performer by lottery code.');
+	}
+
+	const expectedFirstTitle = parseMusicalPiece(
+		firstImport.musical_piece[0].title
+	).titleWithoutMovement;
+	const expectedSecondTitle = parseMusicalPiece(
+		secondImport.musical_piece[0].title
+	).titleWithoutMovement;
+
+	const primaryLottery = Math.min(firstImport.lottery, secondImport.lottery);
+	const primaryPerformanceId =
+		firstImport.lottery === primaryLottery
+			? (firstPerformance.performance?.id ?? null)
+			: (secondPerformance.performance?.id ?? null);
+
+	return {
+		basePerformer,
+		firstImport,
+		secondImport,
+		firstLookup,
+		secondLookup,
+		expectedFirstTitle,
+		expectedSecondTitle,
+		performanceIds,
+		musicalPieceIds,
+		classNames,
+		concertSeries,
+		scheduleYear,
+		performerId,
+		primaryLottery,
+		primaryPerformanceId
+	};
+}
+
 describe('dbOnly lookupByCode with performer in multiple classes', () => {
 	it('returns performer and musical details for each class lottery', async () => {
 		const fixtures = await setupMultiClassFixtures();
@@ -240,6 +369,12 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 			expect(fixtures.performerRow.email).toBe(fixtures.basePerformer.email);
 			expect(fixtures.firstLookup!.lottery_code).toBe(fixtures.firstImport.lottery);
 			expect(fixtures.secondLookup!.lottery_code).toBe(fixtures.secondImport.lottery);
+			expect(fixtures.firstLookup!.primary_class_code).toBe(fixtures.firstImport.lottery);
+			expect(fixtures.secondLookup!.primary_class_code).toBe(fixtures.secondImport.lottery);
+			expect(fixtures.firstLookup!.winner_class_display).toContain(fixtures.firstImport.class_name);
+			expect(fixtures.secondLookup!.winner_class_display).toContain(
+				fixtures.secondImport.class_name
+			);
 
 			expect(fixtures.firstLookup!.performer_name).toBe(fixtures.basePerformer.fullName);
 			expect(fixtures.firstLookup!.musical_piece).toBe(fixtures.expectedFirstTitle);
@@ -345,6 +480,8 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 
 				// Diagnostics / correctness
 				expect(data.lottery_code).toBe(imp.lottery);
+				expect(data.primary_class_code).toBe(imp.lottery);
+				expect(data.winner_class_display).toContain(imp.class_name);
 				expect(data.concert_series).toBe(imp.concert_series);
 				expect(data.performance_id).toBe(lookup.performance_id);
 				expect(data.performer_name).toBe(fixtures.basePerformer.fullName);
@@ -369,4 +506,44 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 			}
 		}
 	);
+
+	it('returns primary code and merged pieces for same-series multi-class winners', async () => {
+		const fixtures: SameSeriesFixtures = await setupSameSeriesFixtures();
+
+		try {
+			expect(fixtures.firstLookup).not.toBeNull();
+			expect(fixtures.secondLookup).not.toBeNull();
+
+			expect(fixtures.firstLookup!.primary_class_code).toBe(fixtures.primaryLottery);
+			expect(fixtures.secondLookup!.primary_class_code).toBe(fixtures.primaryLottery);
+			expect(fixtures.firstLookup!.lottery_code).toBe(fixtures.primaryLottery);
+			expect(fixtures.secondLookup!.lottery_code).toBe(fixtures.primaryLottery);
+
+			expect(fixtures.firstLookup!.performance_id).toBe(fixtures.primaryPerformanceId);
+			expect(fixtures.secondLookup!.performance_id).toBe(fixtures.primaryPerformanceId);
+
+			expect(fixtures.firstLookup!.winner_class_display).toContain(fixtures.firstImport.class_name);
+			expect(fixtures.firstLookup!.winner_class_display).toContain(
+				fixtures.secondImport.class_name
+			);
+
+			expect(fixtures.firstLookup!.musical_piece).toContain(fixtures.expectedFirstTitle);
+			expect(fixtures.firstLookup!.musical_piece).toContain(fixtures.expectedSecondTitle);
+
+			if (fixtures.primaryPerformanceId != null) {
+				const mergedTitles = await fetchPieceTitles(fixtures.primaryPerformanceId);
+				expect(mergedTitles).toContain(fixtures.expectedFirstTitle);
+				expect(mergedTitles).toContain(fixtures.expectedSecondTitle);
+			}
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: [fixtures.concertSeries],
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
 });

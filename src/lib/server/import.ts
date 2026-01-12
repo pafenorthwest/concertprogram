@@ -36,7 +36,8 @@ import {
 	deletePerformancePieceByPerformanceId,
 	deleteClassLottery,
 	getClassLottery,
-	insertClassLottery
+	insertClassLottery,
+	mergePerformancePiecesForPerformerSeries
 } from '$lib/server/db';
 import { createPerformer } from '$lib/server/performer';
 
@@ -184,6 +185,18 @@ export class Performance {
 				movement: parsedMusic.movements
 			};
 			await insertPerformancePieceMap(musical_piece);
+		}
+
+		if (this.performer?.id != null && this.performance?.concert_series != null) {
+			try {
+				await mergePerformancePiecesForPerformerSeries(
+					this.performer.id,
+					this.performance.concert_series,
+					this.performance.year
+				);
+			} catch (error) {
+				throw new PerformanceError(`Merge performance pieces failed: ${(error as Error).message}`);
+			}
 		}
 
 		return {

@@ -9,8 +9,6 @@
 	let notAvailableSelections = {};
 	let confirmSelections = {};
 	export let data;
-	// eslint-disable-next-line svelte/valid-compile
-	export let params;
 
 	// Keep as string so SSR-selected option matches option values
 	let durationSelection = '1';
@@ -139,9 +137,13 @@
 			<h3 class="schedule">Confirmation of Concerto Performance</h3>
 			<p class="top-message">Scheduling for {data.performer_name}</p>
 			<br />
+			<p class="top-message">Classes {data.winner_class_display}</p>
+			<br />
 			<p class="top-message">Performing {data.musical_piece}</p>
 			<br />
-			<p class="top-message">Lookup code {data.lottery_code}</p>
+			<p class="top-message">
+				Primary lookup code {data.primary_class_code ?? data.lottery_code}
+			</p>
 			<br /><br /><br />
 			{#if data.viewModel.slots[0].confirmed}
 				<h3>
@@ -212,9 +214,13 @@
 			<h3 class="schedule">Rank Performance Times</h3>
 			<p class="top-message">Scheduling for {data.performer_name}</p>
 			<br />
+			<p class="top-message">Classes {data.winner_class_display}</p>
+			<br />
 			<p class="top-message">Performing {data.musical_piece}</p>
 			<br />
-			<p class="top-message">Lookup code {data.lottery_code}</p>
+			<p class="top-message">
+				Primary lookup code {data.primary_class_code ?? data.lottery_code}
+			</p>
 			<br /><br /><br />
 			<div id="error-icon" class="base-icon hidden"><p>Duplicate Rankings Selected</p></div>
 			<div id="success-icon" class="base-icon hidden"><p>✓</p></div>
