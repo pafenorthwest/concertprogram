@@ -57,7 +57,7 @@ paths:
                     is_not_appropriate: false
                     updated_at: '2024-07-15T12:10:05.000Z'
                     categories: ['Concerto']
-                    division_tags: ['High-Strings']
+                    division_tags: ['Violin Viola']
                     is_untagged: false
         400:
           description: division tag missing or invalid
@@ -216,7 +216,7 @@ paths:
               required:
                 - division_tags
             example:
-              division_tags: ['High-Strings', 'Ensembles']
+              division_tags: ['Violin Viola', 'Piano']
       responses:
         200:
           description: division tags replaced
@@ -412,11 +412,10 @@ components:
     DivisionTag:
       type: string
       enum:
-        - High-Strings
-        - Low-Strings
+        - Violin Viola
+        - Cello Bass
         - Piano
         - Woodwinds
-        - Ensembles
 
   securitySchemes:
     BearerAuth:

@@ -477,7 +477,7 @@
 		</div>
 		<div class="review-controls">
 			<label>
-				Division
+				Filter
 				<select bind:value={division} on:change={loadQueue}>
 					{#each divisionTags as tag}
 						<option value={tag}>{tag}</option>

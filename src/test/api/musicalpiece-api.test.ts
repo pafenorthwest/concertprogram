@@ -1,12 +1,24 @@
 import { describe, it, assert, expect } from 'vitest';
 import { auth_code } from '$env/static/private';
 import { unpackBody } from '$lib/server/common';
-import { insertTable } from '$lib/server/db';
+import { insertTable, pool } from '$lib/server/db';
 import type { MusicalPieceInterface } from '$lib/server/common';
+
+const baseUrl = 'http://localhost:8888/api/musicalpiece';
+const divisionTagQuery = `
+	SELECT division_tag
+	FROM musical_piece_division_tag
+	WHERE musical_piece_id = $1
+`;
+const categoryTagQuery = `
+	SELECT category
+	FROM musical_piece_category_map
+	WHERE musical_piece_id = $1
+`;
 
 describe('Test MusicalPiece HTTP APIs', () => {
 	it('It should return no-auth', async () => {
-		let getResponseMusicalPiece = await fetch('http://localhost:8888/api/musicalpiece/', {
+		let getResponseMusicalPiece = await fetch(`${baseUrl}/`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -20,7 +32,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 			})
 		});
 		expect(getResponseMusicalPiece.status).toBe(401);
-		getResponseMusicalPiece = await fetch('http://localhost:8888/api/musicalpiece/1', {
+		getResponseMusicalPiece = await fetch(`${baseUrl}/1`, {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json'
@@ -30,7 +42,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 	});
 
 	it('It should return not-authorized', async () => {
-		let getResponseMusicalPiece = await fetch('http://localhost:8888/api/musicalpiece/', {
+		let getResponseMusicalPiece = await fetch(`${baseUrl}/`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -61,16 +73,13 @@ describe('Test MusicalPiece HTTP APIs', () => {
 		try {
 			const result = await insertTable('musical_piece', musicalPiece);
 			expect(getResponseMusicalPiece.status).toBe(401);
-			getResponseMusicalPiece = await fetch(
-				`http://localhost:8888/api/musicalpiece/${result.rows[0].id}`,
-				{
-					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: 'Bearer ffffff'
-					}
+			getResponseMusicalPiece = await fetch(`${baseUrl}/${result.rows[0].id}`, {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: 'Bearer ffffff'
 				}
-			);
+			});
 			expect(getResponseMusicalPiece.status).toBe(401);
 		} catch {
 			expect(false).toBe(true);
@@ -78,7 +87,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 	});
 
 	it('It should error when required fields are not present', async () => {
-		const createResponseMusicalPiece = await fetch('http://localhost:8888/api/musicalpiece/', {
+		const createResponseMusicalPiece = await fetch(`${baseUrl}/`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -98,7 +107,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 	});
 
 	it('It should create and destroy musicalpiece', async () => {
-		const createResponse = await fetch('http://localhost:8888/api/musicalpiece/', {
+		const createResponse = await fetch(`${baseUrl}/`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -121,7 +130,7 @@ describe('Test MusicalPiece HTTP APIs', () => {
 			const resultObject = JSON.parse(bodyFromRequest);
 			const newId = resultObject.id;
 			expect(+newId).toBeGreaterThan(0);
-			const delResponse = await fetch(`http://localhost:8888/api/musicalpiece/${newId}`, {
+			const delResponse = await fetch(`${baseUrl}/${newId}`, {
 				method: 'DELETE',
 				headers: {
 					'Content-Type': 'application/json',
@@ -132,5 +141,184 @@ describe('Test MusicalPiece HTTP APIs', () => {
 		} else {
 			assert(false, 'unable to parse body of create musicalpiece request');
 		}
+	});
+
+	it('It should handle musicalpiece tag updates and removals', async () => {
+		const createResponse = await fetch(`${baseUrl}/`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${auth_code}`
+			},
+			body: JSON.stringify({
+				printed_name: 'Tagged Piece',
+				first_contributor_id: 1,
+				all_movements: 'Movement 1',
+				second_contributor_id: 2,
+				third_contributor_id: 3,
+				division_tags: ['Piano', 'Piano'],
+				category_tags: ['Solo']
+			})
+		});
+		expect(createResponse.status).toBe(201);
+
+		if (createResponse.body == null) {
+			assert(false, 'unable to parse body of create musicalpiece request');
+			return;
+		}
+
+		const bodyFromRequest = await unpackBody(createResponse.body);
+		const resultObject = JSON.parse(bodyFromRequest);
+		const newId = Number(resultObject.id);
+		expect(newId).toBeGreaterThan(0);
+
+		const divisionResult = await pool.query(divisionTagQuery, [newId]);
+		expect(divisionResult.rows.length).toBe(1);
+		expect(divisionResult.rows[0].division_tag).toBe('Piano');
+
+		const categoryResult = await pool.query(categoryTagQuery, [newId]);
+		expect(categoryResult.rows.length).toBe(1);
+		expect(categoryResult.rows[0].category).toBe('Solo');
+
+		const removeDivisionResponse = await fetch(`${baseUrl}/${newId}`, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${auth_code}`
+			},
+			body: JSON.stringify({
+				printed_name: 'Tagged Piece',
+				first_contributor_id: 1,
+				all_movements: 'Movement 1',
+				second_contributor_id: 2,
+				third_contributor_id: 3,
+				rm_division_tags: ['Piano'],
+				division_tags: []
+			})
+		});
+		expect(removeDivisionResponse.status).toBe(200);
+
+		const divisionAfterRemoval = await pool.query(divisionTagQuery, [newId]);
+		expect(divisionAfterRemoval.rows.length).toBe(0);
+
+		const removeCategoryResponse = await fetch(`${baseUrl}/${newId}`, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${auth_code}`
+			},
+			body: JSON.stringify({
+				printed_name: 'Tagged Piece',
+				first_contributor_id: 1,
+				all_movements: 'Movement 1',
+				second_contributor_id: 2,
+				third_contributor_id: 3,
+				rm_category_tags: ['Solo'],
+				category_tags: []
+			})
+		});
+		expect(removeCategoryResponse.status).toBe(200);
+
+		const categoryAfterRemoval = await pool.query(categoryTagQuery, [newId]);
+		expect(categoryAfterRemoval.rows.length).toBe(0);
+
+		const delResponse = await fetch(`${baseUrl}/${newId}`, {
+			method: 'DELETE',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${auth_code}`
+			}
+		});
+		expect(delResponse.status).toBe(200);
+	});
+
+	it('It should reject invalid tag values and invalid removals', async () => {
+		const invalidTypeResponse = await fetch(`${baseUrl}/`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${auth_code}`
+			},
+			body: JSON.stringify({
+				printed_name: 'Invalid Tag Type',
+				first_contributor_id: 1,
+				division_tags: ['Piano', 123]
+			})
+		});
+		expect(invalidTypeResponse.status).toBe(400);
+
+		const invalidCreateResponse = await fetch(`${baseUrl}/`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${auth_code}`
+			},
+			body: JSON.stringify({
+				printed_name: 'Invalid Tag Piece',
+				first_contributor_id: 1,
+				division_tags: ['Brass']
+			})
+		});
+		expect(invalidCreateResponse.status).toBe(400);
+
+		const invalidCategoryResponse = await fetch(`${baseUrl}/`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${auth_code}`
+			},
+			body: JSON.stringify({
+				printed_name: 'Invalid Category Mix',
+				first_contributor_id: 1,
+				category_tags: ['Not Appropriate', 'Solo']
+			})
+		});
+		expect(invalidCategoryResponse.status).toBe(400);
+
+		const createResponse = await fetch(`${baseUrl}/`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${auth_code}`
+			},
+			body: JSON.stringify({
+				printed_name: 'Not Appropriate Piece',
+				first_contributor_id: 1,
+				category_tags: ['Not Appropriate']
+			})
+		});
+		expect(createResponse.status).toBe(201);
+
+		if (createResponse.body == null) {
+			assert(false, 'unable to parse body of create musicalpiece request');
+			return;
+		}
+
+		const bodyFromRequest = await unpackBody(createResponse.body);
+		const resultObject = JSON.parse(bodyFromRequest);
+		const newId = Number(resultObject.id);
+
+		const invalidRemovalResponse = await fetch(`${baseUrl}/${newId}`, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${auth_code}`
+			},
+			body: JSON.stringify({
+				printed_name: 'Not Appropriate Piece',
+				first_contributor_id: 1,
+				rm_category_tags: ['Not Appropriate']
+			})
+		});
+		expect(invalidRemovalResponse.status).toBe(400);
+
+		const delResponse = await fetch(`${baseUrl}/${newId}`, {
+			method: 'DELETE',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${auth_code}`
+			}
+		});
+		expect(delResponse.status).toBe(200);
 	});
 });

@@ -34,6 +34,36 @@ export function isValidPieceCategory(value: unknown): value is PieceCategory {
 	return typeof value === 'string' && pieceCategories.includes(value as PieceCategory);
 }
 
+function normalizeTagStrings(values: string[]): string[] {
+	return values.map((value) => value.trim()).filter((value) => value.length > 0);
+}
+
+function dedupeStrings(values: string[]): string[] {
+	return Array.from(new Set(values));
+}
+
+export function parseDivisionTags(input: unknown): {
+	tags: DivisionTag[];
+	invalid: string[];
+} {
+	const parsed = parseTagInputs(input);
+	const values = dedupeStrings(normalizeTagStrings(parsed.strings));
+	const tags = values.filter(isValidDivisionTag);
+	const invalid = parsed.invalid.concat(values.filter((value) => !isValidDivisionTag(value)));
+	return { tags, invalid };
+}
+
+export function parsePieceCategories(input: unknown): {
+	tags: PieceCategory[];
+	invalid: string[];
+} {
+	const parsed = parseTagInputs(input);
+	const values = dedupeStrings(normalizeTagStrings(parsed.strings));
+	const tags = values.filter(isValidPieceCategory);
+	const invalid = parsed.invalid.concat(values.filter((value) => !isValidPieceCategory(value)));
+	return { tags, invalid };
+}
+
 export function normalizePieceCategories(categories: PieceCategory[]): PieceCategory[] {
 	if (categories.includes('Not Appropriate')) {
 		return ['Not Appropriate'];
@@ -70,6 +100,49 @@ function asStringArray(value: unknown): string[] {
 		}
 	}
 	return [];
+}
+
+function describeInvalidTag(value: unknown): string {
+	try {
+		const serialized = JSON.stringify(value);
+		if (serialized !== undefined) {
+			return serialized;
+		}
+	} catch {
+		// Fall back to string coercion for non-serializable values.
+	}
+	return String(value);
+}
+
+function parseTagInputs(value: unknown): { strings: string[]; invalid: string[] } {
+	const strings: string[] = [];
+	const invalid: string[] = [];
+	const collect = (entry: unknown) => {
+		if (typeof entry === 'string') {
+			strings.push(entry);
+		} else {
+			invalid.push(describeInvalidTag(entry));
+		}
+	};
+
+	if (Array.isArray(value)) {
+		value.forEach(collect);
+		return { strings, invalid };
+	}
+
+	if (typeof value === 'string') {
+		try {
+			const parsed = JSON.parse(value);
+			if (Array.isArray(parsed)) {
+				parsed.forEach(collect);
+				return { strings, invalid };
+			}
+		} catch {
+			return { strings, invalid };
+		}
+	}
+
+	return { strings, invalid };
 }
 
 export async function fetchReviewQueue(
@@ -264,6 +337,44 @@ export async function setPieceDivisionTags(
 	} catch (error) {
 		await client.query('ROLLBACK');
 		throw error;
+	} finally {
+		client.release();
+	}
+}
+
+export async function removePieceCategories(
+	musicalPieceId: number,
+	categories: PieceCategory[]
+): Promise<number> {
+	if (categories.length === 0) {
+		return 0;
+	}
+	const client = await pool.connect();
+	try {
+		const result = await client.query(
+			`DELETE FROM musical_piece_category_map WHERE musical_piece_id = $1 AND category = ANY($2)`,
+			[musicalPieceId, categories]
+		);
+		return result.rowCount ?? 0;
+	} finally {
+		client.release();
+	}
+}
+
+export async function removePieceDivisionTags(
+	musicalPieceId: number,
+	tags: DivisionTag[]
+): Promise<number> {
+	if (tags.length === 0) {
+		return 0;
+	}
+	const client = await pool.connect();
+	try {
+		const result = await client.query(
+			`DELETE FROM musical_piece_division_tag WHERE musical_piece_id = $1 AND division_tag = ANY($2)`,
+			[musicalPieceId, tags]
+		);
+		return result.rowCount ?? 0;
 	} finally {
 		client.release();
 	}
