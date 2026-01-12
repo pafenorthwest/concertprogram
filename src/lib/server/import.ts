@@ -488,7 +488,14 @@ export class Performance {
 			return { result: 'error', reason: 'Not Found' };
 		}
 
-		const performanceRes = await searchPerformanceByPerformer(performerId, concertSeries, year());
+		const normalizedClassName = className.trim();
+		const normalizedConcertSeries = concertSeries.trim();
+		const performanceRes = await searchPerformanceByPerformerAndClass(
+			performerId,
+			normalizedClassName,
+			normalizedConcertSeries,
+			year()
+		);
 		let performanceId: number;
 		if (
 			performanceRes.rowCount != null &&
