@@ -1,5 +1,14 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
 	import type { ScheduleViewModel } from '$lib/types/schedule.js';
+	import { onDestroy } from 'svelte';
+
+	type SubmissionStatus = 'success' | 'error';
+	type ActionData = {
+		submissionStatus?: SubmissionStatus;
+		error?: string;
+	} | null;
 
 	let disableFormSubmit = true;
 	let firstTimeEntry = true;
@@ -9,10 +18,17 @@
 	let notAvailableSelections = {};
 	let confirmSelections = {};
 	export let data;
+	export let form: ActionData = null;
 
 	// Keep as string so SSR-selected option matches option values
 	let durationSelection = '1';
 	let durationPerformanceId: number | null = null;
+
+	let popupStatus: SubmissionStatus | null = null;
+	let popupVisible = false;
+	let popupFading = false;
+	let lastSubmissionStatus: SubmissionStatus | null = null;
+	let popupTimers: ReturnType<typeof setTimeout>[] = [];
 	// Refresh the selection any time the route data changes (e.g., client nav to another performer)
 	$: if (data) {
 		const performanceId = data.performance_id ?? null;
@@ -124,6 +140,67 @@
 			confirmSelections = { ...confirmSelections, [slotId]: false };
 		}
 	}
+
+	function clearPopupTimers() {
+		popupTimers.forEach((timer) => clearTimeout(timer));
+		popupTimers = [];
+	}
+
+	function showPopup(status: SubmissionStatus) {
+		if (!browser) {
+			return;
+		}
+		clearPopupTimers();
+		popupStatus = status;
+		popupVisible = true;
+		popupFading = false;
+
+		popupTimers.push(
+			setTimeout(() => {
+				popupFading = true;
+			}, 7000)
+		);
+		popupTimers.push(
+			setTimeout(() => {
+				popupVisible = false;
+				popupStatus = null;
+				popupFading = false;
+			}, 8000)
+		);
+
+		if (status === 'success') {
+			popupTimers.push(
+				setTimeout(() => {
+					goto('/');
+				}, 8000)
+			);
+		}
+	}
+
+	function dismissPopup() {
+		const shouldRedirect = popupStatus === 'success';
+		clearPopupTimers();
+		popupFading = true;
+		popupTimers.push(
+			setTimeout(() => {
+				popupVisible = false;
+				popupStatus = null;
+				popupFading = false;
+			}, 1000)
+		);
+		if (shouldRedirect && browser) {
+			goto('/');
+		}
+	}
+
+	$: if (browser && form?.submissionStatus && form.submissionStatus !== lastSubmissionStatus) {
+		lastSubmissionStatus = form.submissionStatus;
+		showPopup(form.submissionStatus);
+	}
+
+	onDestroy(() => {
+		clearPopupTimers();
+	});
 </script>
 
 <svelte:head>
@@ -132,6 +209,24 @@
 
 <h2>Concert Scheduling</h2>
 <div class="schedule-form">
+	{#if popupVisible && popupStatus}
+		<div
+			class="status-popup"
+			class:fade-out={popupFading}
+			class:success={popupStatus === 'success'}
+			class:error={popupStatus === 'error'}
+			role={popupStatus === 'error' ? 'alert' : 'status'}
+			aria-live={popupStatus === 'error' ? 'assertive' : 'polite'}
+		>
+			<button class="popup-dismiss" type="button" aria-label="Dismiss" on:click={dismissPopup}>
+				X
+			</button>
+			<span class="popup-icon" aria-hidden="true">{popupStatus === 'success' ? '✓' : 'X'}</span>
+			<span class="popup-text">
+				{popupStatus === 'success' ? 'Success' : 'Please Try Again'}
+			</span>
+		</div>
+	{/if}
 	{#if data.status === 'OK' && data.viewModel}
 		{#if data.viewModel.mode === 'confirm-only'}
 			<h3 class="schedule">Confirmation of Concerto Performance</h3>
@@ -294,11 +389,90 @@
 			</form>
 		{/if}
 	{:else}
-		<h3 class="schedule">{data.status}</h3>
-		<p class="top-message">
-			Please perform search again. If unable to schedule please contact
-			concertchair@pafenorthwest.org
-		</p>
-		<br /><br /><br />
+		{#if popupVisible && popupStatus}
+			<h3 class="schedule">Completed Processing</h3>
+		{:else}
+			<h3 class="schedule">{data.status}</h3>
+			<p class="top-message">
+				Please perform search again. If unable to schedule please contact
+				concertchair@pafenorthwest.org
+			</p>
+			<br /><br /><br />
+		{/if}
 	{/if}
 </div>
+
+<style>
+	.status-popup {
+		position: fixed;
+		top: calc(var(--margin) * 3);
+		left: var(--margin);
+		z-index: 20;
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 12px;
+		align-items: center;
+		padding: 14px 18px;
+		min-width: 220px;
+		background: var(--card-bg-color);
+		color: var(--text-color);
+		border: 1px solid var(--separator-color);
+		border-left: 6px solid var(--allok-color);
+		border-radius: var(--border-radius);
+		box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+		opacity: 1;
+		transition: opacity 1s ease;
+	}
+
+	.status-popup.success {
+		border-left-color: var(--allok-color);
+	}
+
+	.status-popup.error {
+		border-left-color: var(--error-color);
+	}
+
+	.status-popup.fade-out {
+		opacity: 0;
+	}
+
+	.popup-icon {
+		font-size: 1.6em;
+		font-weight: bold;
+	}
+
+	.status-popup.success .popup-icon {
+		color: var(--allok-color);
+	}
+
+	.status-popup.error .popup-icon {
+		color: var(--error-color);
+	}
+
+	.popup-text {
+		font-size: 1em;
+		font-weight: 600;
+	}
+
+	.popup-dismiss {
+		position: absolute;
+		top: 6px;
+		right: 8px;
+		background: transparent;
+		border: none;
+		color: var(--low-em-color);
+		font-size: 0.9em;
+		cursor: pointer;
+	}
+
+	.popup-dismiss:hover {
+		color: var(--text-color);
+	}
+
+	@media screen and (max-width: 600px) {
+		.status-popup {
+			left: var(--gutter);
+			right: var(--gutter);
+		}
+	}
+</style>

@@ -1,4 +1,4 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import { type PerformerSearchResultsInterface, isNonEmptyString, year } from '$lib/server/common';
 import { updateConcertPerformance } from '$lib/server/db';
 import { PerformerLookup } from '$lib/server/performerLookup';
@@ -142,7 +142,7 @@ export const actions = {
 		) {
 			const performerIdAsNumber = Number(performerId);
 			if (!Number.isInteger(performerIdAsNumber)) {
-				return fail(400, { error: 'performer id must be an integer' });
+				return fail(400, { submissionStatus: 'error', error: 'performer id must be an integer' });
 			}
 
 			// update duration and comment across all concert series
@@ -154,7 +154,7 @@ export const actions = {
 
 			const slotCatalog = await SlotCatalog.load(concertSeries, year());
 			if (slotCatalog.slotCount === 0) {
-				return fail(400, { error: 'No schedule slots available.' });
+				return fail(400, { submissionStatus: 'error', error: 'No schedule slots available.' });
 			}
 
 			const scheduleRepository = new ScheduleRepository();
@@ -166,20 +166,23 @@ export const actions = {
 			});
 			const validation = ScheduleValidator.validate(submission, slotCatalog.slotCount);
 			if (!validation.valid) {
-				return fail(400, { error: validation.errors[0] });
+				return fail(400, { submissionStatus: 'error', error: validation.errors[0] });
 			}
 
 			await scheduleRepository.upsertChoices(submission);
-			throw redirect(303, '/');
+			return { submissionStatus: 'success' };
 		} else {
 			// failed param test null or empty parameters
-			return fail(400, { error: 'performer id or concert series is required' });
+			return fail(400, {
+				submissionStatus: 'error',
+				error: 'performer id or concert series is required'
+			});
 		}
 
 		try {
 			// do work
 		} catch (e) {
-			return fail(500, { error: (e as Error).message });
+			return fail(500, { submissionStatus: 'error', error: (e as Error).message });
 		}
 	}
 };
