@@ -6,7 +6,7 @@ import {
 	year,
 	parseMusicalPiece
 } from '$lib/server/common';
-import { searchPerformanceByPerformer } from '$lib/server/db';
+import { searchPerformanceByPerformerAndClass } from '$lib/server/db';
 
 describe('Test Import Code', () => {
 	it('should parse music titles with movements', async () => {
@@ -236,7 +236,12 @@ describe('Test Import Code', () => {
 		const performerId = singlePerformance.performer?.id;
 		assert.isDefined(performerId, 'Expected performer id for first import');
 		const concertSeries = 'Eastside';
-		let res = await searchPerformanceByPerformer(performerId!, concertSeries, year());
+		let res = await searchPerformanceByPerformerAndClass(
+			performerId!,
+			imported.class_name,
+			concertSeries,
+			year()
+		);
 		const firstCount = res.rowCount;
 
 		assert.isDefined(singlePerformance.musical_piece_1, 'Expected musical piece to be defined');
@@ -327,8 +332,9 @@ describe('Test Import Code', () => {
 
 		// count rows in DB for this performer only to avoid interference from other tests
 		assert.isDefined(updatedPerformance.performer?.id, 'Expected performer id for update');
-		res = await searchPerformanceByPerformer(
+		res = await searchPerformanceByPerformerAndClass(
 			updatedPerformance.performer!.id!,
+			updatedEntries.class_name,
 			concertSeries,
 			year()
 		);

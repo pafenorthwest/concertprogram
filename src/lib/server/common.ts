@@ -80,6 +80,7 @@ export interface PerformancePieceInterface {
 	performance_id: number;
 	musical_piece_id: number;
 	movement: string | null;
+	is_merged?: boolean;
 }
 
 export interface ClassLotteryInterface {
@@ -127,6 +128,8 @@ export interface PerformerSearchResultsInterface {
 	performer_name: string;
 	musical_piece: string;
 	lottery_code: number;
+	primary_class_code: number;
+	winner_class_display: string;
 	concert_series: string;
 	performance_id: number;
 	performance_duration: number;

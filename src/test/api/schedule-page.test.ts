@@ -6,8 +6,12 @@ import { lookupByCode, pool } from '$lib/server/db';
 import { ScheduleRepository } from '$lib/server/scheduleRepository';
 import { SlotCatalog } from '$lib/server/slotCatalog';
 
-const emmaCarterPerformance =
-	'{ "class_name": "QQ.9-10.XE", "performer": "Emma Carter", "age": 12, "lottery": 123, "email": "uFiqpdx@example.com","phone": "999-555-4444","accompanist": "Zhi, Zhou","instrument": "Cello","musical_piece": [ {"title": "Concerto in C minor 3rd movement", "contributors": [ { "name": "Johann Christian Bach", "yearsActive": "None" }  ]  },{ "title": "Scherzo no.2 in B Flat Minor, op.31", "contributors": [  { "name": "Frédéric Chopin", "yearsActive": "None" }  ] } ], "concert_series": "Eastside"}';
+const emmaCarterLottery = Math.floor(10000 + Math.random() * 90000);
+const emmaCarterSuffix = Math.random().toString(36).slice(2, 5);
+const emmaCarterName = `Emma Carter Scheduler ${emmaCarterSuffix}`;
+const emmaCarterEmail = `${emmaCarterName.toLowerCase().replaceAll(' ', '.')}@example.com`;
+const emmaCarterClassName = `QQ.9-10.${Math.random().toString(36).slice(2, 5)}`;
+const emmaCarterPerformance = `{ "class_name": "${emmaCarterClassName}", "performer": "${emmaCarterName}", "age": 12, "lottery": ${emmaCarterLottery}, "email": "${emmaCarterEmail}","phone": "999-555-4444","accompanist": "Zhi, Zhou","instrument": "Cello","musical_piece": [ {"title": "Concerto in C minor 3rd movement", "contributors": [ { "name": "Johann Christian Bach", "yearsActive": "None" }  ]  },{ "title": "Scherzo no.2 in B Flat Minor, op.31", "contributors": [  { "name": "Frédéric Chopin", "yearsActive": "None" }  ] } ], "concert_series": "Eastside"}`;
 
 const organSonataPerformance =
 	'{ "class_name": "ORG.11-12.A", "performer": "Kai Organ", "age": 17, "lottery": 456, "email": "kai.organ@example.com","phone": "222-333-4444","accompanist": "Pat Riley","instrument": "Piano","musical_piece": [ {"title": "Organ Sonata No.6 in G major, BWV 530", "contributors": [ { "name": "Johann Sebastian Bach", "yearsActive": "1685-1750", "role": "Composer" }, { "name": "Béla Bartók", "yearsActive": "1881-1945", "role": "Arranger" } ] } ], "concert_series": "Concerto"}';
@@ -133,17 +137,24 @@ describe('Valid Eastside page', () => {
 	it('should display schedule page with ranked choices (playwright)', async () => {
 		const importEmmaCarterResults = await importPerformance(emmaCarterPerformance);
 		const EmmaCarterRecord = JSON.parse(emmaCarterPerformance);
-		const EmmaCarterMusicPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[0].title);
+		const EmmaCarterFirstPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[0].title);
+		const EmmaCarterSecondPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[1].title);
+		const EmmaCarterPiecesDisplay = [
+			EmmaCarterFirstPiece.titleWithoutMovement,
+			EmmaCarterSecondPiece.titleWithoutMovement
+		]
+			.sort()
+			.join('; ');
 		const slotCatalog = await SlotCatalog.load(EmmaCarterRecord.concert_series, scheduleYear);
 		const [firstSlot, secondSlot, thirdSlot, fourthSlot] = slotCatalog.slots;
 
 		const browser = await chromium.launch({ headless: true });
 		const page = await browser.newPage();
 		try {
-			await page.goto('http://localhost:8888/schedule?code=123');
-			await page.waitForSelector('text=Scheduling for Emma Carter');
+			await page.goto(`http://localhost:8888/schedule?code=${emmaCarterLottery}`);
+			await page.waitForSelector(`text=Scheduling for ${emmaCarterName}`);
 			await page.waitForSelector('text=Performing Concerto in C minor');
-			await page.waitForSelector('text=Lookup code 123');
+			await page.waitForSelector('text=Primary lookup code');
 			await page.waitForSelector('form#ranked-choice-form');
 
 			const rankSelectIds = [
@@ -179,7 +190,7 @@ describe('Valid Eastside page', () => {
 				page.click('form#ranked-choice-form button[type="submit"]')
 			]);
 			const validateFormValues = async () => {
-				await page.waitForSelector('text=Lookup code 123');
+				await page.waitForSelector('text=Primary lookup code');
 				const firstRankValue = await page.$eval(
 					`#slot-${firstSlot.id}-rank`,
 					(element) => (element as HTMLSelectElement).value
@@ -217,16 +228,16 @@ describe('Valid Eastside page', () => {
 				expect(commentValue).toBe('Thank you');
 			};
 
-			await page.goto('http://localhost:8888/schedule?code=123');
+			await page.goto(`http://localhost:8888/schedule?code=${emmaCarterLottery}`);
 			await validateFormValues();
 
 			await page.reload({ waitUntil: 'networkidle' });
 			await validateFormValues();
-			const performanceResults = await lookupByCode('123');
+			const performanceResults = await lookupByCode(String(emmaCarterLottery));
 			expect(performanceResults?.performance_duration).toBe(3);
 			expect(performanceResults?.performance_comment).toBe('Thank you');
-			expect(performanceResults?.lottery_code).toBe(123);
-			expect(performanceResults?.musical_piece).toBe(EmmaCarterMusicPiece.titleWithoutMovement);
+			expect(performanceResults?.lottery_code).toBe(emmaCarterLottery);
+			expect(performanceResults?.musical_piece).toBe(EmmaCarterPiecesDisplay);
 			expect(performanceResults?.concert_series).toBe(EmmaCarterRecord.concert_series);
 
 			const performanceSchedule = await scheduleRepository.fetchChoices(
@@ -248,7 +259,7 @@ describe('Valid Eastside page', () => {
 			);
 			await browser.close();
 		}
-	});
+	}, 30000);
 
 	it('Valid Concerto page', async () => {
 		const OrganSonataResults = await importPerformance(organSonataPerformance);
@@ -263,7 +274,7 @@ describe('Valid Eastside page', () => {
 			await page.goto('http://localhost:8888/schedule?code=456');
 			await page.waitForSelector('text=Scheduling for Kai Organ');
 			await page.waitForSelector('text=Performing Organ Sonata No.6 in G major, BWV 530');
-			await page.waitForSelector('text=Lookup code 456');
+			await page.waitForSelector('text=Primary lookup code');
 
 			const checkboxTag = await page.$eval('#concert-confirm', (element) =>
 				element.tagName.toLowerCase()

@@ -105,7 +105,9 @@ describe('Test SearchPerformer HTTP APIs', () => {
 			expect(resultObject.body.result.status).not.toBe('NOTFOUND');
 			expect(resultObject.body.result.performer_id).toBeGreaterThan(0);
 			expect(resultObject.body.result.performer_name).toBe(performerName);
-			expect(resultObject.body.result.musical_piece).toBe('Scherzo no.2 in B Flat Minor, op.31');
+			expect(resultObject.body.result.musical_piece).toBe(
+				'Concerto in C minor; Scherzo no.2 in B Flat Minor, op.31'
+			);
 		}
 
 		// clean up for repeatable tests
