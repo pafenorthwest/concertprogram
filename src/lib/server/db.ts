@@ -312,10 +312,9 @@ export async function mergePerformancePiecesForPerformerSeries(
 
 		if (!performancesResult.rowCount || performancesResult.rowCount < 2) {
 			if (performancesResult.rowCount === 1) {
-				await connection.query(
-					'DELETE FROM adjudicated_pieces WHERE performance_id = $1 AND is_merged = true',
-					[performancesResult.rows[0].id]
-				);
+				await connection.query('DELETE FROM performance_pieces WHERE performance_id = $1', [
+					performancesResult.rows[0].id
+				]);
 			}
 			return;
 		}
@@ -326,18 +325,17 @@ export async function mergePerformancePiecesForPerformerSeries(
 			.map((row) => row.id)
 			.filter((id) => id != null);
 
-		await connection.query(
-			'DELETE FROM adjudicated_pieces WHERE performance_id = $1 AND is_merged = true',
-			[primaryPerformanceId]
-		);
+		await connection.query('DELETE FROM performance_pieces WHERE performance_id = $1', [
+			primaryPerformanceId
+		]);
 
 		if (secondaryPerformanceIds.length === 0) {
 			return;
 		}
 
 		await connection.query(
-			`INSERT INTO adjudicated_pieces (performance_id, musical_piece_id, movement, is_merged)
-       SELECT $1, merged.musical_piece_id, merged.movement, true
+			`INSERT INTO performance_pieces (performance_id, musical_piece_id, movement)
+       SELECT $1, merged.musical_piece_id, merged.movement
          FROM (
            SELECT pp.musical_piece_id,
                   MAX(pp.movement) AS movement
@@ -347,8 +345,12 @@ export async function mergePerformancePiecesForPerformerSeries(
             GROUP BY pp.musical_piece_id
          ) AS merged
        ON CONFLICT (performance_id, musical_piece_id)
-       DO UPDATE SET movement = COALESCE(adjudicated_pieces.movement, EXCLUDED.movement),
-                     is_merged = adjudicated_pieces.is_merged`,
+       DO UPDATE SET movement = EXCLUDED.movement`,
+			[primaryPerformanceId, secondaryPerformanceIds]
+		);
+
+		await connection.query(
+			`UPDATE adjudicated_pieces set is_merged = true where performance_id = ANY($2)`,
 			[primaryPerformanceId, secondaryPerformanceIds]
 		);
 	} finally {
