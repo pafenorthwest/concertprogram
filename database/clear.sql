@@ -5,6 +5,7 @@ delete from musical_piece_division_tag;
 delete from musical_piece_review;
 delete from musical_piece;
 delete from performance;
+delete from adjudicated_pieces;
 delete from performance_pieces;
 delete from performer;
 delete from schedule_slot_choice;

@@ -214,11 +214,18 @@ AFTER UPDATE OF is_not_appropriate ON musical_piece
 FOR EACH ROW
 EXECUTE FUNCTION sync_not_appropriate_flag();
 
-CREATE TABLE performance_pieces (
+CREATE TABLE adjudicated_pieces (
     performance_id INTEGER NOT NULL,
     musical_piece_id INTEGER NOT NULL,
     movement VARCHAR(255) NULL,
     is_merged BOOLEAN NOT NULL DEFAULT FALSE
+);
+CREATE UNIQUE INDEX adjudicated_pieces_idx ON adjudicated_pieces(performance_id,musical_piece_id);
+
+CREATE TABLE performance_pieces (
+    performance_id INTEGER NOT NULL,
+    musical_piece_id INTEGER NOT NULL,
+    movement VARCHAR(255) NULL
 );
 CREATE UNIQUE INDEX performance_pieces_idx ON performance_pieces(performance_id,musical_piece_id);
 

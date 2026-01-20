@@ -62,7 +62,7 @@ export interface PerformanceFilterInterface {
 
 /**
  * Performance can have multiple music pieces
- * mapping in PerformancePieces
+ * mapping in adjudicated_pieces
  */
 export interface PerformanceInterface {
 	id: number | null;

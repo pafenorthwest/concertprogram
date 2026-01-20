@@ -32,7 +32,7 @@ async function fetchPerformerEmail(performerId: number) {
 async function fetchPieceAndComposer(performanceId: number) {
 	const result = await pool.query(
 		`SELECT mp.printed_name, c.full_name AS composer_name
-     FROM performance_pieces pp
+     FROM adjudicated_pieces pp
      JOIN musical_piece mp ON mp.id = pp.musical_piece_id
      JOIN contributor c ON c.id = mp.first_contributor_id
      WHERE pp.performance_id = $1`,
@@ -44,7 +44,7 @@ async function fetchPieceAndComposer(performanceId: number) {
 async function fetchPieceTitles(performanceId: number) {
 	const result = await pool.query(
 		`SELECT mp.printed_name
-     FROM performance_pieces pp
+     FROM adjudicated_pieces pp
      JOIN musical_piece mp ON mp.id = pp.musical_piece_id
      WHERE pp.performance_id = $1`,
 		[performanceId]
@@ -70,7 +70,7 @@ async function cleanupDb({
 	const client = await pool.connect();
 	try {
 		if (performanceIds.length > 0) {
-			await client.query('DELETE FROM performance_pieces WHERE performance_id = ANY($1)', [
+			await client.query('DELETE FROM adjudicated_pieces WHERE performance_id = ANY($1)', [
 				performanceIds
 			]);
 			await client.query('DELETE FROM performance WHERE id = ANY($1)', [performanceIds]);

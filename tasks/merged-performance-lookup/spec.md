@@ -6,7 +6,7 @@ Unify performer lookup and scheduling for multi-class wins within the same conce
 ## Goals
 - Resolve any valid lookup code to the same scheduling context for a performer within a concert series + year.
 - Select a primary class code using the lowest `class_lottery.lottery` (numeric).
-- Merge `performance_pieces` across a multi-win performer’s classes during import, recomputed on every relevant import.
+- Merge `adjudicated_pieces` across a multi-win performer’s classes during import, recomputed on every relevant import.
 - Preserve existing behavior for single-win performers.
 - Surface all winning class names on the schedule page.
 
@@ -53,7 +53,7 @@ Unify performer lookup and scheduling for multi-class wins within the same conce
 ### Architecture / modules impacted
 - `src/lib/server/db.ts`
   - Add a unified lookup helper that aggregates class names and pieces.
-  - Add a merge function to upsert `performance_pieces` into the primary performance.
+  - Add a merge function to upsert `adjudicated_pieces` into the primary performance.
 - `src/lib/server/import.ts`
   - Call the merge helper after each performance import/update.
 - `src/lib/server/common.ts`
@@ -78,7 +78,7 @@ Unify performer lookup and scheduling for multi-class wins within the same conce
 
 ### Data model / schema changes (PostgreSQL)
 - No schema changes required.
-- Merging is performed via `performance_pieces` upserts into the primary performance.
+- Merging is performed via `adjudicated_pieces` upserts into the primary performance.
 - Backward compatibility: existing `performance` rows remain unchanged.
 - Rollback: remove merge helper and restore lookup logic to class-only behavior.
 
@@ -115,6 +115,6 @@ Unify performer lookup and scheduling for multi-class wins within the same conce
 ## Acceptance criteria checklist
 - [ ] Any lookup code for a performer resolves to the same scheduling context within a concert series/year.
 - [ ] Primary class code is the lowest `class_lottery.lottery`.
-- [ ] `performance_pieces` unions are recomputed on relevant imports.
+- [ ] `adjudicated_pieces` unions are recomputed on relevant imports.
 - [ ] Single-win performers experience no change.
 - [ ] Schedule page shows all winning class names and primary class code.

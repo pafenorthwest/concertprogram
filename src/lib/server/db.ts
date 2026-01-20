@@ -125,7 +125,7 @@ async function lookupByPerformanceContext(
 		         AS musical_piece
 		  FROM performances
 		  JOIN performer perf ON perf.id = performances.performer_id
-		  LEFT JOIN performance_pieces pp ON pp.performance_id = performances.id
+		  LEFT JOIN adjudicated_pieces pp ON pp.performance_id = performances.id
 		  LEFT JOIN musical_piece mp ON mp.id = pp.musical_piece_id
 		  JOIN primary_perf ON primary_perf.performer_id = performances.performer_id
 		 GROUP BY perf.id,
@@ -207,8 +207,8 @@ async function resolveLookupContextByDetails(
 		       performance.year
 		  FROM performer
 		  JOIN performance ON performance.performer_id = performer.id
-		  JOIN performance_pieces ON performance_pieces.performance_id = performance.id
-		  JOIN musical_piece ON musical_piece.id = performance_pieces.musical_piece_id
+		  JOIN adjudicated_pieces ON adjudicated_pieces.performance_id = performance.id
+		  JOIN musical_piece ON musical_piece.id = adjudicated_pieces.musical_piece_id
 		  JOIN contributor ON musical_piece.first_contributor_id = contributor.id
 		 WHERE performer.full_name ILIKE $1
 		   AND (
@@ -313,7 +313,7 @@ export async function mergePerformancePiecesForPerformerSeries(
 		if (!performancesResult.rowCount || performancesResult.rowCount < 2) {
 			if (performancesResult.rowCount === 1) {
 				await connection.query(
-					'DELETE FROM performance_pieces WHERE performance_id = $1 AND is_merged = true',
+					'DELETE FROM adjudicated_pieces WHERE performance_id = $1 AND is_merged = true',
 					[performancesResult.rows[0].id]
 				);
 			}
@@ -327,7 +327,7 @@ export async function mergePerformancePiecesForPerformerSeries(
 			.filter((id) => id != null);
 
 		await connection.query(
-			'DELETE FROM performance_pieces WHERE performance_id = $1 AND is_merged = true',
+			'DELETE FROM adjudicated_pieces WHERE performance_id = $1 AND is_merged = true',
 			[primaryPerformanceId]
 		);
 
@@ -336,19 +336,19 @@ export async function mergePerformancePiecesForPerformerSeries(
 		}
 
 		await connection.query(
-			`INSERT INTO performance_pieces (performance_id, musical_piece_id, movement, is_merged)
+			`INSERT INTO adjudicated_pieces (performance_id, musical_piece_id, movement, is_merged)
        SELECT $1, merged.musical_piece_id, merged.movement, true
          FROM (
            SELECT pp.musical_piece_id,
                   MAX(pp.movement) AS movement
-             FROM performance_pieces pp
+             FROM adjudicated_pieces pp
             WHERE pp.performance_id = ANY($2)
               AND pp.is_merged = false
             GROUP BY pp.musical_piece_id
          ) AS merged
        ON CONFLICT (performance_id, musical_piece_id)
-       DO UPDATE SET movement = COALESCE(performance_pieces.movement, EXCLUDED.movement),
-                     is_merged = performance_pieces.is_merged`,
+       DO UPDATE SET movement = COALESCE(adjudicated_pieces.movement, EXCLUDED.movement),
+                     is_merged = adjudicated_pieces.is_merged`,
 			[primaryPerformanceId, secondaryPerformanceIds]
 		);
 	} finally {
@@ -885,7 +885,7 @@ export async function insertPerformancePieceMap(performancePieceMap: Performance
 		const connection = await pool.connect();
 
 		const isMerged = performancePieceMap.is_merged === true ? 'true' : 'false';
-		let insertSQL = 'INSERT INTO performance_pieces ';
+		let insertSQL = 'INSERT INTO adjudicated_pieces ';
 		if (performancePieceMap.movement != null) {
 			insertSQL = insertSQL + '(performance_id, musical_piece_id, movement, is_merged) ';
 			insertSQL =
@@ -931,7 +931,7 @@ export async function deletePerformancePieceMap(
 		const connection = await pool.connect();
 
 		let deleteSQL =
-			'DELETE FROM performance_pieces where performance_id = ' + performancePieceMap.performance_id;
+			'DELETE FROM adjudicated_pieces where performance_id = ' + performancePieceMap.performance_id;
 
 		if (!deleteAll) {
 			deleteSQL = deleteSQL + ' AND musical_piece_id = ' + performancePieceMap.musical_piece_id;
@@ -953,7 +953,7 @@ export async function deletePerformancePieceByPerformanceId(performance_id: numb
 	try {
 		const connection = await pool.connect();
 
-		const deleteSQL = 'DELETE FROM performance_pieces where performance_id = ' + performance_id;
+		const deleteSQL = 'DELETE FROM adjudicated_pieces where performance_id = ' + performance_id;
 		const result = await connection.query(deleteSQL);
 
 		// Release the connection back to the pool
@@ -1086,7 +1086,7 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
 		const fields =
 			'performance.id, ' +
 			'            musical_piece.printed_name AS musical_piece,\n' +
-			'            performance_pieces.movement,\n' +
+			'            adjudicated_pieces.movement,\n' +
 			'            First.full_name AS composer, First.years_active AS composer_years_active,\n' +
 			'            Second.full_name AS composer2, Second.years_active AS composer2_years_active,\n' +
 			'            Third.full_name AS composer3, Third.years_active AS composer3_years_active,\n' +
@@ -1094,8 +1094,8 @@ export async function queryPerformances(filters?: PerformanceFilterInterface) {
 			'            performance.duration, performance.comment, performance.instrument,\n' +
 			'            performance.performance_order, performance.concert_series, performance.year\n';
 		const joins =
-			' JOIN performance_pieces ON performance.id = performance_pieces.performance_id\n' +
-			'        JOIN musical_piece ON performance_pieces.musical_piece_id = musical_piece.id\n' +
+			' JOIN adjudicated_pieces ON performance.id = adjudicated_pieces.performance_id\n' +
+			'        JOIN musical_piece ON adjudicated_pieces.musical_piece_id = musical_piece.id\n' +
 			'        JOIN contributor First ON First.id = musical_piece.first_contributor_id\n' +
 			'        LEFT JOIN contributor Second ON Second.id = musical_piece.second_contributor_id\n' +
 			'        LEFT JOIN contributor Third ON Third.id = musical_piece.second_contributor_id\n' +
@@ -1133,16 +1133,16 @@ export async function queryMusicalPieceByPerformanceId(id: number) {
 	try {
 		const connection = await pool.connect();
 		const querySQL =
-			'SELECT performance.id, musical_piece.printed_name, performance_pieces.movement, \n' +
+			'SELECT performance.id, musical_piece.printed_name, adjudicated_pieces.movement, \n' +
 			'one.full_name as composer_one_name, one.years_active as composer_one_years, \n' +
 			'two.full_name as composer_two_name, two.years_active as composer_two_years, \n' +
 			'three.full_name as composer_three_name, three.years_active as composer_three_years \n' +
 			'FROM musical_piece\n' +
-			'JOIN performance_pieces ON musical_piece.id = performance_pieces.musical_piece_id\n' +
+			'JOIN adjudicated_pieces ON musical_piece.id = adjudicated_pieces.musical_piece_id\n' +
 			'JOIN contributor one ON one.id = musical_piece.first_contributor_id\n' +
 			'LEFT JOIN contributor two ON two.id = musical_piece.second_contributor_id\n' +
 			'LEFT JOIN contributor three ON three.id = musical_piece.third_contributor_id\n' +
-			'JOIN performance ON performance_pieces.performance_id = performance.id\n' +
+			'JOIN performance ON adjudicated_pieces.performance_id = performance.id\n' +
 			'AND performance.id = ' +
 			id;
 
@@ -1308,7 +1308,7 @@ export async function searchPerformanceByPerformerAndClass(
 				p.warm_up_room_end
 			FROM performance p
 			JOIN performer perf ON p.performer_id = perf.id
-			JOIN performance_pieces pp ON p.id = pp.performance_id
+			JOIN adjudicated_pieces pp ON p.id = pp.performance_id
 			JOIN musical_piece mp ON pp.musical_piece_id = mp.id
 			WHERE p.performer_id = $1
 				AND p.class_name = $2
@@ -1347,8 +1347,8 @@ export async function selectPerformanceLottery(year: number) {
 			'FROM class_lottery \n' +
 			'JOIN performance ON performance.class_name = class_lottery.class_name \n' +
 			'JOIN performer ON performer.id = performance.performer_id \n' +
-			'JOIN performance_pieces ON performance.id = performance_pieces.performance_id \n' +
-			'JOIN musical_piece ON musical_piece.id = performance_pieces.musical_piece_id \n' +
+			'JOIN adjudicated_pieces ON performance.id = adjudicated_pieces.performance_id \n' +
+			'JOIN musical_piece ON musical_piece.id = adjudicated_pieces.musical_piece_id \n' +
 			'JOIN contributor ON musical_piece.first_contributor_id = contributor.id \n' +
 			'LEFT JOIN schedule_slot_choice \n' +
 			'  ON schedule_slot_choice.performer_id = performer.id \n' +

@@ -12,7 +12,7 @@ Implement unified lookup logic and merge performance pieces into the primary per
   - locating performer/series/year context from a lookup code/details.
   - determining primary performance by lowest `class_lottery.lottery`.
   - aggregating class names + musical pieces for lookup results.
-- [ ] Implement merge helper that upserts `performance_pieces` into the primary performance.
+- [ ] Implement merge helper that upserts `adjudicated_pieces` into the primary performance.
 - [ ] Call merge helper after each performance import/update.
 
 ## Deliverables
