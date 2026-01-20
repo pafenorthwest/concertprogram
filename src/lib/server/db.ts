@@ -310,48 +310,99 @@ export async function mergePerformancePiecesForPerformerSeries(
 			[performerId, concertSeries, scheduleYear]
 		);
 
-		if (!performancesResult.rowCount || performancesResult.rowCount < 2) {
-			if (performancesResult.rowCount === 1) {
-				await connection.query('DELETE FROM performance_pieces WHERE performance_id = $1', [
-					performancesResult.rows[0].id
-				]);
-			}
+		// Case 4: 0 or undefined -> no-op
+		if (!performancesResult.rowCount || performancesResult.rowCount < 1) {
 			return;
 		}
 
 		const primaryPerformanceId = performancesResult.rows[0].id;
-		const secondaryPerformanceIds = performancesResult.rows
-			.slice(1)
-			.map((row) => row.id)
+
+		// Case 3: exactly 1 -> backfill only if performance_pieces is empty; never delete
+		if (performancesResult.rowCount === 1) {
+			const existingPiecesResult = await connection.query(
+				`SELECT 1
+           FROM performance_pieces
+          WHERE performance_id = $1
+          LIMIT 1`,
+				[primaryPerformanceId]
+			);
+
+			// Strictly "empty" means no rows at all.
+			if (existingPiecesResult.rowCount && existingPiecesResult.rowCount > 0) {
+				return;
+			}
+
+			// Backfill from adjudicated_pieces for the primary performance
+			await connection.query(
+				`INSERT INTO performance_pieces (performance_id, musical_piece_id, movement)
+         SELECT $1, merged.musical_piece_id, merged.movement
+           FROM (
+             SELECT ap.musical_piece_id,
+                    MAX(ap.movement) AS movement
+               FROM adjudicated_pieces ap
+              WHERE ap.performance_id = $1
+                AND ap.is_merged = false
+              GROUP BY ap.musical_piece_id
+           ) AS merged
+         ON CONFLICT (performance_id, musical_piece_id)
+         DO UPDATE SET movement = EXCLUDED.movement`,
+				[primaryPerformanceId]
+			);
+
+			return;
+		}
+
+		// Case 1/2: rowCount >= 2 -> reset + fresh merge
+		const allPerformanceIds: number[] = performancesResult.rows
+			.map((r) => r.id)
 			.filter((id) => id != null);
 
-		await connection.query('DELETE FROM performance_pieces WHERE performance_id = $1', [
-			primaryPerformanceId
-		]);
+		const secondaryPerformanceIds: number[] = allPerformanceIds.slice(1);
 
+		// Defensive: if somehow no secondaries, nothing to merge
 		if (secondaryPerformanceIds.length === 0) {
 			return;
 		}
 
+		// 1) Reset performance_pieces for BOTH primary + secondary performances
+		await connection.query(
+			`DELETE FROM performance_pieces
+        WHERE performance_id = ANY($1)`,
+			[allPerformanceIds]
+		);
+
+		// 2) Reset adjudicated_pieces merge flags for involved performances
+		await connection.query(
+			`UPDATE adjudicated_pieces
+          SET is_merged = false
+        WHERE performance_id = ANY($1)`,
+			[allPerformanceIds]
+		);
+
+		// 3) Fresh merge into primary from adjudicated_pieces across ALL involved performances
+		//    (primary + secondaries), grouped by musical_piece_id with MAX(movement)
 		await connection.query(
 			`INSERT INTO performance_pieces (performance_id, musical_piece_id, movement)
        SELECT $1, merged.musical_piece_id, merged.movement
          FROM (
-           SELECT pp.musical_piece_id,
-                  MAX(pp.movement) AS movement
-             FROM adjudicated_pieces pp
-            WHERE pp.performance_id = ANY($2)
-              AND pp.is_merged = false
-            GROUP BY pp.musical_piece_id
+           SELECT ap.musical_piece_id,
+                  MAX(ap.movement) AS movement
+             FROM adjudicated_pieces ap
+            WHERE ap.performance_id = ANY($2)
+              AND ap.is_merged = false
+            GROUP BY ap.musical_piece_id
          ) AS merged
        ON CONFLICT (performance_id, musical_piece_id)
        DO UPDATE SET movement = EXCLUDED.movement`,
-			[primaryPerformanceId, secondaryPerformanceIds]
+			[primaryPerformanceId, allPerformanceIds]
 		);
 
+		// 4) Mark secondaries as merged (primary remains unmerged)
 		await connection.query(
-			`UPDATE adjudicated_pieces set is_merged = true where performance_id = ANY($2)`,
-			[primaryPerformanceId, secondaryPerformanceIds]
+			`UPDATE adjudicated_pieces
+          SET is_merged = true
+        WHERE performance_id = ANY($1)`,
+			[secondaryPerformanceIds]
 		);
 	} finally {
 		connection.release();
