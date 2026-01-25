@@ -9,6 +9,12 @@
 		submissionStatus?: SubmissionStatus;
 		error?: string;
 	} | null;
+	type PerformancePiece = {
+		musical_piece_id: number;
+		printed_name: string;
+		movement: string | null;
+		is_performance_piece: boolean;
+	};
 
 	let disableFormSubmit = true;
 	let firstTimeEntry = true;
@@ -29,6 +35,13 @@
 	let popupFading = false;
 	let lastSubmissionStatus: SubmissionStatus | null = null;
 	let popupTimers: ReturnType<typeof setTimeout>[] = [];
+	let performancePieces: PerformancePiece[] = [];
+	let selectedPerformancePieceId: number | null = null;
+	let selectionRequired = false;
+	let selectionError: string | null = null;
+	let selectionSaving = false;
+	let selectionPerformanceId: number | null = null;
+	let performancePieceSelfService = false;
 	// Refresh the selection any time the route data changes (e.g., client nav to another performer)
 	$: if (data) {
 		const performanceId = data.performance_id ?? null;
@@ -67,6 +80,19 @@
 		}
 	}
 
+	$: if (data) {
+		const performanceId = data.performance_id ?? null;
+		if (performanceId !== selectionPerformanceId) {
+			selectionPerformanceId = performanceId;
+			performancePieces = data.performance_pieces ?? [];
+			selectedPerformancePieceId = data.selected_performance_piece_id ?? null;
+			selectionRequired = data.performance_piece_selection_required ?? false;
+			performancePieceSelfService = data.performance_piece_self_service ?? false;
+			selectionError = null;
+			selectionSaving = false;
+		}
+	}
+
 	function selectedRanks() {
 		return Object.entries(rankSelections)
 			.filter(([slotId]) => !notAvailableSelections[slotId])
@@ -102,6 +128,10 @@
 	}
 
 	function enforceValidSelect() {
+		if (selectionRequired) {
+			disableFormSubmit = true;
+			return;
+		}
 		const lacksGoodChoices = lacksGoodRankChoices();
 		if (lacksGoodChoices) {
 			const error_icon = document.getElementById('error-icon');
@@ -117,7 +147,7 @@
 	}
 
 	$: if (viewModel?.mode === 'rank-choice') {
-		disableFormSubmit = lacksGoodRankChoices();
+		disableFormSubmit = lacksGoodRankChoices() || selectionRequired;
 	}
 
 	$: if (viewModel?.mode === 'confirm-only') {
@@ -125,7 +155,7 @@
 		if (slot) {
 			const confirmed = confirmSelections[slot.slotId];
 			const notAvailable = notAvailableSelections[slot.slotId];
-			disableFormSubmit = !(confirmed || notAvailable);
+			disableFormSubmit = !(confirmed || notAvailable) || selectionRequired;
 		}
 	}
 
@@ -201,6 +231,70 @@
 	onDestroy(() => {
 		clearPopupTimers();
 	});
+
+	function formatPieceLabel(piece: PerformancePiece): string {
+		if (piece.movement && piece.movement.trim().length > 0) {
+			return `${piece.printed_name} - ${piece.movement}`;
+		}
+		return piece.printed_name;
+	}
+
+	async function selectPerformancePiece(musicalPieceId: number) {
+		if (!data?.performance_id) {
+			return;
+		}
+		selectionSaving = true;
+		selectionError = null;
+		try {
+			const response = await fetch('/api/performance/pieces/select', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					performance_id: data.performance_id,
+					musical_piece_id: musicalPieceId
+				})
+			});
+			if (!response.ok) {
+				selectionError = 'Unable to save selection. Please try again.';
+				return;
+			}
+			selectedPerformancePieceId = musicalPieceId;
+			performancePieces = performancePieces.map((piece) => ({
+				...piece,
+				is_performance_piece: piece.musical_piece_id === musicalPieceId
+			}));
+			selectionRequired = false;
+		} finally {
+			selectionSaving = false;
+		}
+	}
+
+	async function clearPerformancePieceSelection() {
+		if (!data?.performance_id) {
+			return;
+		}
+		selectionSaving = true;
+		selectionError = null;
+		try {
+			const response = await fetch('/api/performance/pieces/clear', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ performance_id: data.performance_id })
+			});
+			if (!response.ok) {
+				selectionError = 'Unable to clear selection. Please try again.';
+				return;
+			}
+			selectedPerformancePieceId = null;
+			performancePieces = performancePieces.map((piece) => ({
+				...piece,
+				is_performance_piece: false
+			}));
+			selectionRequired = performancePieceSelfService && performancePieces.length > 1;
+		} finally {
+			selectionSaving = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -234,7 +328,48 @@
 			<br />
 			<p class="top-message">Classes {data.winner_class_display}</p>
 			<br />
-			<p class="top-message">Performing {data.musical_piece}</p>
+			<p class="top-message">
+				Performing {data.performance_piece_display || data.musical_piece}
+			</p>
+			{#if data.performance_piece_warning}
+				<p class="top-message warning">{data.performance_piece_warning}</p>
+			{/if}
+			{#if performancePieceSelfService && performancePieces.length > 1}
+				<div class="piece-selection">
+					<p class="top-message">Select your performance piece to continue.</p>
+					{#each performancePieces as piece (piece.musical_piece_id)}
+						<label class="piece-option">
+							<input
+								type="radio"
+								name="performancePiece"
+								value={piece.musical_piece_id}
+								checked={piece.musical_piece_id === selectedPerformancePieceId}
+								on:change={() => selectPerformancePiece(piece.musical_piece_id)}
+								disabled={selectionSaving}
+							/>
+							<span>{formatPieceLabel(piece)}</span>
+						</label>
+					{/each}
+					<div class="piece-actions">
+						{#if selectedPerformancePieceId && performancePieces.length > 1}
+							<button
+								type="button"
+								class="action"
+								on:click={clearPerformancePieceSelection}
+								disabled={selectionSaving}
+							>
+								Clear selection
+							</button>
+						{/if}
+						{#if selectionRequired}
+							<span class="piece-warning">Selection required before submitting schedule.</span>
+						{/if}
+						{#if selectionError}
+							<span class="piece-error">{selectionError}</span>
+						{/if}
+					</div>
+				</div>
+			{/if}
 			<br />
 			<p class="top-message">
 				Primary lookup code {data.primary_class_code ?? data.lottery_code}
@@ -311,7 +446,48 @@
 			<br />
 			<p class="top-message">Classes {data.winner_class_display}</p>
 			<br />
-			<p class="top-message">Performing {data.musical_piece}</p>
+			<p class="top-message">
+				Performing {data.performance_piece_display || data.musical_piece}
+			</p>
+			{#if data.performance_piece_warning}
+				<p class="top-message warning">{data.performance_piece_warning}</p>
+			{/if}
+			{#if performancePieceSelfService && performancePieces.length > 1}
+				<div class="piece-selection">
+					<p class="top-message">Select your performance piece to continue.</p>
+					{#each performancePieces as piece (piece.musical_piece_id)}
+						<label class="piece-option">
+							<input
+								type="radio"
+								name="performancePiece"
+								value={piece.musical_piece_id}
+								checked={piece.musical_piece_id === selectedPerformancePieceId}
+								on:change={() => selectPerformancePiece(piece.musical_piece_id)}
+								disabled={selectionSaving}
+							/>
+							<span>{formatPieceLabel(piece)}</span>
+						</label>
+					{/each}
+					<div class="piece-actions">
+						{#if selectedPerformancePieceId && performancePieces.length > 1}
+							<button
+								type="button"
+								class="action"
+								on:click={clearPerformancePieceSelection}
+								disabled={selectionSaving}
+							>
+								Clear selection
+							</button>
+						{/if}
+						{#if selectionRequired}
+							<span class="piece-warning">Selection required before submitting schedule.</span>
+						{/if}
+						{#if selectionError}
+							<span class="piece-error">{selectionError}</span>
+						{/if}
+					</div>
+				</div>
+			{/if}
 			<br />
 			<p class="top-message">
 				Primary lookup code {data.primary_class_code ?? data.lottery_code}
@@ -388,17 +564,15 @@
 				</div>
 			</form>
 		{/if}
+	{:else if popupVisible && popupStatus}
+		<h3 class="schedule">Completed Processing</h3>
 	{:else}
-		{#if popupVisible && popupStatus}
-			<h3 class="schedule">Completed Processing</h3>
-		{:else}
-			<h3 class="schedule">{data.status}</h3>
-			<p class="top-message">
-				Please perform search again. If unable to schedule please contact
-				concertchair@pafenorthwest.org
-			</p>
-			<br /><br /><br />
-		{/if}
+		<h3 class="schedule">{data.status}</h3>
+		<p class="top-message">
+			Please perform search again. If unable to schedule please contact
+			concertchair@pafenorthwest.org
+		</p>
+		<br /><br /><br />
 	{/if}
 </div>
 
@@ -474,5 +648,39 @@
 			left: var(--gutter);
 			right: var(--gutter);
 		}
+	}
+
+	.warning {
+		color: var(--error-color);
+		font-weight: 600;
+	}
+
+	.piece-selection {
+		margin-bottom: 18px;
+		padding: 12px 14px;
+		border: 1px solid var(--separator-color);
+		border-radius: var(--border-radius);
+		background: var(--card-bg-color);
+	}
+
+	.piece-option {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 6px 0;
+	}
+
+	.piece-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+		align-items: center;
+		margin-top: 10px;
+	}
+
+	.piece-warning,
+	.piece-error {
+		color: var(--error-color);
+		font-weight: 600;
 	}
 </style>

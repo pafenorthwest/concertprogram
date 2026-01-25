@@ -121,12 +121,18 @@ async function lookupByPerformanceContext(
 		       MIN(performances.lottery) AS primary_class_code,
 		       STRING_AGG(DISTINCT performances.class_name, ', ' ORDER BY performances.class_name)
 		         AS winner_class_display,
-		       STRING_AGG(DISTINCT mp.printed_name, '; ' ORDER BY mp.printed_name)
-		         AS musical_piece
+		       COALESCE(
+		         STRING_AGG(DISTINCT mp.printed_name, '; ' ORDER BY mp.printed_name),
+		         STRING_AGG(DISTINCT ap_mp.printed_name, '; ' ORDER BY ap_mp.printed_name)
+		       ) AS musical_piece
 		  FROM performances
 		  JOIN performer perf ON perf.id = performances.performer_id
-		  LEFT JOIN adjudicated_pieces pp ON pp.performance_id = performances.id
+		  LEFT JOIN performance_pieces pp
+		         ON pp.performance_id = performances.id
+		        AND pp.is_performance_piece = true
 		  LEFT JOIN musical_piece mp ON mp.id = pp.musical_piece_id
+		  LEFT JOIN adjudicated_pieces ap ON ap.performance_id = performances.id
+		  LEFT JOIN musical_piece ap_mp ON ap_mp.id = ap.musical_piece_id
 		  JOIN primary_perf ON primary_perf.performer_id = performances.performer_id
 		 GROUP BY perf.id,
 		          perf.full_name,
@@ -1025,6 +1031,265 @@ export async function updatePerformancePieceMap(performancePieceMap: Performance
 	await insertPerformancePieceMap(performancePieceMap);
 }
 
+export async function fetchPerformancePieces(performanceId: number) {
+	try {
+		const connection = await pool.connect();
+		const result = await connection.query(
+			`SELECT pp.performance_id,
+              pp.musical_piece_id,
+              pp.movement,
+              pp.is_performance_piece,
+              mp.printed_name,
+              c.full_name AS composer_name
+         FROM performance_pieces pp
+         JOIN musical_piece mp ON mp.id = pp.musical_piece_id
+         LEFT JOIN contributor c ON c.id = mp.first_contributor_id
+        WHERE pp.performance_id = $1
+        ORDER BY mp.printed_name`,
+			[performanceId]
+		);
+		connection.release();
+		return result;
+	} catch (error) {
+		console.error('Error executing fetchPerformancePieces', error);
+		throw error;
+	}
+}
+
+export async function getPerformancePieceSelectionSummary(performanceId: number) {
+	try {
+		const connection = await pool.connect();
+		const result = await connection.query(
+			`SELECT COUNT(*)::int AS total,
+              COUNT(*) FILTER (WHERE is_performance_piece) AS selected,
+              MAX(CASE WHEN is_performance_piece THEN musical_piece_id END) AS selected_piece_id
+         FROM performance_pieces
+        WHERE performance_id = $1`,
+			[performanceId]
+		);
+		connection.release();
+		return result.rows[0] as {
+			total: number;
+			selected: number;
+			selected_piece_id: number | null;
+		};
+	} catch (error) {
+		console.error('Error executing getPerformancePieceSelectionSummary', error);
+		throw error;
+	}
+}
+
+export async function ensureAutoSelectedPerformancePiece(performanceId: number): Promise<boolean> {
+	try {
+		const connection = await pool.connect();
+		try {
+			const summary = await connection.query(
+				`SELECT COUNT(*)::int AS total,
+              COUNT(*) FILTER (WHERE is_performance_piece) AS selected
+         FROM performance_pieces
+        WHERE performance_id = $1`,
+				[performanceId]
+			);
+			const total = Number(summary.rows[0]?.total ?? 0);
+			const selected = Number(summary.rows[0]?.selected ?? 0);
+			if (total === 1 && selected === 0) {
+				await connection.query(
+					`UPDATE performance_pieces
+             SET is_performance_piece = true
+           WHERE performance_id = $1`,
+					[performanceId]
+				);
+				return true;
+			}
+			return false;
+		} finally {
+			connection.release();
+		}
+	} catch (error) {
+		console.error('Error executing ensureAutoSelectedPerformancePiece', error);
+		throw error;
+	}
+}
+
+export async function selectPerformancePiece(
+	performanceId: number,
+	musicalPieceId: number
+): Promise<number> {
+	try {
+		const connection = await pool.connect();
+		try {
+			const exists = await connection.query(
+				`SELECT 1
+         FROM performance_pieces
+        WHERE performance_id = $1
+          AND musical_piece_id = $2
+        LIMIT 1`,
+				[performanceId, musicalPieceId]
+			);
+			if (!exists.rowCount) {
+				return 0;
+			}
+			const result = await connection.query(
+				`UPDATE performance_pieces
+          SET is_performance_piece = CASE WHEN musical_piece_id = $2 THEN true ELSE false END
+        WHERE performance_id = $1`,
+				[performanceId, musicalPieceId]
+			);
+			return result.rowCount ?? 0;
+		} finally {
+			connection.release();
+		}
+	} catch (error) {
+		console.error('Error executing selectPerformancePiece', error);
+		throw error;
+	}
+}
+
+export async function clearPerformancePieceSelection(performanceId: number): Promise<number> {
+	try {
+		const connection = await pool.connect();
+		const result = await connection.query(
+			`UPDATE performance_pieces
+        SET is_performance_piece = false
+      WHERE performance_id = $1`,
+			[performanceId]
+		);
+		connection.release();
+		return result.rowCount ?? 0;
+	} catch (error) {
+		console.error('Error executing clearPerformancePieceSelection', error);
+		throw error;
+	}
+}
+
+export async function addPerformancePieceAssociation(
+	performanceId: number,
+	musicalPieceId: number,
+	movement: string | null
+) {
+	try {
+		const connection = await pool.connect();
+		try {
+			const result = await connection.query(
+				`INSERT INTO performance_pieces (performance_id, musical_piece_id, movement)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (performance_id, musical_piece_id)
+         DO UPDATE SET movement = EXCLUDED.movement`,
+				[performanceId, musicalPieceId, movement]
+			);
+			const summary = await connection.query(
+				`SELECT COUNT(*)::int AS total,
+              COUNT(*) FILTER (WHERE is_performance_piece) AS selected
+         FROM performance_pieces
+        WHERE performance_id = $1`,
+				[performanceId]
+			);
+			const total = Number(summary.rows[0]?.total ?? 0);
+			const selected = Number(summary.rows[0]?.selected ?? 0);
+			if (total === 1 && selected === 0) {
+				await connection.query(
+					`UPDATE performance_pieces
+             SET is_performance_piece = true
+           WHERE performance_id = $1`,
+					[performanceId]
+				);
+			}
+			return result;
+		} finally {
+			connection.release();
+		}
+	} catch (error) {
+		console.error('Error executing addPerformancePieceAssociation', error);
+		throw error;
+	}
+}
+
+export async function removePerformancePieceAssociation(
+	performanceId: number,
+	musicalPieceId: number
+) {
+	try {
+		const connection = await pool.connect();
+		try {
+			const removed = await connection.query(
+				`DELETE FROM performance_pieces
+        WHERE performance_id = $1
+          AND musical_piece_id = $2`,
+				[performanceId, musicalPieceId]
+			);
+
+			const summary = await connection.query(
+				`SELECT COUNT(*)::int AS total,
+              COUNT(*) FILTER (WHERE is_performance_piece) AS selected
+         FROM performance_pieces
+        WHERE performance_id = $1`,
+				[performanceId]
+			);
+			const total = Number(summary.rows[0]?.total ?? 0);
+			const selected = Number(summary.rows[0]?.selected ?? 0);
+			if (total === 1 && selected === 0) {
+				await connection.query(
+					`UPDATE performance_pieces
+             SET is_performance_piece = true
+           WHERE performance_id = $1`,
+					[performanceId]
+				);
+			}
+			if (total > 1 && selected === 0) {
+				await connection.query(
+					`UPDATE performance_pieces
+             SET is_performance_piece = false
+           WHERE performance_id = $1`,
+					[performanceId]
+				);
+			}
+			return removed;
+		} finally {
+			connection.release();
+		}
+	} catch (error) {
+		console.error('Error executing removePerformancePieceAssociation', error);
+		throw error;
+	}
+}
+
+export async function backfillAdjudicatedPiecesIfEmpty(performanceId: number): Promise<boolean> {
+	try {
+		const connection = await pool.connect();
+		try {
+			const existing = await connection.query(
+				`SELECT 1
+         FROM adjudicated_pieces
+        WHERE performance_id = $1
+        LIMIT 1`,
+				[performanceId]
+			);
+			if (existing.rowCount && existing.rowCount > 0) {
+				return false;
+			}
+			await connection.query(
+				`INSERT INTO adjudicated_pieces (performance_id, musical_piece_id, movement, is_merged)
+         SELECT performance_id,
+                musical_piece_id,
+                movement,
+                false
+           FROM performance_pieces
+          WHERE performance_id = $1
+         ON CONFLICT (performance_id, musical_piece_id)
+         DO UPDATE SET movement = EXCLUDED.movement,
+                       is_merged = false`,
+				[performanceId]
+			);
+			return true;
+		} finally {
+			connection.release();
+		}
+	} catch (error) {
+		console.error('Error executing backfillAdjudicatedPiecesIfEmpty', error);
+		throw error;
+	}
+}
+
 export async function getClassLottery(class_name: string) {
 	try {
 		const connection = await pool.connect();
@@ -1186,16 +1451,17 @@ export async function queryMusicalPieceByPerformanceId(id: number) {
 	try {
 		const connection = await pool.connect();
 		const querySQL =
-			'SELECT performance.id, musical_piece.printed_name, adjudicated_pieces.movement, \n' +
+			'SELECT performance.id, musical_piece.printed_name, performance_pieces.movement, \n' +
 			'one.full_name as composer_one_name, one.years_active as composer_one_years, \n' +
 			'two.full_name as composer_two_name, two.years_active as composer_two_years, \n' +
 			'three.full_name as composer_three_name, three.years_active as composer_three_years \n' +
 			'FROM musical_piece\n' +
-			'JOIN adjudicated_pieces ON musical_piece.id = adjudicated_pieces.musical_piece_id\n' +
+			'JOIN performance_pieces ON musical_piece.id = performance_pieces.musical_piece_id\n' +
 			'JOIN contributor one ON one.id = musical_piece.first_contributor_id\n' +
 			'LEFT JOIN contributor two ON two.id = musical_piece.second_contributor_id\n' +
 			'LEFT JOIN contributor three ON three.id = musical_piece.third_contributor_id\n' +
-			'JOIN performance ON adjudicated_pieces.performance_id = performance.id\n' +
+			'JOIN performance ON performance_pieces.performance_id = performance.id\n' +
+			'WHERE performance_pieces.is_performance_piece = true\n' +
 			'AND performance.id = ' +
 			id;
 

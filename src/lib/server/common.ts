@@ -81,6 +81,7 @@ export interface PerformancePieceInterface {
 	musical_piece_id: number;
 	movement: string | null;
 	is_merged?: boolean;
+	is_performance_piece?: boolean;
 }
 
 export interface ClassLotteryInterface {

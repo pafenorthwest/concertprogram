@@ -32,10 +32,11 @@ async function fetchPerformerEmail(performerId: number) {
 async function fetchPieceAndComposer(performanceId: number) {
 	const result = await pool.query(
 		`SELECT mp.printed_name, c.full_name AS composer_name
-     FROM adjudicated_pieces pp
+     FROM performance_pieces pp
      JOIN musical_piece mp ON mp.id = pp.musical_piece_id
      JOIN contributor c ON c.id = mp.first_contributor_id
-     WHERE pp.performance_id = $1`,
+     WHERE pp.performance_id = $1
+       AND pp.is_performance_piece = true`,
 		[performanceId]
 	);
 	return result.rows[0];
@@ -44,12 +45,30 @@ async function fetchPieceAndComposer(performanceId: number) {
 async function fetchPieceTitles(performanceId: number) {
 	const result = await pool.query(
 		`SELECT mp.printed_name
-     FROM adjudicated_pieces pp
+     FROM performance_pieces pp
      JOIN musical_piece mp ON mp.id = pp.musical_piece_id
      WHERE pp.performance_id = $1`,
 		[performanceId]
 	);
 	return result.rows.map((row) => row.printed_name);
+}
+
+async function selectPerformancePieceForTest(performanceId: number, musicalPieceId: number) {
+	await pool.query(
+		`UPDATE performance_pieces
+     SET is_performance_piece = CASE WHEN musical_piece_id = $2 THEN true ELSE false END
+     WHERE performance_id = $1`,
+		[performanceId, musicalPieceId]
+	);
+}
+
+async function clearPerformancePieceSelectionForTest(performanceId: number) {
+	await pool.query(
+		`UPDATE performance_pieces
+     SET is_performance_piece = false
+     WHERE performance_id = $1`,
+		[performanceId]
+	);
 }
 
 async function cleanupDb({
@@ -71,6 +90,9 @@ async function cleanupDb({
 	try {
 		if (performanceIds.length > 0) {
 			await client.query('DELETE FROM adjudicated_pieces WHERE performance_id = ANY($1)', [
+				performanceIds
+			]);
+			await client.query('DELETE FROM performance_pieces WHERE performance_id = ANY($1)', [
 				performanceIds
 			]);
 			await client.query('DELETE FROM performance WHERE id = ANY($1)', [performanceIds]);
@@ -204,6 +226,19 @@ async function setupMultiClassFixtures() {
 		musicalPieceIds.push(secondPerformance.musical_piece_1.id);
 	}
 
+	if (firstPerformance.performance?.id && firstPerformance.musical_piece_1?.id) {
+		await selectPerformancePieceForTest(
+			firstPerformance.performance.id,
+			firstPerformance.musical_piece_1.id
+		);
+	}
+	if (secondPerformance.performance?.id && secondPerformance.musical_piece_1?.id) {
+		await selectPerformancePieceForTest(
+			secondPerformance.performance.id,
+			secondPerformance.musical_piece_1.id
+		);
+	}
+
 	const firstLookup = await lookupByCode(String(firstImport.lottery));
 	const secondLookup = await lookupByCode(String(secondImport.lottery));
 
@@ -315,13 +350,6 @@ async function setupSameSeriesFixtures() {
 		musicalPieceIds.push(secondPerformance.musical_piece_1.id);
 	}
 
-	const firstLookup = await lookupByCode(String(firstImport.lottery));
-	const secondLookup = await lookupByCode(String(secondImport.lottery));
-
-	if (firstLookup == null || secondLookup == null) {
-		throw new Error('Failed to look up performer by lottery code.');
-	}
-
 	const expectedFirstTitle = parseMusicalPiece(
 		firstImport.musical_piece[0].title
 	).titleWithoutMovement;
@@ -334,6 +362,17 @@ async function setupSameSeriesFixtures() {
 		firstImport.lottery === primaryLottery
 			? (firstPerformance.performance?.id ?? null)
 			: (secondPerformance.performance?.id ?? null);
+
+	if (primaryPerformanceId != null && firstPerformance.musical_piece_1?.id != null) {
+		await selectPerformancePieceForTest(primaryPerformanceId, firstPerformance.musical_piece_1.id);
+	}
+
+	const firstLookup = await lookupByCode(String(firstImport.lottery));
+	const secondLookup = await lookupByCode(String(secondImport.lottery));
+
+	if (firstLookup == null || secondLookup == null) {
+		throw new Error('Failed to look up performer by lottery code.');
+	}
 
 	return {
 		basePerformer,
@@ -507,6 +546,77 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 		}
 	);
 
+	it('backfills adjudicated_pieces when schedule load finds none', async () => {
+		const fixtures = await setupMultiClassFixtures();
+		try {
+			const performanceId = fixtures.firstLookup!.performance_id;
+			await pool.query('DELETE FROM adjudicated_pieces WHERE performance_id = $1', [performanceId]);
+			const before = await pool.query(
+				'SELECT 1 FROM adjudicated_pieces WHERE performance_id = $1',
+				[performanceId]
+			);
+			expect(before.rowCount).toBe(0);
+
+			const url = new URL(`http://localhost:8888/schedule?code=${fixtures.firstImport.lottery}`);
+			await load({
+				url,
+				params: {},
+				locals: {},
+				parent: async () => ({}),
+				depends: () => {}
+			} as Parameters<typeof load>[0]);
+
+			const after = await pool.query('SELECT 1 FROM adjudicated_pieces WHERE performance_id = $1', [
+				performanceId
+			]);
+			expect(after.rowCount).toBeGreaterThan(0);
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: fixtures.concertSeries,
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
+
+	it('auto-selects a single performance piece on schedule load', async () => {
+		const fixtures = await setupMultiClassFixtures();
+		try {
+			const performanceId = fixtures.firstLookup!.performance_id;
+			await clearPerformancePieceSelectionForTest(performanceId);
+
+			const url = new URL(`http://localhost:8888/schedule?code=${fixtures.firstImport.lottery}`);
+			await load({
+				url,
+				params: {},
+				locals: {},
+				parent: async () => ({}),
+				depends: () => {}
+			} as Parameters<typeof load>[0]);
+
+			const selected = await pool.query(
+				`SELECT 1
+         FROM performance_pieces
+        WHERE performance_id = $1
+          AND is_performance_piece = true`,
+				[performanceId]
+			);
+			expect(selected.rowCount).toBe(1);
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: fixtures.concertSeries,
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
+
 	it('returns primary code and merged pieces for same-series multi-class winners', async () => {
 		const fixtures: SameSeriesFixtures = await setupSameSeriesFixtures();
 
@@ -527,8 +637,7 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 				fixtures.secondImport.class_name
 			);
 
-			expect(fixtures.firstLookup!.musical_piece).toContain(fixtures.expectedFirstTitle);
-			expect(fixtures.firstLookup!.musical_piece).toContain(fixtures.expectedSecondTitle);
+			expect(fixtures.firstLookup!.musical_piece).toBe(fixtures.expectedFirstTitle);
 
 			if (fixtures.primaryPerformanceId != null) {
 				const mergedTitles = await fetchPieceTitles(fixtures.primaryPerformanceId);
