@@ -777,4 +777,43 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 			});
 		}
 	});
+
+	it('requires performanceId before schedule submission', async () => {
+		const fixtures: SameSeriesFixtures = await setupSameSeriesFixtures();
+
+		try {
+			if (fixtures.primaryPerformanceId == null || fixtures.performerId == null) {
+				throw new Error('Expected same-series fixtures to include performer and performance ids.');
+			}
+			const slotCatalog = await SlotCatalog.load(fixtures.concertSeries, fixtures.scheduleYear);
+			const formData = buildRankChoiceFormData(
+				fixtures.performerId,
+				fixtures.concertSeries,
+				fixtures.primaryPerformanceId,
+				slotCatalog.slots.slice(0, 2).map((slot) => slot.id)
+			);
+			formData.delete('performanceId');
+
+			const blocked = await actions.add({
+				request: new Request('http://localhost:8888/schedule?/add', {
+					method: 'POST',
+					body: formData
+				})
+			} as Parameters<(typeof actions)['add']>[0]);
+
+			expect((blocked as { status?: number }).status).toBe(400);
+			expect((blocked as { data?: { error?: string } }).data?.error).toBe(
+				'performance id is required'
+			);
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: [fixtures.concertSeries],
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
 });

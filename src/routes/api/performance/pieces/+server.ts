@@ -6,7 +6,6 @@ import {
 	getPerformancePieceSelectionSummary,
 	removePerformancePieceAssociation
 } from '$lib/server/db';
-import { featureFlags } from '$lib/server/featureFlags';
 
 function parseNumber(value: string | null): number | null {
 	if (!value) {
@@ -63,14 +62,10 @@ export async function GET({ url, request, cookies }) {
 		composer_name: row.composer_name
 	}));
 
-	const filteredPieces = featureFlags.performancePieceSelfService
-		? pieces
-		: pieces.filter((piece) => piece.is_performance_piece);
-
 	return json(
 		{
 			performance_id: performanceId,
-			pieces: filteredPieces,
+			pieces,
 			total_pieces: selection.total,
 			selected_piece_id: selection.selected_piece_id
 		},
@@ -82,9 +77,6 @@ export async function POST({ url, request, cookies }) {
 	const authError = await ensureAuthorized(url, request, cookies.get('pafe_auth'));
 	if (authError) {
 		return authError;
-	}
-	if (!featureFlags.performancePieceSelfService) {
-		return json({ status: 'error', reason: 'Selection is disabled' }, { status: 403 });
 	}
 
 	const body = await request.json();
@@ -107,9 +99,6 @@ export async function DELETE({ url, request, cookies }) {
 	const authError = await ensureAuthorized(url, request, cookies.get('pafe_auth'));
 	if (authError) {
 		return authError;
-	}
-	if (!featureFlags.performancePieceSelfService) {
-		return json({ status: 'error', reason: 'Selection is disabled' }, { status: 403 });
 	}
 
 	const body = await request.json();

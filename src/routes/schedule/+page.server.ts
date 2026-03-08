@@ -189,20 +189,31 @@ export const actions = {
 				return fail(400, { submissionStatus: 'error', error: 'performer id must be an integer' });
 			}
 
-			// update duration and comment across all concert series
-			if (performanceId != null) {
-				const performanceIdAsNumber = Number(performanceId);
-				await ensureAutoSelectedPerformancePiece(performanceIdAsNumber);
-				const selection = await getPerformancePieceSelectionSummary(performanceIdAsNumber);
-				if (selection.total > 1 && selection.selected === 0) {
-					return fail(400, {
-						submissionStatus: 'error',
-						error: 'Select a performance piece before submitting scheduling preferences.'
-					});
-				}
-				// if this fails return some error??
-				await updateConcertPerformance(performanceIdAsNumber, duration, comment);
+			if (performanceId == null) {
+				return fail(400, {
+					submissionStatus: 'error',
+					error: 'performance id is required'
+				});
 			}
+
+			const performanceIdAsNumber = Number(performanceId);
+			if (!Number.isInteger(performanceIdAsNumber)) {
+				return fail(400, {
+					submissionStatus: 'error',
+					error: 'performance id must be an integer'
+				});
+			}
+
+			await ensureAutoSelectedPerformancePiece(performanceIdAsNumber);
+			const selection = await getPerformancePieceSelectionSummary(performanceIdAsNumber);
+			if (selection.total > 1 && selection.selected === 0) {
+				return fail(400, {
+					submissionStatus: 'error',
+					error: 'Select a performance piece before submitting scheduling preferences.'
+				});
+			}
+			// if this fails return some error??
+			await updateConcertPerformance(performanceIdAsNumber, duration, comment);
 
 			const slotCatalog = await SlotCatalog.load(concertSeries, year());
 			if (slotCatalog.slotCount === 0) {
