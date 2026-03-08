@@ -185,12 +185,6 @@ describe('Valid Eastside page', () => {
 		const EmmaCarterFirstPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[0].title);
 		const EmmaCarterSecondPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[1].title);
 		const expectedSelectedPiece = EmmaCarterFirstPiece.titleWithoutMovement;
-		const expectedLookupPieceDisplay = [
-			EmmaCarterFirstPiece.titleWithoutMovement,
-			EmmaCarterSecondPiece.titleWithoutMovement
-		]
-			.sort()
-			.join('; ');
 		const slotCatalog = await SlotCatalog.load(EmmaCarterRecord.concert_series, scheduleYear);
 		const [firstSlot, secondSlot, thirdSlot, fourthSlot] = slotCatalog.slots;
 
@@ -201,6 +195,10 @@ describe('Valid Eastside page', () => {
 			await page.waitForSelector(`text=Scheduling for ${performerName}`);
 			await page.waitForSelector('text=Primary lookup code');
 			await page.waitForSelector('form#ranked-choice-form');
+			await page.waitForSelector('text=Select your performance piece to continue.');
+			const pieceOptions = page.locator('input[name="performancePiece"]');
+			expect(await pieceOptions.count()).toBe(2);
+			await pieceOptions.first().check();
 			await page.waitForSelector(`text=Performing ${expectedSelectedPiece}`);
 
 			const rankSelectIds = [
@@ -306,7 +304,7 @@ describe('Valid Eastside page', () => {
 			expect(performanceResults?.performance_duration).toBe(3);
 			expect(performanceResults?.performance_comment).toBe('Thank you');
 			expect(performanceResults?.lottery_code).toBe(lottery);
-			expect(performanceResults?.musical_piece).toBe(expectedLookupPieceDisplay);
+			expect(performanceResults?.musical_piece).toBe(expectedSelectedPiece);
 			expect(performanceResults?.concert_series).toBe(EmmaCarterRecord.concert_series);
 
 			const performanceSchedule = await scheduleRepository.fetchChoices(

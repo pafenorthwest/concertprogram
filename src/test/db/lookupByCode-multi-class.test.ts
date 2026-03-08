@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { refreshCachedTimeStamps } from '$lib/cache';
 import { Performance } from '$lib/server/import';
 import { parseMusicalPiece, type ImportPerformanceInterface, year } from '$lib/server/common';
-import { lookupByCode, pool } from '$lib/server/db';
+import { lookupByCode, pool, selectPerformancePiece } from '$lib/server/db';
 import { SlotCatalog } from '$lib/server/slotCatalog';
 import { ScheduleMapper } from '$lib/server/scheduleMapper';
 import { ScheduleRepository } from '$lib/server/scheduleRepository';
@@ -54,12 +54,7 @@ async function fetchPieceTitles(performanceId: number) {
 }
 
 async function selectPerformancePieceForTest(performanceId: number, musicalPieceId: number) {
-	await pool.query(
-		`UPDATE performance_pieces
-     SET is_performance_piece = CASE WHEN musical_piece_id = $2 THEN true ELSE false END
-     WHERE performance_id = $1`,
-		[performanceId, musicalPieceId]
-	);
+	await selectPerformancePiece(performanceId, musicalPieceId);
 }
 
 async function clearPerformancePieceSelectionForTest(performanceId: number) {
@@ -697,6 +692,40 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 			expect(data.performance_pieces.map((piece) => piece.printed_name)).toEqual(
 				expect.arrayContaining([fixtures.expectedFirstTitle, fixtures.expectedSecondTitle])
 			);
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: [fixtures.concertSeries],
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
+
+	it('switches selected pieces without leaving duplicate active selections', async () => {
+		const fixtures: SameSeriesFixtures = await setupSameSeriesFixtures();
+
+		try {
+			if (fixtures.primaryPerformanceId == null) {
+				throw new Error('Expected a primary performance id for same-series fixtures.');
+			}
+
+			await selectPerformancePiece(fixtures.primaryPerformanceId, fixtures.musicalPieceIds[1]);
+
+			const selectedRows = await pool.query(
+				`SELECT musical_piece_id
+         FROM performance_pieces
+        WHERE performance_id = $1
+          AND is_performance_piece = true`,
+				[fixtures.primaryPerformanceId]
+			);
+			expect(selectedRows.rowCount).toBe(1);
+			expect(selectedRows.rows[0]?.musical_piece_id).toBe(fixtures.musicalPieceIds[1]);
+
+			const switchedLookup = await lookupByCode(String(fixtures.firstImport.lottery));
+			expect(switchedLookup?.musical_piece).toBe(fixtures.expectedSecondTitle);
 		} finally {
 			await cleanupDb({
 				performanceIds: fixtures.performanceIds,

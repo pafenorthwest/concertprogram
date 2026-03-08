@@ -6,7 +6,7 @@ import {
 	year,
 	parseMusicalPiece
 } from '$lib/server/common';
-import { searchPerformanceByPerformerAndClass } from '$lib/server/db';
+import { lookupByCode, searchPerformanceByPerformerAndClass } from '$lib/server/db';
 
 describe('Test Import Code', () => {
 	it('should parse music titles with movements', async () => {
@@ -108,6 +108,51 @@ describe('Test Import Code', () => {
 			singlePerformance.contributor_1[0].full_name,
 			'Johann Christian Bach',
 			'Expected composer'
+		);
+	});
+	it('refreshes selected performance pieces for single-performance reimports', async () => {
+		const lottery = 65432;
+		const initialPerformance: ImportPerformanceInterface = {
+			class_name: 'RN.REIMPORT.1',
+			performer: 'Single Performance Refresh',
+			age: 14,
+			lottery,
+			email: 'refresh.single.performance@example.com',
+			phone: '555-0303',
+			accompanist: null,
+			instrument: 'Violin',
+			musical_piece: [
+				{
+					title: 'Original Refresh Piece',
+					contributors: [{ name: 'Refresh Composer One', yearsActive: '1900-1950' }]
+				}
+			],
+			concert_series: 'Eastside'
+		};
+		const updatedImport: ImportPerformanceInterface = {
+			...initialPerformance,
+			musical_piece: [
+				{
+					title: 'Updated Refresh Piece',
+					contributors: [{ name: 'Refresh Composer Two', yearsActive: '1910-1960' }]
+				}
+			]
+		};
+
+		const firstPerformance = new Performance();
+		const updatedPerformance = new Performance();
+
+		await firstPerformance.initialize(initialPerformance);
+		await updatedPerformance.initialize(updatedImport);
+
+		const lookupResult = await lookupByCode(String(lottery));
+		await updatedPerformance.deleteAll();
+
+		assert.isNotNull(lookupResult, 'Expected lookup result after reimport');
+		assert.equal(
+			lookupResult?.musical_piece,
+			'Updated Refresh Piece',
+			'Expected lookup to return the refreshed selected piece'
 		);
 	});
 	it('normalizes contributor role before lookup', async () => {

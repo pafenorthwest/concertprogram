@@ -322,23 +322,67 @@ export async function mergePerformancePiecesForPerformerSeries(
 		}
 
 		const primaryPerformanceId = performancesResult.rows[0].id;
+		const currentSelectionResult = await connection.query(
+			`SELECT musical_piece_id
+         FROM performance_pieces
+        WHERE performance_id = $1
+          AND is_performance_piece = true
+        LIMIT 1`,
+			[primaryPerformanceId]
+		);
+		const previouslySelectedPieceId =
+			(currentSelectionResult.rows[0]?.musical_piece_id as number | undefined) ?? null;
 
-		// Case 3: exactly 1 -> backfill only if performance_pieces is empty; never delete
-		if (performancesResult.rowCount === 1) {
-			const existingPiecesResult = await connection.query(
-				`SELECT 1
+		const restoreSelection = async (performanceId: number, preferredPieceId: number | null) => {
+			const piecesResult = await connection.query(
+				`SELECT musical_piece_id
            FROM performance_pieces
           WHERE performance_id = $1
-          LIMIT 1`,
-				[primaryPerformanceId]
+          ORDER BY musical_piece_id`,
+				[performanceId]
 			);
-
-			// Strictly "empty" means no rows at all.
-			if (existingPiecesResult.rowCount && existingPiecesResult.rowCount > 0) {
+			if (!piecesResult.rowCount || piecesResult.rowCount < 1) {
 				return;
 			}
 
-			// Backfill from adjudicated_pieces for the primary performance
+			const selectedPieceStillExists =
+				preferredPieceId != null &&
+				piecesResult.rows.some((row) => row.musical_piece_id === preferredPieceId);
+
+			if (selectedPieceStillExists) {
+				await connection.query(
+					`UPDATE performance_pieces
+             SET is_performance_piece = false
+           WHERE performance_id = $1
+             AND is_performance_piece = true`,
+					[performanceId]
+				);
+				await connection.query(
+					`UPDATE performance_pieces
+             SET is_performance_piece = true
+           WHERE performance_id = $1
+             AND musical_piece_id = $2`,
+					[performanceId, preferredPieceId]
+				);
+				return;
+			}
+
+			if (piecesResult.rowCount === 1) {
+				await connection.query(
+					`UPDATE performance_pieces
+             SET is_performance_piece = true
+           WHERE performance_id = $1`,
+					[performanceId]
+				);
+			}
+		};
+
+		// Case 3: exactly 1 -> rebuild associations from adjudicated_pieces and preserve selection if possible
+		if (performancesResult.rowCount === 1) {
+			await connection.query('DELETE FROM performance_pieces WHERE performance_id = $1', [
+				primaryPerformanceId
+			]);
+
 			await connection.query(
 				`INSERT INTO performance_pieces (performance_id, musical_piece_id, movement)
          SELECT $1, merged.musical_piece_id, merged.movement
@@ -354,6 +398,7 @@ export async function mergePerformancePiecesForPerformerSeries(
          DO UPDATE SET movement = EXCLUDED.movement`,
 				[primaryPerformanceId]
 			);
+			await restoreSelection(primaryPerformanceId, previouslySelectedPieceId);
 
 			return;
 		}
@@ -402,6 +447,7 @@ export async function mergePerformancePiecesForPerformerSeries(
        DO UPDATE SET movement = EXCLUDED.movement`,
 			[primaryPerformanceId, allPerformanceIds]
 		);
+		await restoreSelection(primaryPerformanceId, previouslySelectedPieceId);
 
 		// 4) Mark secondaries as merged (primary remains unmerged)
 		await connection.query(
@@ -1118,6 +1164,7 @@ export async function selectPerformancePiece(
 	try {
 		const connection = await pool.connect();
 		try {
+			await connection.query('BEGIN');
 			const exists = await connection.query(
 				`SELECT 1
          FROM performance_pieces
@@ -1127,15 +1174,28 @@ export async function selectPerformancePiece(
 				[performanceId, musicalPieceId]
 			);
 			if (!exists.rowCount) {
+				await connection.query('ROLLBACK');
 				return 0;
 			}
+			await connection.query(
+				`UPDATE performance_pieces
+            SET is_performance_piece = false
+          WHERE performance_id = $1
+            AND is_performance_piece = true`,
+				[performanceId]
+			);
 			const result = await connection.query(
 				`UPDATE performance_pieces
-          SET is_performance_piece = CASE WHEN musical_piece_id = $2 THEN true ELSE false END
-        WHERE performance_id = $1`,
+            SET is_performance_piece = true
+          WHERE performance_id = $1
+            AND musical_piece_id = $2`,
 				[performanceId, musicalPieceId]
 			);
+			await connection.query('COMMIT');
 			return result.rowCount ?? 0;
+		} catch (error) {
+			await connection.query('ROLLBACK');
+			throw error;
 		} finally {
 			connection.release();
 		}
