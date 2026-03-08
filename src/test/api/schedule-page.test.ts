@@ -183,7 +183,6 @@ describe('Valid Eastside page', () => {
 		const importEmmaCarterResults = await importPerformance(performanceJson);
 		const EmmaCarterRecord = JSON.parse(performanceJson);
 		const EmmaCarterFirstPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[0].title);
-		const EmmaCarterSecondPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[1].title);
 		const expectedSelectedPiece = EmmaCarterFirstPiece.titleWithoutMovement;
 		const slotCatalog = await SlotCatalog.load(EmmaCarterRecord.concert_series, scheduleYear);
 		const [firstSlot, secondSlot, thirdSlot, fourthSlot] = slotCatalog.slots;
