@@ -1,7 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { isAuthorizedRequest } from '$lib/server/apiAuth';
 import { clearPerformancePieceSelection } from '$lib/server/db';
-import { featureFlags } from '$lib/server/featureFlags';
 
 function parseNumber(value: string | null): number | null {
 	if (!value) {
@@ -31,9 +30,6 @@ export async function POST({ url, request, cookies }) {
 	const authError = await ensureAuthorized(url, request, cookies.get('pafe_auth'));
 	if (authError) {
 		return authError;
-	}
-	if (!featureFlags.performancePieceSelfService) {
-		return json({ status: 'error', reason: 'Selection is disabled' }, { status: 403 });
 	}
 
 	const body = await request.json();

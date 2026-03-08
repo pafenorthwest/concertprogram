@@ -1061,8 +1061,8 @@ export async function getPerformancePieceSelectionSummary(performanceId: number)
 		const connection = await pool.connect();
 		const result = await connection.query(
 			`SELECT COUNT(*)::int AS total,
-              COUNT(*) FILTER (WHERE is_performance_piece) AS selected,
-              MAX(CASE WHEN is_performance_piece THEN musical_piece_id END) AS selected_piece_id
+              COUNT(*) FILTER (WHERE is_performance_piece)::int AS selected,
+              MAX(CASE WHEN is_performance_piece THEN musical_piece_id END)::int AS selected_piece_id
          FROM performance_pieces
         WHERE performance_id = $1`,
 			[performanceId]

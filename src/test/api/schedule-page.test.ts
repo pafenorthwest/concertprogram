@@ -138,13 +138,7 @@ describe('Valid Eastside page', () => {
 		const importEmmaCarterResults = await importPerformance(emmaCarterPerformance);
 		const EmmaCarterRecord = JSON.parse(emmaCarterPerformance);
 		const EmmaCarterFirstPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[0].title);
-		const EmmaCarterSecondPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[1].title);
-		const EmmaCarterPiecesDisplay = [
-			EmmaCarterFirstPiece.titleWithoutMovement,
-			EmmaCarterSecondPiece.titleWithoutMovement
-		]
-			.sort()
-			.join('; ');
+		const expectedSelectedPiece = EmmaCarterFirstPiece.titleWithoutMovement;
 		const slotCatalog = await SlotCatalog.load(EmmaCarterRecord.concert_series, scheduleYear);
 		const [firstSlot, secondSlot, thirdSlot, fourthSlot] = slotCatalog.slots;
 
@@ -153,9 +147,34 @@ describe('Valid Eastside page', () => {
 		try {
 			await page.goto(`http://localhost:8888/schedule?code=${emmaCarterLottery}`);
 			await page.waitForSelector(`text=Scheduling for ${emmaCarterName}`);
-			await page.waitForSelector('text=Performing Concerto in C minor');
 			await page.waitForSelector('text=Primary lookup code');
 			await page.waitForSelector('form#ranked-choice-form');
+			await page.waitForSelector('text=Select your performance piece to continue.');
+			const radioCount = await page.$$eval(
+				'input[name="performancePiece"]',
+				(elements) => elements.length
+			);
+			expect(radioCount).toBe(2);
+			const submitDisabledBeforeSelection = await page.$eval(
+				'form#ranked-choice-form button[type="submit"]',
+				(element) => (element as HTMLButtonElement).disabled
+			);
+			expect(submitDisabledBeforeSelection).toBe(true);
+			await Promise.all([
+				page.waitForResponse(
+					(resp) =>
+						resp.url().includes('/api/performance/pieces/select') &&
+						resp.request().method() === 'POST'
+				),
+				page.locator('input[name="performancePiece"]').first().check()
+			]);
+			await page.waitForSelector(`text=Performing ${expectedSelectedPiece}`);
+			await page.waitForFunction(() => {
+				const button = document.querySelector(
+					'form#ranked-choice-form button[type="submit"]'
+				) as HTMLButtonElement | null;
+				return button != null && button.disabled === false;
+			});
 
 			const rankSelectIds = [
 				`#slot-${firstSlot.id}-rank`,
@@ -237,7 +256,7 @@ describe('Valid Eastside page', () => {
 			expect(performanceResults?.performance_duration).toBe(3);
 			expect(performanceResults?.performance_comment).toBe('Thank you');
 			expect(performanceResults?.lottery_code).toBe(emmaCarterLottery);
-			expect(performanceResults?.musical_piece).toBe(EmmaCarterPiecesDisplay);
+			expect(performanceResults?.musical_piece).toBe(expectedSelectedPiece);
 			expect(performanceResults?.concert_series).toBe(EmmaCarterRecord.concert_series);
 
 			const performanceSchedule = await scheduleRepository.fetchChoices(

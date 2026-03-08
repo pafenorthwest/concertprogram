@@ -1,0 +1,23 @@
+{
+  "selected_signals_path": "/Users/eric/.codex/worktrees/488d/concertprogram/tasks/radio-select-piece/complexity-signals.json",
+  "selected_signals_sha256": "2bbdef46f1e74011129d0916871da5a4d5478079915a53bb0c6e941b41eb75ca",
+  "score_script_path": "/Users/eric/.codex/worktrees/488d/concertprogram/.codex/scripts/complexity-score.sh",
+  "score_script_sha256": "45a062dd25a8938ad1fba76e1be65815c40d7d722a20ff07c22c74ed0e479699",
+  "ranges": {
+    "goals": {
+      "min": 5,
+      "max": 8
+    },
+    "phases": {
+      "min": 4,
+      "max": 6
+    }
+  },
+  "recommended": {
+    "goals": 6,
+    "phases": 6
+  },
+  "complexity_input": "@tasks/radio-select-piece/complexity-signals.json",
+  "complexity_descriptor": "scored:L3 (multi-surface)",
+  "captured_at": "2026-03-08T20:41:54Z"
+}

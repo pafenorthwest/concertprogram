@@ -14,7 +14,6 @@ import { ScheduleValidator } from '$lib/server/scheduleValidator';
 import { SlotCatalog } from '$lib/server/slotCatalog';
 import { getCachedTimeStamps, type ConcertRow } from '$lib/cache';
 import type { ScheduleViewModel, Slot } from '$lib/types/schedule';
-import { featureFlags } from '$lib/server/featureFlags';
 
 // Ensure a stable ordering of concert times for both rendering and form processing
 async function getSortedConcertTimes(): Promise<ConcertRow[] | null> {
@@ -55,7 +54,6 @@ export async function load({ url }) {
 	let viewModel: ScheduleViewModel | null = null;
 	let slotCount = 0;
 	let slots: Slot[] = [];
-	const selfServiceEnabled = featureFlags.performancePieceSelfService;
 	let performancePieces: Array<{
 		musical_piece_id: number;
 		printed_name: string;
@@ -64,7 +62,6 @@ export async function load({ url }) {
 	}> = [];
 	let selectedPerformancePieceId: number | null = null;
 	let performancePieceDisplay = '';
-	let performancePieceWarning: string | null = null;
 	let selectionRequired = false;
 
 	const concertStartTimes = await getSortedConcertTimes();
@@ -134,13 +131,8 @@ export async function load({ url }) {
 			selectedPerformancePieceId = selectedPiece?.musical_piece_id ?? null;
 			if (selectedPiece) {
 				performancePieceDisplay = formatPerformancePiece(selectedPiece);
-			} else if (!selfServiceEnabled && performancePieces.length > 0) {
-				performancePieceDisplay = formatPerformancePiece(performancePieces[0]);
-				performancePieceWarning =
-					'Performance piece has not been selected by staff yet. Scheduling can proceed.';
 			}
-			selectionRequired =
-				selfServiceEnabled && selectionSummary.total > 1 && !selectedPerformancePieceId;
+			selectionRequired = selectionSummary.total > 1 && !selectedPerformancePieceId;
 		}
 		/*
 		console.log(
@@ -167,9 +159,7 @@ export async function load({ url }) {
 		performance_pieces: performancePieces,
 		selected_performance_piece_id: selectedPerformancePieceId,
 		performance_piece_display: performancePieceDisplay,
-		performance_piece_warning: performancePieceWarning,
 		performance_piece_selection_required: selectionRequired,
-		performance_piece_self_service: selfServiceEnabled,
 		viewModel,
 		slotCount,
 		slots
@@ -202,15 +192,13 @@ export const actions = {
 			// update duration and comment across all concert series
 			if (performanceId != null) {
 				const performanceIdAsNumber = Number(performanceId);
-				if (featureFlags.performancePieceSelfService) {
-					await ensureAutoSelectedPerformancePiece(performanceIdAsNumber);
-					const selection = await getPerformancePieceSelectionSummary(performanceIdAsNumber);
-					if (selection.total > 1 && selection.selected === 0) {
-						return fail(400, {
-							submissionStatus: 'error',
-							error: 'Select a performance piece before submitting scheduling preferences.'
-						});
-					}
+				await ensureAutoSelectedPerformancePiece(performanceIdAsNumber);
+				const selection = await getPerformancePieceSelectionSummary(performanceIdAsNumber);
+				if (selection.total > 1 && selection.selected === 0) {
+					return fail(400, {
+						submissionStatus: 'error',
+						error: 'Select a performance piece before submitting scheduling preferences.'
+					});
 				}
 				// if this fails return some error??
 				await updateConcertPerformance(performanceIdAsNumber, duration, comment);

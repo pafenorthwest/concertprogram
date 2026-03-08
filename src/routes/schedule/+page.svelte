@@ -41,7 +41,8 @@
 	let selectionError: string | null = null;
 	let selectionSaving = false;
 	let selectionPerformanceId: number | null = null;
-	let performancePieceSelfService = false;
+	let selectedPerformancePiece: PerformancePiece | null = null;
+	let performancePieceHeading = '';
 	// Refresh the selection any time the route data changes (e.g., client nav to another performer)
 	$: if (data) {
 		const performanceId = data.performance_id ?? null;
@@ -87,11 +88,19 @@
 			performancePieces = data.performance_pieces ?? [];
 			selectedPerformancePieceId = data.selected_performance_piece_id ?? null;
 			selectionRequired = data.performance_piece_selection_required ?? false;
-			performancePieceSelfService = data.performance_piece_self_service ?? false;
 			selectionError = null;
 			selectionSaving = false;
 		}
 	}
+
+	$: selectedPerformancePiece =
+		performancePieces.find((piece) => piece.musical_piece_id === selectedPerformancePieceId) ??
+		null;
+	$: performancePieceHeading = selectedPerformancePiece
+		? selectedPerformancePiece.printed_name
+		: selectionRequired
+			? ''
+			: data?.performance_piece_display || data?.musical_piece || '';
 
 	function selectedRanks() {
 		return Object.entries(rankSelections)
@@ -290,7 +299,7 @@
 				...piece,
 				is_performance_piece: false
 			}));
-			selectionRequired = performancePieceSelfService && performancePieces.length > 1;
+			selectionRequired = performancePieces.length > 1;
 		} finally {
 			selectionSaving = false;
 		}
@@ -328,13 +337,7 @@
 			<br />
 			<p class="top-message">Classes {data.winner_class_display}</p>
 			<br />
-			<p class="top-message">
-				Performing {data.performance_piece_display || data.musical_piece}
-			</p>
-			{#if data.performance_piece_warning}
-				<p class="top-message warning">{data.performance_piece_warning}</p>
-			{/if}
-			{#if performancePieceSelfService && performancePieces.length > 1}
+			{#if performancePieces.length > 1}
 				<div class="piece-selection">
 					<p class="top-message">Select your performance piece to continue.</p>
 					{#each performancePieces as piece (piece.musical_piece_id)}
@@ -369,6 +372,9 @@
 						{/if}
 					</div>
 				</div>
+			{/if}
+			{#if performancePieceHeading}
+				<p class="top-message">Performing {performancePieceHeading}</p>
 			{/if}
 			<br />
 			<p class="top-message">
@@ -446,13 +452,7 @@
 			<br />
 			<p class="top-message">Classes {data.winner_class_display}</p>
 			<br />
-			<p class="top-message">
-				Performing {data.performance_piece_display || data.musical_piece}
-			</p>
-			{#if data.performance_piece_warning}
-				<p class="top-message warning">{data.performance_piece_warning}</p>
-			{/if}
-			{#if performancePieceSelfService && performancePieces.length > 1}
+			{#if performancePieces.length > 1}
 				<div class="piece-selection">
 					<p class="top-message">Select your performance piece to continue.</p>
 					{#each performancePieces as piece (piece.musical_piece_id)}
@@ -487,6 +487,9 @@
 						{/if}
 					</div>
 				</div>
+			{/if}
+			{#if performancePieceHeading}
+				<p class="top-message">Performing {performancePieceHeading}</p>
 			{/if}
 			<br />
 			<p class="top-message">
@@ -648,11 +651,6 @@
 			left: var(--gutter);
 			right: var(--gutter);
 		}
-	}
-
-	.warning {
-		color: var(--error-color);
-		font-weight: 600;
 	}
 
 	.piece-selection {
