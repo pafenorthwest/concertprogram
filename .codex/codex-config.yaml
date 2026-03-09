@@ -1,5 +1,5 @@
 code_review:
-  base_branch: schedule_refactor
+  base_branch: clear_schedule_page
 
 notes:
   - "Update this manifest only when the repository's canonical commands change."
