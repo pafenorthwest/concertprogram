@@ -1,0 +1,23 @@
+{
+  "selected_signals_path": "/Users/eric/.codex/worktrees/b371/concertprogram/tasks/clear-instructions-schedule/complexity-signals.json",
+  "selected_signals_sha256": "3da2564ef2ef5b6978e3c3ee6caa773012d790d831673314b37e985a091ae888",
+  "score_script_path": "/Users/eric/.codex/worktrees/b371/concertprogram/.codex/scripts/complexity-score.sh",
+  "score_script_sha256": "45a062dd25a8938ad1fba76e1be65815c40d7d722a20ff07c22c74ed0e479699",
+  "ranges": {
+    "goals": {
+      "min": 3,
+      "max": 5
+    },
+    "phases": {
+      "min": 2,
+      "max": 4
+    }
+  },
+  "recommended": {
+    "goals": 4,
+    "phases": 2
+  },
+  "complexity_input": "@tasks/clear-instructions-schedule/complexity-signals.json",
+  "complexity_descriptor": "scored:L2 (focused)",
+  "captured_at": "2026-03-09T02:21:19Z"
+}

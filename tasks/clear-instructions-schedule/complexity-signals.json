@@ -1,0 +1,25 @@
+{
+  "scope": 2,
+  "behavior": 2,
+  "dependency": 0,
+  "uncertainty": 0,
+  "verification": 4,
+  "evidence": {
+    "scope": "files=2 surface=schedule-page-ui+route-tests bounded to one subsystem",
+    "behavior": "one user-visible schedule-form clarity workflow update with no contract change",
+    "dependency": "interfaces=none",
+    "uncertainty": "known Svelte page-copy update pattern with no migration risk",
+    "verification": "checks=lint,build,test plus route-level UI assertions",
+    "guardrails": "no schema/api contract change; no new deps; localized surface; reversible with straightforward verification"
+  },
+  "guardrails": {
+    "no_schema_or_api_contract_change": true,
+    "no_new_external_dependencies": true,
+    "localized_surface": true,
+    "reversible_with_straightforward_verification": true
+  },
+  "overrides": {
+    "phases": 2,
+    "reason": "Localized schedule-page copy/help updates and matching test coverage fit a two-phase implementation."
+  }
+}

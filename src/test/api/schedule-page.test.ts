@@ -191,14 +191,26 @@ describe('Valid Eastside page', () => {
 		const page = await browser.newPage();
 		try {
 			await page.goto(`http://localhost:8888/schedule?code=${lottery}`);
-			await page.waitForSelector(`text=Scheduling for ${performerName}`);
-			await page.waitForSelector('text=Primary lookup code');
+			await page.waitForSelector('text=Step 1: Review concert information');
+			await page.waitForSelector(`text=${performerName}`);
+			await page.waitForSelector('text=Lookup code');
 			await page.waitForSelector('form#ranked-choice-form');
-			await page.waitForSelector('text=Select your performance piece to continue.');
+			await page.waitForSelector('text=How to complete this form');
+			await page.waitForSelector('text=If more than one song is listed, choose one piece below.');
+			await page.click('button[aria-label="Dismiss schedule help"]');
+			await page.waitForSelector('text=Show instructions again');
+			await page.click('text=Show instructions again');
+			await page.waitForSelector('text=How to complete this form');
+			await page.waitForSelector('text=Step 2: Choose one performance piece');
 			const pieceOptions = page.locator('input[name="performancePiece"]');
 			expect(await pieceOptions.count()).toBe(2);
 			await pieceOptions.first().check();
-			await page.waitForSelector(`text=Performing ${expectedSelectedPiece}`);
+			await page.waitForSelector(`text=${expectedSelectedPiece}`);
+			await page.waitForSelector('text=Step 3: Rank concert times');
+			await page.waitForSelector('text=The limit is 8 minutes.');
+			await page.waitForSelector(
+				'text=You can come back and edit this page later if anything changes.'
+			);
 
 			const rankSelectIds = [
 				`#slot-${firstSlot.id}-rank`,
@@ -233,7 +245,7 @@ describe('Valid Eastside page', () => {
 				page.click('form#ranked-choice-form button[type="submit"]')
 			]);
 			const validateFormValues = async () => {
-				await page.waitForSelector('text=Primary lookup code');
+				await page.waitForSelector('text=Lookup code');
 				await page.waitForFunction(
 					([firstSlotId, secondSlotId, thirdSlotId, fourthSlotId]) => {
 						const firstRank = document.querySelector(
@@ -349,9 +361,16 @@ describe('Valid Eastside page', () => {
 		const page = await browser.newPage();
 		try {
 			await page.goto('http://localhost:8888/schedule?code=456');
-			await page.waitForSelector('text=Scheduling for Kai Organ');
-			await page.waitForSelector('text=Performing Organ Sonata No.6 in G major, BWV 530');
-			await page.waitForSelector('text=Primary lookup code');
+			await page.waitForSelector('text=Step 1: Review concert information');
+			await page.waitForSelector('text=Kai Organ');
+			await page.waitForSelector('text=Organ Sonata No.6 in G major, BWV 530');
+			await page.waitForSelector('text=Lookup code');
+			await page.waitForSelector(
+				'text=If only one eligible piece is listed, it stays selected for you by default.'
+			);
+			await page.waitForSelector('text=Step 3: Confirm your concert time');
+			await page.waitForSelector('text=Step 4: Duration');
+			await page.waitForSelector('text=Step 5: Comments');
 
 			const checkboxTag = await page.$eval('#concert-confirm', (element) =>
 				element.tagName.toLowerCase()
@@ -375,12 +394,12 @@ describe('Valid Eastside page', () => {
 			// Reload the schedule page to verify confirmation message and absence of form
 			await page.goto('http://localhost:8888/schedule?code=456');
 
-			await page.waitForSelector('text=You are all set, thank you for confirming you attendance');
+			await page.waitForSelector('text=You are all set, thank you for confirming your attendance');
 			const concertoFormAfterSubmit = await page.$('form#concerto-confirmation');
 			expect(concertoFormAfterSubmit).toBeNull();
 
 			await page.reload();
-			await page.waitForSelector('text=You are all set, thank you for confirming you attendance');
+			await page.waitForSelector('text=You are all set, thank you for confirming your attendance');
 			const concertoFormAfterReload = await page.$('form#concerto-confirmation');
 			expect(concertoFormAfterReload).toBeNull();
 

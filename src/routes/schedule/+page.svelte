@@ -43,6 +43,11 @@
 	let selectionPerformanceId: number | null = null;
 	let selectedPerformancePiece: PerformancePiece | null = null;
 	let performancePieceHeading = '';
+	let helpVisible = true;
+	let selectedLookupCode = '';
+	let reviewPerformancePiece = '';
+	let pieceInstruction = '';
+	let timeInstruction = '';
 	// Refresh the selection any time the route data changes (e.g., client nav to another performer)
 	$: if (data) {
 		const performanceId = data.performance_id ?? null;
@@ -90,6 +95,7 @@
 			selectionRequired = data.performance_piece_selection_required ?? false;
 			selectionError = null;
 			selectionSaving = false;
+			helpVisible = true;
 		}
 	}
 
@@ -101,6 +107,16 @@
 		: selectionRequired
 			? ''
 			: data?.performance_piece_display || data?.musical_piece || '';
+	$: selectedLookupCode = data?.primary_class_code ?? data?.lottery_code ?? '';
+	$: reviewPerformancePiece = performancePieceHeading || 'Choose one performance piece below.';
+	$: pieceInstruction =
+		performancePieces.length > 1
+			? 'If more than one song is listed, choose one piece below. If only one piece is eligible, it stays selected for you by default. Please perform the piece that matches the award you received unless the Concert Chair asks otherwise.'
+			: 'If only one eligible piece is listed, it stays selected for you by default. Please perform the piece that matches the award you received unless the Concert Chair asks otherwise.';
+	$: timeInstruction =
+		viewModel?.mode === 'confirm-only'
+			? 'You are invited to play at one concert. Confirm attendance for the listed concert, or choose Not Available if you cannot attend.'
+			: 'You are invited to play at one concert. Rank the concert times you prefer and mark any time you cannot attend as Not Available.';
 
 	function selectedRanks() {
 		return Object.entries(rankSelections)
@@ -248,6 +264,14 @@
 		return piece.printed_name;
 	}
 
+	function dismissHelp() {
+		helpVisible = false;
+	}
+
+	function showHelp() {
+		helpVisible = true;
+	}
+
 	async function selectPerformancePiece(musicalPieceId: number) {
 		if (!data?.performance_id) {
 			return;
@@ -333,13 +357,76 @@
 	{#if data.status === 'OK' && data.viewModel}
 		{#if data.viewModel.mode === 'confirm-only'}
 			<h3 class="schedule">Confirmation of Concerto Performance</h3>
-			<p class="top-message">Scheduling for {data.performer_name}</p>
-			<br />
-			<p class="top-message">Classes {data.winner_class_display}</p>
-			<br />
+			{#if helpVisible}
+				<section class="help-panel" aria-labelledby="schedule-help-title">
+					<div class="help-panel-header">
+						<div>
+							<p class="help-kicker">Parents and teachers</p>
+							<h4 id="schedule-help-title">How to complete this form</h4>
+						</div>
+						<button
+							type="button"
+							class="help-toggle"
+							aria-label="Dismiss schedule help"
+							on:click={dismissHelp}
+						>
+							Dismiss help
+						</button>
+					</div>
+					<ol class="help-steps">
+						<li>
+							<strong>Review concert information at the top.</strong> Confirm the performer name, classes,
+							performance piece, and lookup code before making any choices.
+						</li>
+						<li>
+							<strong>Choose one performance piece if needed.</strong>
+							{pieceInstruction}
+						</li>
+						<li>
+							<strong>Confirm or decline the listed concert time.</strong>
+							{timeInstruction}
+						</li>
+						<li>
+							<strong>Enter duration.</strong> We need the length of your performance in minutes. The
+							limit is 8 minutes and must not be exceeded.
+						</li>
+						<li>
+							<strong>Add comments if needed.</strong> Use comments for any special information that pertains
+							to the performance.
+						</li>
+					</ol>
+					<p class="help-note">You can return to this page later if you need to make changes.</p>
+				</section>
+			{:else}
+				<button type="button" class="help-reopen" on:click={showHelp}
+					>Show instructions again</button
+				>
+			{/if}
+			<section class="review-card" aria-labelledby="review-concert-info">
+				<h4 id="review-concert-info">Step 1: Review concert information</h4>
+				<div class="review-grid">
+					<div>
+						<span class="review-label">Performer name</span>
+						<p>{data.performer_name}</p>
+					</div>
+					<div>
+						<span class="review-label">Classes</span>
+						<p>{data.winner_class_display}</p>
+					</div>
+					<div>
+						<span class="review-label">Performance piece</span>
+						<p>{reviewPerformancePiece}</p>
+					</div>
+					<div>
+						<span class="review-label">Lookup code</span>
+						<p>{selectedLookupCode}</p>
+					</div>
+				</div>
+			</section>
 			{#if performancePieces.length > 1}
 				<div class="piece-selection">
-					<p class="top-message">Select your performance piece to continue.</p>
+					<h4>Step 2: Choose one performance piece</h4>
+					<p class="instruction-text">{pieceInstruction}</p>
 					{#each performancePieces as piece (piece.musical_piece_id)}
 						<label class="piece-option">
 							<input
@@ -373,23 +460,19 @@
 					</div>
 				</div>
 			{/if}
-			{#if performancePieceHeading}
-				<p class="top-message">Performing {performancePieceHeading}</p>
-			{/if}
-			<br />
-			<p class="top-message">
-				Primary lookup code {data.primary_class_code ?? data.lottery_code}
-			</p>
-			<br /><br /><br />
 			{#if data.viewModel.slots[0].confirmed}
 				<h3>
-					You are all set, thank you for confirming you attendance {data.viewModel.slots[0]
+					You are all set, thank you for confirming your attendance {data.viewModel.slots[0]
 						.displayTime}
 				</h3>
 				<p>Please contact concertchair@pafenorthwest.com with any questions</p>
 				<br /><br />
 			{:else}
 				<form id="concerto-confirmation" method="POST" action="?/add">
+					<h4>Step 3: Confirm your concert time</h4>
+					<p class="instruction-text">
+						{timeInstruction}
+					</p>
 					<p>
 						Please confirm your attendance for Concerto Playoff on {data.concertTimes[0]
 							.displayStartTime}
@@ -419,8 +502,8 @@
 						<p class="concerto-confirm">Not Available</p>
 						<br /><br />
 						<label for="duration"
-							><span class="concerto-confirm">Duration: </span><br /><span>
-								performance time in minutes</span
+							><span class="concerto-confirm">Step 4: Duration</span><br /><span>
+								Enter the performance time in minutes. The limit is 8 minutes.</span
 							></label
 						>
 						<select class="action" name="duration" id="duration" bind:value={durationSelection}>
@@ -433,13 +516,20 @@
 							<option value="7">7</option>
 							<option value="8">8</option>
 						</select><br /><br />
-						<label for="comment"><span class="concerto-confirm">Comments:</span></label>
+						<label for="comment"
+							><span class="concerto-confirm">Step 5: Comments</span><br /><span>
+								Add any special information about the performance.</span
+							></label
+						>
 						<input
 							type="text"
 							id="comment"
 							name="comment"
 							value={data.performance_comment ?? ''}
 						/><br /><br />
+						<p class="return-note">
+							You can come back and edit this page later if anything changes.
+						</p>
 					</div>
 					<div class="form-group">
 						<button type="submit" disabled={disableFormSubmit}>Submit</button>
@@ -448,13 +538,76 @@
 			{/if}
 		{:else}
 			<h3 class="schedule">Rank Performance Times</h3>
-			<p class="top-message">Scheduling for {data.performer_name}</p>
-			<br />
-			<p class="top-message">Classes {data.winner_class_display}</p>
-			<br />
+			{#if helpVisible}
+				<section class="help-panel" aria-labelledby="schedule-help-title">
+					<div class="help-panel-header">
+						<div>
+							<p class="help-kicker">Parents and teachers</p>
+							<h4 id="schedule-help-title">How to complete this form</h4>
+						</div>
+						<button
+							type="button"
+							class="help-toggle"
+							aria-label="Dismiss schedule help"
+							on:click={dismissHelp}
+						>
+							Dismiss help
+						</button>
+					</div>
+					<ol class="help-steps">
+						<li>
+							<strong>Review concert information at the top.</strong> Confirm the performer name, classes,
+							performance piece, and lookup code before making any choices.
+						</li>
+						<li>
+							<strong>Choose one performance piece if needed.</strong>
+							{pieceInstruction}
+						</li>
+						<li>
+							<strong>Rank your preferred concert times.</strong>
+							{timeInstruction}
+						</li>
+						<li>
+							<strong>Enter duration.</strong> We need the length of your performance in minutes. The
+							limit is 8 minutes and must not be exceeded.
+						</li>
+						<li>
+							<strong>Add comments if needed.</strong> Use comments for any special information that pertains
+							to the performance.
+						</li>
+					</ol>
+					<p class="help-note">You can return to this page later if you need to make changes.</p>
+				</section>
+			{:else}
+				<button type="button" class="help-reopen" on:click={showHelp}
+					>Show instructions again</button
+				>
+			{/if}
+			<section class="review-card" aria-labelledby="review-concert-info">
+				<h4 id="review-concert-info">Step 1: Review concert information</h4>
+				<div class="review-grid">
+					<div>
+						<span class="review-label">Performer name</span>
+						<p>{data.performer_name}</p>
+					</div>
+					<div>
+						<span class="review-label">Classes</span>
+						<p>{data.winner_class_display}</p>
+					</div>
+					<div>
+						<span class="review-label">Performance piece</span>
+						<p>{reviewPerformancePiece}</p>
+					</div>
+					<div>
+						<span class="review-label">Lookup code</span>
+						<p>{selectedLookupCode}</p>
+					</div>
+				</div>
+			</section>
 			{#if performancePieces.length > 1}
 				<div class="piece-selection">
-					<p class="top-message">Select your performance piece to continue.</p>
+					<h4>Step 2: Choose one performance piece</h4>
+					<p class="instruction-text">{pieceInstruction}</p>
 					{#each performancePieces as piece (piece.musical_piece_id)}
 						<label class="piece-option">
 							<input
@@ -488,14 +641,6 @@
 					</div>
 				</div>
 			{/if}
-			{#if performancePieceHeading}
-				<p class="top-message">Performing {performancePieceHeading}</p>
-			{/if}
-			<br />
-			<p class="top-message">
-				Primary lookup code {data.primary_class_code ?? data.lottery_code}
-			</p>
-			<br /><br /><br />
 			<div id="error-icon" class="base-icon hidden"><p>Duplicate Rankings Selected</p></div>
 			<div id="success-icon" class="base-icon hidden"><p>✓</p></div>
 			<form id="ranked-choice-form" class="form-container" method="POST" action="?/add">
@@ -503,10 +648,13 @@
 					<input type="hidden" name="performerId" value={data.performer_id} />
 					<input type="hidden" name="concertSeries" value={data.concert_series} />
 					<input type="hidden" name="performanceId" value={data.performance_id} />
-					<span class="concerto-confirm">Rank Choice: </span><br />
+					<span class="concerto-confirm">Step 3: Rank concert times</span><br />
 					<p>
-						Please rank the following options (1 = most preferred, {data.viewModel.slotCount} = least
-						preferred).
+						{timeInstruction}
+					</p>
+					<p>
+						Use 1 for your most preferred option and {data.viewModel.slotCount} for your least preferred
+						option.
 					</p>
 					<br /><br />
 
@@ -540,8 +688,8 @@
 					{/each}
 					<br /><br />
 					<label for="duration"
-						><span class="concerto-confirm">Duration: </span><br /><span>
-							performance time in minutes</span
+						><span class="concerto-confirm">Step 4: Duration</span><br /><span>
+							Enter the performance time in minutes. The limit is 8 minutes.</span
 						></label
 					>
 					<select class="action" name="duration" id="duration" bind:value={durationSelection}>
@@ -554,13 +702,18 @@
 						<option value="7">7</option>
 						<option value="8">8</option>
 					</select><br /><br />
-					<label for="comment"><span class="concerto-confirm">Comments:</span></label>
+					<label for="comment"
+						><span class="concerto-confirm">Step 5: Comments</span><br /><span>
+							Add any special information about the performance.</span
+						></label
+					>
 					<input
 						type="text"
 						id="comment"
 						name="comment"
 						value={data.performance_comment ?? ''}
 					/><br /><br />
+					<p class="return-note">You can come back and edit this page later if anything changes.</p>
 					<div class="form-group">
 						<button type="submit" disabled={disableFormSubmit}>Submit</button>
 					</div>
@@ -654,12 +807,79 @@
 	}
 
 	.piece-selection {
-		margin-bottom: 18px;
-		margin-left: var(--margin);
+		margin: 0 0 18px var(--margin);
 		padding: 12px 14px;
 		border: 1px solid var(--separator-color);
 		border-radius: var(--border-radius);
 		background: var(--card-bg-color);
+	}
+
+	.help-panel,
+	.review-card {
+		margin: 0 0 18px var(--margin);
+		padding: 16px 18px;
+		border: 1px solid var(--separator-color);
+		border-radius: var(--border-radius);
+		background: var(--card-bg-color);
+	}
+
+	.help-panel-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 12px;
+	}
+
+	.help-kicker,
+	.review-label {
+		margin: 0;
+		color: var(--low-em-color);
+		font-size: 0.9rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+
+	.help-toggle,
+	.help-reopen {
+		border: 1px solid var(--separator-color);
+		border-radius: var(--border-radius);
+		background: transparent;
+		color: var(--text-color);
+		cursor: pointer;
+		padding: 8px 12px;
+	}
+
+	.help-reopen {
+		margin: 0 0 18px var(--margin);
+	}
+
+	.help-steps {
+		margin: 12px 0 0 20px;
+		padding: 0;
+	}
+
+	.help-steps li,
+	.help-note,
+	.instruction-text,
+	.return-note {
+		line-height: 1.5;
+	}
+
+	.help-note,
+	.return-note {
+		margin: 12px 0 0;
+		color: var(--low-em-color);
+	}
+
+	.review-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 14px;
+		margin-top: 12px;
+	}
+
+	.review-grid p {
+		margin: 6px 0 0;
 	}
 
 	.piece-option {
@@ -681,5 +901,11 @@
 	.piece-error {
 		color: var(--error-color);
 		font-weight: 600;
+	}
+
+	@media screen and (max-width: 600px) {
+		.help-panel-header {
+			flex-direction: column;
+		}
 	}
 </style>
