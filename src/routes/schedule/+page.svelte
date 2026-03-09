@@ -655,6 +655,7 @@
 
 	.piece-selection {
 		margin-bottom: 18px;
+		margin-left: var(--margin);
 		padding: 12px 14px;
 		border: 1px solid var(--separator-color);
 		border-radius: var(--border-radius);
