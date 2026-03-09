@@ -61,6 +61,42 @@ function makePerformanceJson({
 	});
 }
 
+function makeMultiPiecePerformanceJson({
+	className,
+	performer,
+	age,
+	lottery,
+	concertSeries
+}: {
+	className: string;
+	performer: string;
+	age: number;
+	lottery: number;
+	concertSeries: string;
+}) {
+	return JSON.stringify({
+		class_name: className,
+		performer,
+		age,
+		lottery,
+		email: `${performer.toLowerCase().replaceAll(' ', '.')}@example.com`,
+		phone: '999-555-4444',
+		accompanist: 'Zhi, Zhou',
+		instrument: 'Cello',
+		musical_piece: [
+			{
+				title: 'Concerto in C minor 3rd movement',
+				contributors: [{ name: 'Johann Christian Bach', yearsActive: 'None' }]
+			},
+			{
+				title: 'Scherzo no.2 in B Flat Minor, op.31',
+				contributors: [{ name: 'Frédéric Chopin', yearsActive: 'None' }]
+			}
+		],
+		concert_series: concertSeries
+	});
+}
+
 async function seedConcertTimes(series: string, seedYear: number, slotCount: number) {
 	const connection = await pool.connect();
 	try {
@@ -135,27 +171,34 @@ describe('Valid Eastside page', () => {
 	});
 
 	it('should display schedule page with ranked choices (playwright)', async () => {
-		const importEmmaCarterResults = await importPerformance(emmaCarterPerformance);
-		const EmmaCarterRecord = JSON.parse(emmaCarterPerformance);
+		const lottery = Math.floor(10000 + Math.random() * 90000);
+		const performerName = `Emma Carter Scheduler ${Math.random().toString(36).slice(2, 5)}`;
+		const performanceJson = makeMultiPiecePerformanceJson({
+			className: `QQ.9-10.${Math.random().toString(36).slice(2, 5)}`,
+			performer: performerName,
+			age: 12,
+			lottery,
+			concertSeries: tenSlotSeries
+		});
+		const importEmmaCarterResults = await importPerformance(performanceJson);
+		const EmmaCarterRecord = JSON.parse(performanceJson);
 		const EmmaCarterFirstPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[0].title);
-		const EmmaCarterSecondPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[1].title);
-		const EmmaCarterPiecesDisplay = [
-			EmmaCarterFirstPiece.titleWithoutMovement,
-			EmmaCarterSecondPiece.titleWithoutMovement
-		]
-			.sort()
-			.join('; ');
+		const expectedSelectedPiece = EmmaCarterFirstPiece.titleWithoutMovement;
 		const slotCatalog = await SlotCatalog.load(EmmaCarterRecord.concert_series, scheduleYear);
 		const [firstSlot, secondSlot, thirdSlot, fourthSlot] = slotCatalog.slots;
 
 		const browser = await chromium.launch({ headless: true });
 		const page = await browser.newPage();
 		try {
-			await page.goto(`http://localhost:8888/schedule?code=${emmaCarterLottery}`);
-			await page.waitForSelector(`text=Scheduling for ${emmaCarterName}`);
-			await page.waitForSelector('text=Performing Concerto in C minor');
+			await page.goto(`http://localhost:8888/schedule?code=${lottery}`);
+			await page.waitForSelector(`text=Scheduling for ${performerName}`);
 			await page.waitForSelector('text=Primary lookup code');
 			await page.waitForSelector('form#ranked-choice-form');
+			await page.waitForSelector('text=Select your performance piece to continue.');
+			const pieceOptions = page.locator('input[name="performancePiece"]');
+			expect(await pieceOptions.count()).toBe(2);
+			await pieceOptions.first().check();
+			await page.waitForSelector(`text=Performing ${expectedSelectedPiece}`);
 
 			const rankSelectIds = [
 				`#slot-${firstSlot.id}-rank`,
@@ -191,6 +234,29 @@ describe('Valid Eastside page', () => {
 			]);
 			const validateFormValues = async () => {
 				await page.waitForSelector('text=Primary lookup code');
+				await page.waitForFunction(
+					([firstSlotId, secondSlotId, thirdSlotId, fourthSlotId]) => {
+						const firstRank = document.querySelector(
+							`#slot-${firstSlotId}-rank`
+						) as HTMLSelectElement | null;
+						const secondRank = document.querySelector(
+							`#slot-${secondSlotId}-rank`
+						) as HTMLSelectElement | null;
+						const thirdNotAvailable = document.querySelector(
+							`#slot-${thirdSlotId}-not-available`
+						) as HTMLInputElement | null;
+						const fourthRank = document.querySelector(
+							`#slot-${fourthSlotId}-rank`
+						) as HTMLSelectElement | null;
+						return (
+							firstRank?.value === '1' &&
+							secondRank?.value === '3' &&
+							fourthRank?.value === '2' &&
+							thirdNotAvailable?.checked === true
+						);
+					},
+					[firstSlot.id, secondSlot.id, thirdSlot.id, fourthSlot.id]
+				);
 				const firstRankValue = await page.$eval(
 					`#slot-${firstSlot.id}-rank`,
 					(element) => (element as HTMLSelectElement).value
@@ -228,16 +294,16 @@ describe('Valid Eastside page', () => {
 				expect(commentValue).toBe('Thank you');
 			};
 
-			await page.goto(`http://localhost:8888/schedule?code=${emmaCarterLottery}`);
+			await page.goto(`http://localhost:8888/schedule?code=${lottery}`);
 			await validateFormValues();
 
 			await page.reload({ waitUntil: 'networkidle' });
 			await validateFormValues();
-			const performanceResults = await lookupByCode(String(emmaCarterLottery));
+			const performanceResults = await lookupByCode(String(lottery));
 			expect(performanceResults?.performance_duration).toBe(3);
 			expect(performanceResults?.performance_comment).toBe('Thank you');
-			expect(performanceResults?.lottery_code).toBe(emmaCarterLottery);
-			expect(performanceResults?.musical_piece).toBe(EmmaCarterPiecesDisplay);
+			expect(performanceResults?.lottery_code).toBe(lottery);
+			expect(performanceResults?.musical_piece).toBe(expectedSelectedPiece);
 			expect(performanceResults?.concert_series).toBe(EmmaCarterRecord.concert_series);
 
 			const performanceSchedule = await scheduleRepository.fetchChoices(
@@ -245,12 +311,23 @@ describe('Valid Eastside page', () => {
 				EmmaCarterRecord.concert_series,
 				scheduleYear
 			);
-			expect(performanceSchedule?.slots).toEqual([
-				{ slotId: firstSlot.id, rank: 1, notAvailable: false },
-				{ slotId: secondSlot.id, rank: 3, notAvailable: false },
-				{ slotId: thirdSlot.id, rank: null, notAvailable: true },
-				{ slotId: fourthSlot.id, rank: 2, notAvailable: false }
-			]);
+			expect(performanceSchedule?.slots).toEqual(
+				slotCatalog.slots.map((slot) => {
+					if (slot.id === firstSlot.id) {
+						return { slotId: slot.id, rank: 1, notAvailable: false };
+					}
+					if (slot.id === secondSlot.id) {
+						return { slotId: slot.id, rank: 3, notAvailable: false };
+					}
+					if (slot.id === thirdSlot.id) {
+						return { slotId: slot.id, rank: null, notAvailable: true };
+					}
+					if (slot.id === fourthSlot.id) {
+						return { slotId: slot.id, rank: 2, notAvailable: false };
+					}
+					return { slotId: slot.id, rank: null, notAvailable: false };
+				})
+			);
 		} finally {
 			await deleteScheduleChoices(
 				importEmmaCarterResults.performerId,
@@ -259,7 +336,7 @@ describe('Valid Eastside page', () => {
 			);
 			await browser.close();
 		}
-	}, 30000);
+	}, 45000);
 
 	it('Valid Concerto page', async () => {
 		const OrganSonataResults = await importPerformance(organSonataPerformance);

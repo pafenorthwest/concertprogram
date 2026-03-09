@@ -1,6 +1,12 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import { type PerformerSearchResultsInterface, isNonEmptyString, year } from '$lib/server/common';
-import { updateConcertPerformance } from '$lib/server/db';
+import {
+	backfillAdjudicatedPiecesIfEmpty,
+	ensureAutoSelectedPerformancePiece,
+	fetchPerformancePieces,
+	getPerformancePieceSelectionSummary,
+	updateConcertPerformance
+} from '$lib/server/db';
 import { PerformerLookup } from '$lib/server/performerLookup';
 import { ScheduleMapper } from '$lib/server/scheduleMapper';
 import { ScheduleRepository } from '$lib/server/scheduleRepository';
@@ -24,6 +30,10 @@ async function getSortedConcertTimes(): Promise<ConcertRow[] | null> {
 	});
 }
 
+function formatPerformancePiece(piece: { printed_name: string; movement: string | null }): string {
+	return piece.printed_name;
+}
+
 export async function load({ url }) {
 	/* console.log('[schedule.load] url=', url.toString()); */
 
@@ -44,6 +54,15 @@ export async function load({ url }) {
 	let viewModel: ScheduleViewModel | null = null;
 	let slotCount = 0;
 	let slots: Slot[] = [];
+	let performancePieces: Array<{
+		musical_piece_id: number;
+		printed_name: string;
+		movement: string | null;
+		is_performance_piece: boolean;
+	}> = [];
+	let selectedPerformancePieceId: number | null = null;
+	let performancePieceDisplay = '';
+	let selectionRequired = false;
 
 	const concertStartTimes = await getSortedConcertTimes();
 	/*
@@ -94,6 +113,27 @@ export async function load({ url }) {
 				console.error('Error performing fetchSchedule');
 			}
 		}
+
+		const performanceId = performerSearchResults.performance_id;
+		if (performanceId) {
+			await backfillAdjudicatedPiecesIfEmpty(performanceId);
+			await ensureAutoSelectedPerformancePiece(performanceId);
+
+			const piecesResult = await fetchPerformancePieces(performanceId);
+			const selectionSummary = await getPerformancePieceSelectionSummary(performanceId);
+			performancePieces = piecesResult.rows.map((row) => ({
+				musical_piece_id: row.musical_piece_id,
+				printed_name: row.printed_name,
+				movement: row.movement,
+				is_performance_piece: row.is_performance_piece === true
+			}));
+			const selectedPiece = performancePieces.find((piece) => piece.is_performance_piece) ?? null;
+			selectedPerformancePieceId = selectedPiece?.musical_piece_id ?? null;
+			if (selectedPiece) {
+				performancePieceDisplay = formatPerformancePiece(selectedPiece);
+			}
+			selectionRequired = selectionSummary.total > 1 && !selectedPerformancePieceId;
+		}
 		/*
 		console.log(
 			'[schedule.load] slotCount=',
@@ -107,7 +147,7 @@ export async function load({ url }) {
 		status: performerSearchResults.status,
 		performer_id: performerSearchResults.performer_id,
 		performer_name: performerSearchResults.performer_name,
-		musical_piece: performerSearchResults.musical_piece,
+		musical_piece: performancePieceDisplay || performerSearchResults.musical_piece,
 		lottery_code: performerSearchResults.lottery_code,
 		primary_class_code: performerSearchResults.primary_class_code,
 		winner_class_display: performerSearchResults.winner_class_display,
@@ -116,6 +156,10 @@ export async function load({ url }) {
 		performance_id: performerSearchResults.performance_id,
 		performance_duration: performerSearchResults.performance_duration,
 		performance_comment: performerSearchResults.performance_comment,
+		performance_pieces: performancePieces,
+		selected_performance_piece_id: selectedPerformancePieceId,
+		performance_piece_display: performancePieceDisplay,
+		performance_piece_selection_required: selectionRequired,
 		viewModel,
 		slotCount,
 		slots
@@ -142,19 +186,38 @@ export const actions = {
 		) {
 			const performerIdAsNumber = Number(performerId);
 			if (!Number.isInteger(performerIdAsNumber)) {
-				return fail(400, { error: 'performer id must be an integer' });
+				return fail(400, { submissionStatus: 'error', error: 'performer id must be an integer' });
 			}
 
-			// update duration and comment across all concert series
-			if (performanceId != null) {
-				const performanceIdAsNumber = Number(performanceId);
-				// if this fails return some error??
-				await updateConcertPerformance(performanceIdAsNumber, duration, comment);
+			if (performanceId == null) {
+				return fail(400, {
+					submissionStatus: 'error',
+					error: 'performance id is required'
+				});
 			}
+
+			const performanceIdAsNumber = Number(performanceId);
+			if (!Number.isInteger(performanceIdAsNumber)) {
+				return fail(400, {
+					submissionStatus: 'error',
+					error: 'performance id must be an integer'
+				});
+			}
+
+			await ensureAutoSelectedPerformancePiece(performanceIdAsNumber);
+			const selection = await getPerformancePieceSelectionSummary(performanceIdAsNumber);
+			if (selection.total > 1 && selection.selected === 0) {
+				return fail(400, {
+					submissionStatus: 'error',
+					error: 'Select a performance piece before submitting scheduling preferences.'
+				});
+			}
+			// if this fails return some error??
+			await updateConcertPerformance(performanceIdAsNumber, duration, comment);
 
 			const slotCatalog = await SlotCatalog.load(concertSeries, year());
 			if (slotCatalog.slotCount === 0) {
-				return fail(400, { error: 'No schedule slots available.' });
+				return fail(400, { submissionStatus: 'error', error: 'No schedule slots available.' });
 			}
 
 			const scheduleRepository = new ScheduleRepository();
@@ -166,20 +229,23 @@ export const actions = {
 			});
 			const validation = ScheduleValidator.validate(submission, slotCatalog.slotCount);
 			if (!validation.valid) {
-				return fail(400, { error: validation.errors[0] });
+				return fail(400, { submissionStatus: 'error', error: validation.errors[0] });
 			}
 
 			await scheduleRepository.upsertChoices(submission);
-			throw redirect(303, '/');
+			return { submissionStatus: 'success' };
 		} else {
 			// failed param test null or empty parameters
-			return fail(400, { error: 'performer id or concert series is required' });
+			return fail(400, {
+				submissionStatus: 'error',
+				error: 'performer id or concert series is required'
+			});
 		}
 
 		try {
 			// do work
 		} catch (e) {
-			return fail(500, { error: (e as Error).message });
+			return fail(500, { submissionStatus: 'error', error: (e as Error).message });
 		}
 	}
 };

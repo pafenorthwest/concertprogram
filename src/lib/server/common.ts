@@ -62,7 +62,7 @@ export interface PerformanceFilterInterface {
 
 /**
  * Performance can have multiple music pieces
- * mapping in PerformancePieces
+ * mapping in adjudicated_pieces
  */
 export interface PerformanceInterface {
 	id: number | null;
@@ -81,6 +81,7 @@ export interface PerformancePieceInterface {
 	musical_piece_id: number;
 	movement: string | null;
 	is_merged?: boolean;
+	is_performance_piece?: boolean;
 }
 
 export interface ClassLotteryInterface {

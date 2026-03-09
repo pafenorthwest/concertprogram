@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { refreshCachedTimeStamps } from '$lib/cache';
 import { Performance } from '$lib/server/import';
 import { parseMusicalPiece, type ImportPerformanceInterface, year } from '$lib/server/common';
-import { lookupByCode, pool } from '$lib/server/db';
+import { lookupByCode, pool, selectPerformancePiece } from '$lib/server/db';
 import { SlotCatalog } from '$lib/server/slotCatalog';
 import { ScheduleMapper } from '$lib/server/scheduleMapper';
 import { ScheduleRepository } from '$lib/server/scheduleRepository';
@@ -15,7 +15,7 @@ vi.mock('$lib/server/common', async () => {
 	};
 });
 
-import { load } from '../../routes/schedule/+page.server';
+import { actions, load } from '../../routes/schedule/+page.server';
 
 const TEST_YEAR = 2026;
 type MultiClassFixtures = Awaited<ReturnType<typeof setupMultiClassFixtures>>;
@@ -35,7 +35,8 @@ async function fetchPieceAndComposer(performanceId: number) {
      FROM performance_pieces pp
      JOIN musical_piece mp ON mp.id = pp.musical_piece_id
      JOIN contributor c ON c.id = mp.first_contributor_id
-     WHERE pp.performance_id = $1`,
+     WHERE pp.performance_id = $1
+       AND pp.is_performance_piece = true`,
 		[performanceId]
 	);
 	return result.rows[0];
@@ -50,6 +51,37 @@ async function fetchPieceTitles(performanceId: number) {
 		[performanceId]
 	);
 	return result.rows.map((row) => row.printed_name);
+}
+
+async function selectPerformancePieceForTest(performanceId: number, musicalPieceId: number) {
+	await selectPerformancePiece(performanceId, musicalPieceId);
+}
+
+async function clearPerformancePieceSelectionForTest(performanceId: number) {
+	await pool.query(
+		`UPDATE performance_pieces
+     SET is_performance_piece = false
+     WHERE performance_id = $1`,
+		[performanceId]
+	);
+}
+
+function buildRankChoiceFormData(
+	performerId: number,
+	concertSeries: string,
+	performanceId: number,
+	slotIds: number[]
+) {
+	const formData = new FormData();
+	formData.set('performerId', String(performerId));
+	formData.set('concertSeries', concertSeries);
+	formData.set('performanceId', String(performanceId));
+	formData.set('duration', '4');
+	formData.set('comment', 'Schedule me');
+	slotIds.forEach((slotId, index) => {
+		formData.set(`slot-${slotId}-rank`, String(index + 1));
+	});
+	return formData;
 }
 
 async function cleanupDb({
@@ -70,6 +102,9 @@ async function cleanupDb({
 	const client = await pool.connect();
 	try {
 		if (performanceIds.length > 0) {
+			await client.query('DELETE FROM adjudicated_pieces WHERE performance_id = ANY($1)', [
+				performanceIds
+			]);
 			await client.query('DELETE FROM performance_pieces WHERE performance_id = ANY($1)', [
 				performanceIds
 			]);
@@ -204,6 +239,19 @@ async function setupMultiClassFixtures() {
 		musicalPieceIds.push(secondPerformance.musical_piece_1.id);
 	}
 
+	if (firstPerformance.performance?.id && firstPerformance.musical_piece_1?.id) {
+		await selectPerformancePieceForTest(
+			firstPerformance.performance.id,
+			firstPerformance.musical_piece_1.id
+		);
+	}
+	if (secondPerformance.performance?.id && secondPerformance.musical_piece_1?.id) {
+		await selectPerformancePieceForTest(
+			secondPerformance.performance.id,
+			secondPerformance.musical_piece_1.id
+		);
+	}
+
 	const firstLookup = await lookupByCode(String(firstImport.lottery));
 	const secondLookup = await lookupByCode(String(secondImport.lottery));
 
@@ -315,13 +363,6 @@ async function setupSameSeriesFixtures() {
 		musicalPieceIds.push(secondPerformance.musical_piece_1.id);
 	}
 
-	const firstLookup = await lookupByCode(String(firstImport.lottery));
-	const secondLookup = await lookupByCode(String(secondImport.lottery));
-
-	if (firstLookup == null || secondLookup == null) {
-		throw new Error('Failed to look up performer by lottery code.');
-	}
-
 	const expectedFirstTitle = parseMusicalPiece(
 		firstImport.musical_piece[0].title
 	).titleWithoutMovement;
@@ -334,6 +375,17 @@ async function setupSameSeriesFixtures() {
 		firstImport.lottery === primaryLottery
 			? (firstPerformance.performance?.id ?? null)
 			: (secondPerformance.performance?.id ?? null);
+
+	if (primaryPerformanceId != null && firstPerformance.musical_piece_1?.id != null) {
+		await selectPerformancePieceForTest(primaryPerformanceId, firstPerformance.musical_piece_1.id);
+	}
+
+	const firstLookup = await lookupByCode(String(firstImport.lottery));
+	const secondLookup = await lookupByCode(String(secondImport.lottery));
+
+	if (firstLookup == null || secondLookup == null) {
+		throw new Error('Failed to look up performer by lottery code.');
+	}
 
 	return {
 		basePerformer,
@@ -507,6 +559,77 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 		}
 	);
 
+	it('backfills adjudicated_pieces when schedule load finds none', async () => {
+		const fixtures = await setupMultiClassFixtures();
+		try {
+			const performanceId = fixtures.firstLookup!.performance_id;
+			await pool.query('DELETE FROM adjudicated_pieces WHERE performance_id = $1', [performanceId]);
+			const before = await pool.query(
+				'SELECT 1 FROM adjudicated_pieces WHERE performance_id = $1',
+				[performanceId]
+			);
+			expect(before.rowCount).toBe(0);
+
+			const url = new URL(`http://localhost:8888/schedule?code=${fixtures.firstImport.lottery}`);
+			await load({
+				url,
+				params: {},
+				locals: {},
+				parent: async () => ({}),
+				depends: () => {}
+			} as Parameters<typeof load>[0]);
+
+			const after = await pool.query('SELECT 1 FROM adjudicated_pieces WHERE performance_id = $1', [
+				performanceId
+			]);
+			expect(after.rowCount).toBeGreaterThan(0);
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: fixtures.concertSeries,
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
+
+	it('auto-selects a single performance piece on schedule load', async () => {
+		const fixtures = await setupMultiClassFixtures();
+		try {
+			const performanceId = fixtures.firstLookup!.performance_id;
+			await clearPerformancePieceSelectionForTest(performanceId);
+
+			const url = new URL(`http://localhost:8888/schedule?code=${fixtures.firstImport.lottery}`);
+			await load({
+				url,
+				params: {},
+				locals: {},
+				parent: async () => ({}),
+				depends: () => {}
+			} as Parameters<typeof load>[0]);
+
+			const selected = await pool.query(
+				`SELECT 1
+         FROM performance_pieces
+        WHERE performance_id = $1
+          AND is_performance_piece = true`,
+				[performanceId]
+			);
+			expect(selected.rowCount).toBe(1);
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: fixtures.concertSeries,
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
+
 	it('returns primary code and merged pieces for same-series multi-class winners', async () => {
 		const fixtures: SameSeriesFixtures = await setupSameSeriesFixtures();
 
@@ -527,14 +650,190 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 				fixtures.secondImport.class_name
 			);
 
-			expect(fixtures.firstLookup!.musical_piece).toContain(fixtures.expectedFirstTitle);
-			expect(fixtures.firstLookup!.musical_piece).toContain(fixtures.expectedSecondTitle);
+			expect(fixtures.firstLookup!.musical_piece).toBe(fixtures.expectedFirstTitle);
 
 			if (fixtures.primaryPerformanceId != null) {
 				const mergedTitles = await fetchPieceTitles(fixtures.primaryPerformanceId);
 				expect(mergedTitles).toContain(fixtures.expectedFirstTitle);
 				expect(mergedTitles).toContain(fixtures.expectedSecondTitle);
 			}
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: [fixtures.concertSeries],
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
+
+	it('requires a selected piece before scheduling in same-series multi-class load data', async () => {
+		const fixtures: SameSeriesFixtures = await setupSameSeriesFixtures();
+
+		try {
+			if (fixtures.primaryPerformanceId == null) {
+				throw new Error('Expected a primary performance id for same-series fixtures.');
+			}
+			await clearPerformancePieceSelectionForTest(fixtures.primaryPerformanceId);
+
+			const url = new URL(`http://localhost:8888/schedule?code=${fixtures.firstImport.lottery}`);
+			const data = await load({
+				url,
+				params: {},
+				locals: {},
+				parent: async () => ({}),
+				depends: () => {}
+			} as Parameters<typeof load>[0]);
+
+			expect(data.performance_piece_selection_required).toBe(true);
+			expect(data.selected_performance_piece_id).toBeNull();
+			expect(data.performance_pieces.map((piece) => piece.printed_name)).toEqual(
+				expect.arrayContaining([fixtures.expectedFirstTitle, fixtures.expectedSecondTitle])
+			);
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: [fixtures.concertSeries],
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
+
+	it('switches selected pieces without leaving duplicate active selections', async () => {
+		const fixtures: SameSeriesFixtures = await setupSameSeriesFixtures();
+
+		try {
+			if (fixtures.primaryPerformanceId == null) {
+				throw new Error('Expected a primary performance id for same-series fixtures.');
+			}
+
+			await selectPerformancePiece(fixtures.primaryPerformanceId, fixtures.musicalPieceIds[1]);
+
+			const selectedRows = await pool.query(
+				`SELECT musical_piece_id
+         FROM performance_pieces
+        WHERE performance_id = $1
+          AND is_performance_piece = true`,
+				[fixtures.primaryPerformanceId]
+			);
+			expect(selectedRows.rowCount).toBe(1);
+			expect(selectedRows.rows[0]?.musical_piece_id).toBe(fixtures.musicalPieceIds[1]);
+
+			const switchedLookup = await lookupByCode(String(fixtures.firstImport.lottery));
+			expect(switchedLookup?.musical_piece).toBe(fixtures.expectedSecondTitle);
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: [fixtures.concertSeries],
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
+
+	it('blocks schedule submission until a piece is selected for same-series multi-class winners', async () => {
+		const fixtures: SameSeriesFixtures = await setupSameSeriesFixtures();
+
+		try {
+			if (fixtures.primaryPerformanceId == null || fixtures.performerId == null) {
+				throw new Error('Expected same-series fixtures to include performer and performance ids.');
+			}
+			await clearPerformancePieceSelectionForTest(fixtures.primaryPerformanceId);
+			const slotCatalog = await SlotCatalog.load(fixtures.concertSeries, fixtures.scheduleYear);
+			const formData = buildRankChoiceFormData(
+				fixtures.performerId,
+				fixtures.concertSeries,
+				fixtures.primaryPerformanceId,
+				slotCatalog.slots.slice(0, 2).map((slot) => slot.id)
+			);
+
+			const blocked = await actions.add({
+				request: new Request('http://localhost:8888/schedule?/add', {
+					method: 'POST',
+					body: formData
+				})
+			} as Parameters<(typeof actions)['add']>[0]);
+
+			expect((blocked as { status?: number }).status).toBe(400);
+			expect((blocked as { data?: { error?: string } }).data?.error).toBe(
+				'Select a performance piece before submitting scheduling preferences.'
+			);
+
+			const selectedPieceId =
+				fixtures.firstImport.lottery === fixtures.primaryLottery
+					? fixtures.musicalPieceIds[0]
+					: fixtures.musicalPieceIds[1];
+			await selectPerformancePieceForTest(fixtures.primaryPerformanceId, selectedPieceId);
+
+			const success = await actions.add({
+				request: new Request('http://localhost:8888/schedule?/add', {
+					method: 'POST',
+					body: buildRankChoiceFormData(
+						fixtures.performerId,
+						fixtures.concertSeries,
+						fixtures.primaryPerformanceId,
+						slotCatalog.slots.slice(0, 2).map((slot) => slot.id)
+					)
+				})
+			} as Parameters<(typeof actions)['add']>[0]);
+
+			expect(success).toEqual({ submissionStatus: 'success' });
+
+			const savedChoices = await new ScheduleRepository().fetchChoices(
+				fixtures.performerId,
+				fixtures.concertSeries,
+				fixtures.scheduleYear
+			);
+			expect(savedChoices?.slots).toEqual([
+				{ slotId: slotCatalog.slots[0].id, rank: 1, notAvailable: false },
+				{ slotId: slotCatalog.slots[1].id, rank: 2, notAvailable: false }
+			]);
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: [fixtures.concertSeries],
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
+
+	it('requires performanceId before schedule submission', async () => {
+		const fixtures: SameSeriesFixtures = await setupSameSeriesFixtures();
+
+		try {
+			if (fixtures.primaryPerformanceId == null || fixtures.performerId == null) {
+				throw new Error('Expected same-series fixtures to include performer and performance ids.');
+			}
+			const slotCatalog = await SlotCatalog.load(fixtures.concertSeries, fixtures.scheduleYear);
+			const formData = buildRankChoiceFormData(
+				fixtures.performerId,
+				fixtures.concertSeries,
+				fixtures.primaryPerformanceId,
+				slotCatalog.slots.slice(0, 2).map((slot) => slot.id)
+			);
+			formData.delete('performanceId');
+
+			const blocked = await actions.add({
+				request: new Request('http://localhost:8888/schedule?/add', {
+					method: 'POST',
+					body: formData
+				})
+			} as Parameters<(typeof actions)['add']>[0]);
+
+			expect((blocked as { status?: number }).status).toBe(400);
+			expect((blocked as { data?: { error?: string } }).data?.error).toBe(
+				'performance id is required'
+			);
 		} finally {
 			await cleanupDb({
 				performanceIds: fixtures.performanceIds,

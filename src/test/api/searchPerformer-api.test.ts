@@ -47,6 +47,7 @@ describe('Test SearchPerformer HTTP APIs', () => {
 		const lastName = 'Carter';
 		const performerAge = 12;
 		const composerName = 'Frédéric Chopin';
+		let performerId: number | null = null;
 		// first create a searchable entry
 		const getResponse = await fetch('http://localhost:8888/api/import', {
 			method: 'PUT',
@@ -87,6 +88,11 @@ describe('Test SearchPerformer HTTP APIs', () => {
 				'}'
 		});
 		expect(getResponse.status).to.be.oneOf([200, 201]);
+		if (getResponse.body != null) {
+			const bodyFromRequest = await unpackBody(getResponse.body);
+			const resultObject = JSON.parse(bodyFromRequest);
+			performerId = resultObject.performerId ?? null;
+		}
 		const searchResponse = await fetch(
 			`http://localhost:8888/api/searchPerformer/?performerLastName=${lastName}&age=${performerAge}&composerName=${composerName}`,
 			{
@@ -111,11 +117,9 @@ describe('Test SearchPerformer HTTP APIs', () => {
 		}
 
 		// clean up for repeatable tests
-		if (getResponse.body != null) {
-			const bodyFromRequest = await unpackBody(getResponse.body);
-			const resultObject = JSON.parse(bodyFromRequest);
-			console.log(`delete ${resultObject.performerId}`);
-			await deleteById('performer', resultObject.performerId);
+		if (performerId != null) {
+			console.log(`delete ${performerId}`);
+			await deleteById('performer', performerId);
 		}
 		await deleteClassLottery(className);
 	});

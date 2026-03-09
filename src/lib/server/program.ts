@@ -1,7 +1,8 @@
 import {
 	queryMusicalPieceByPerformanceId,
 	queryPerformanceDetailsById,
-	retrievePerformanceByLottery
+	retrievePerformanceByLottery,
+	ensureAutoSelectedPerformancePiece
 } from '$lib/server/db';
 import { calcEpochAge } from '$lib/server/common';
 import { SlotCatalog } from '$lib/server/slotCatalog';
@@ -376,6 +377,7 @@ export class Program {
 	}
 
 	async queryMusicalPiece(performanceId: number): Promise<MusicalTitleInterface[]> {
+		await ensureAutoSelectedPerformancePiece(performanceId);
 		const data = await queryMusicalPieceByPerformanceId(performanceId);
 		const musicalTitles: MusicalTitleInterface[] = [];
 		if (data.rowCount == null || data.rowCount === 0) {
