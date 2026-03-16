@@ -126,6 +126,16 @@ prefix_rule(
     ],
 )
 
+prefix_rule(
+    pattern = ["gh", "issue", "create"],
+    decision = "allow",
+    justification = "Allow issue creation in ericpassmore/prompts for the issue-first skill-improvement workflow.",
+    match = [
+        "gh issue create --repo ericpassmore/prompts --title \"skill: summary\" --body \"Body\"",
+        "gh issue create --repo ericpassmore/prompts --title \"skill: summary\" --body-file /tmp/issue.md",
+    ],
+)
+
 # -----------------------
 # Commit (scoped)
 # -----------------------
