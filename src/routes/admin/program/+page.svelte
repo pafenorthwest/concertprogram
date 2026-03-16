@@ -1,10 +1,12 @@
 <script>
 	import { onMount } from 'svelte';
+	import { buildProgramExportUrl, canExportProgram } from '$lib/programExport';
 
 	export let data;
 	let draggable = true;
 	let filterSeries = 'Concerto';
 	let filterConcertNumber = 0;
+	let selectedConcertValue = `${filterSeries}-${filterConcertNumber}`;
 
 	async function handleSave(program) {
 		try {
@@ -25,13 +27,27 @@
 
 	async function filterByConcert(event) {
 		const chooser = event.target;
+		selectedConcertValue = chooser.value;
 		if (chooser.value.includes('-')) {
 			const [concertSeries, concertNum] = chooser.value.split('-', 2);
 			filterSeries = concertSeries;
 			filterConcertNumber = Number(concertNum);
 		} else {
 			filterSeries = chooser.value;
+			filterConcertNumber = 0;
 		}
+	}
+
+	function downloadCsv() {
+		window.location.href = '/api/program/';
+	}
+
+	function downloadProgram() {
+		const programUrl = buildProgramExportUrl(selectedConcertValue);
+		if (!programUrl) {
+			return;
+		}
+		window.location.href = programUrl;
 	}
 
 	async function forceMove(event) {
@@ -128,7 +144,12 @@
 <h2>Programs</h2>
 {#if data.isAuthenticated}
 	<div class="program-top-bar">
-		<select name="concert-selector" id="concert-selector" on:change={filterByConcert}>
+		<select
+			name="concert-selector"
+			id="concert-selector"
+			bind:value={selectedConcertValue}
+			on:change={filterByConcert}
+		>
 			{#each data.concert_times as concert}
 				<option value={concert.concert_series + '-' + concert.concert_number_in_series}
 					>{concert.concert_series}
@@ -139,7 +160,12 @@
 			<option value="Waitlist">Waitlist NoTime</option>
 			<option value="All">All</option>
 		</select>
-		<a href="/api/program/">Export to csv</a>
+		<button type="button" on:click={downloadCsv}>CSV</button>
+		<button
+			type="button"
+			on:click={downloadProgram}
+			disabled={!canExportProgram(selectedConcertValue)}>Program</button
+		>
 	</div>
 	<table class="table" id="sortable-table">
 		<thead>

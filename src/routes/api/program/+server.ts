@@ -1,4 +1,5 @@
 import { json } from '@sveltejs/kit';
+import { getCachedTimeStamps, refreshCachedTimeStamps, type ConcertRow } from '$lib/cache';
 import {
 	type MusicalTitleInterface,
 	type OrderedPerformanceInterface,
@@ -6,14 +7,10 @@ import {
 	type ProgramCSVExportInterface
 } from '$lib/server/program';
 import { year } from '$lib/server/common';
+import { buildProgramDocx, DOCX_MIME_TYPE } from '$lib/server/programDocx';
 import Papa from 'papaparse';
 
-export async function GET() {
-	const download_headers = {
-		'Content-Type': 'text/csv',
-		'Content-Disposition': 'attachment; filename="pafeprogram.csv"'
-	};
-
+export async function GET({ url }) {
 	try {
 		const program = new Program(year());
 		await program.build();
@@ -22,12 +19,22 @@ export async function GET() {
 			return json({ status: 'error', message: 'Not Found' }, { status: 404 });
 		}
 
+		const exportFormat = url.searchParams.get('format');
+		if (exportFormat === 'docx') {
+			return await buildDocxResponse(program, url);
+		}
+
 		const flattenedArray: ProgramCSVExportInterface[] = program
 			.retrieveAllConcertPrograms()
 			.map(flattenProgram);
 
 		const csv = Papa.unparse(flattenedArray);
-		return new Response(csv, { headers: download_headers });
+		return new Response(csv, {
+			headers: {
+				'Content-Disposition': 'attachment; filename="pafeprogram.csv"',
+				'Content-Type': 'text/csv'
+			}
+		});
 	} catch (error) {
 		console.error('Failed to process the program request', error);
 		return json(
@@ -35,6 +42,52 @@ export async function GET() {
 			{ status: 500 }
 		);
 	}
+}
+
+async function buildDocxResponse(program: Program, url: URL): Promise<Response> {
+	const concertSeries = url.searchParams.get('concertSeries');
+	const concertNum = Number(url.searchParams.get('concertNum'));
+	if (!concertSeries || !Number.isInteger(concertNum) || concertSeries === 'Waitlist') {
+		return json(
+			{ status: 'error', message: 'Program export requires a specific concert selection' },
+			{ status: 400 }
+		);
+	}
+
+	await refreshCachedTimeStamps();
+	const concertTimes = getCachedTimeStamps();
+	const selectedConcert = concertTimes?.data.find(
+		(concert) =>
+			concert.concert_series === concertSeries && concert.concert_number_in_series === concertNum
+	);
+	if (!selectedConcert) {
+		return json({ status: 'error', message: 'Concert not found' }, { status: 404 });
+	}
+
+	const programEntries = program
+		.retrieveAllConcertPrograms()
+		.filter(
+			(entry) => entry.concertSeries === concertSeries && entry.concertNumberInSeries === concertNum
+		);
+	if (programEntries.length === 0) {
+		return json({ status: 'error', message: 'Program entries not found' }, { status: 404 });
+	}
+
+	const docx = await buildProgramDocx({
+		concertName: concertSeries,
+		concertNumberInSeries: concertNum,
+		concertSeries,
+		concertTime: formatConcertTime(selectedConcert),
+		entries: programEntries
+	});
+	const fileBaseName = `${concertSeries.toLowerCase()}-${concertNum}-program.docx`;
+
+	return new Response(docx, {
+		headers: {
+			'Content-Disposition': `attachment; filename="${fileBaseName}"`,
+			'Content-Type': DOCX_MIME_TYPE
+		}
+	});
 }
 
 function flattenProgram(input: OrderedPerformanceInterface): ProgramCSVExportInterface {
@@ -119,4 +172,8 @@ function safeStringTitle(input: MusicalTitleInterface | null): string {
 		return '';
 	}
 	return input.title;
+}
+
+function formatConcertTime(concert: ConcertRow): string {
+	return concert.displayStartTime;
 }
