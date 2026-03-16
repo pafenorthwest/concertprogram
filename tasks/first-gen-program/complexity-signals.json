@@ -1,0 +1,25 @@
+{
+  "scope": 2,
+  "behavior": 2,
+  "dependency": 0,
+  "uncertainty": 2,
+  "verification": 2,
+  "evidence": {
+    "scope": "files=4-6 surface=admin program page + export route + server helper + tests",
+    "behavior": "one admin export workflow is updated with one new document download path",
+    "dependency": "interfaces=none",
+    "uncertainty": "template-backed docx generation is new in this repo but the required output is well-bounded by the provided files",
+    "verification": "checks=npm run lint,npm run build,npm run test",
+    "guardrails": "no schema/api contract change; no new deps; localized surface; reversible with straightforward verification"
+  },
+  "guardrails": {
+    "no_schema_or_api_contract_change": true,
+    "no_new_external_dependencies": true,
+    "localized_surface": true,
+    "reversible_with_straightforward_verification": true
+  },
+  "overrides": {
+    "phases": 2,
+    "reason": "The work cleanly separates into export data generation and admin UI/test integration."
+  }
+}
