@@ -309,11 +309,11 @@ CREATE INDEX login_user_code_idx ON login_user(code);
 
 INSERT INTO concert_times (concert_series, year, concert_number_in_series, start_time)
 VALUES
-  ('Concerto', 2026, 0, '2026-04-27 15:00:00'),
-  ('Eastside', 2026, 1, '2026-05-03 16:00:00'),
-  ('Eastside', 2026, 2, '2026-05-03 19:00:00'),
-  ('Eastside', 2026, 3, '2026-05-04 14:00:00'),
-  ('Eastside', 2026, 4, '2026-05-04 17:00:00');
+  ('Concerto', 2026, 0, '2026-04-12 15:00:00'),
+  ('Eastside', 2026, 1, '2026-04-18 16:00:00'),
+  ('Eastside', 2026, 2, '2026-04-18 19:00:00'),
+  ('Eastside', 2026, 3, '2026-04-19 14:00:00'),
+  ('Eastside', 2026, 4, '2026-04-19 17:00:00');
 
 
 INSERT INTO contributor (full_name, years_active) VALUES ('Adele Adkins','1988 - current');
