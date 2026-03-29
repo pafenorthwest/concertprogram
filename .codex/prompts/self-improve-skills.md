@@ -18,6 +18,12 @@ Every concrete skill or workflow incident starts with a child GitHub issue in `e
 
 Do not wait for batch analysis when the issue is already observable.
 
+## Active stage reminder
+
+When the incident is discovered during an active lifecycle stage, file the child issue before continuing whenever it is safe to do so.
+
+If continuing would hide the failure, weaken verification, or create drift risk, stop and treat the incident as blocking.
+
 ## File Immediately
 
 Create an issue as soon as any of these are noticed:
@@ -86,10 +92,10 @@ Use a body with these fields:
 When using the GitHub CLI, use the central repository explicitly:
 
 ```bash
-gh issue create --repo ericpassmore/prompts --title "<skill-or-stage>: <incident summary>" --body-file <body-file>
+./codex/scripts/gh-wrap.sh issue create --repo ericpassmore/prompts --title "<skill-or-stage>: <incident summary>" --body-file <body-file>
 ```
 
-The allowed CLI path is intentionally narrow. Do not broaden it to unrelated repositories or GitHub operations.
+The allowed CLI path is intentionally narrow. Do not broaden it to unrelated repositories or GitHub operations. If wrapper auth fails on create, the user may be prompted to run `./codex/scripts/gh-auth-check.sh --repo ericpassmore/prompts`, but the diagnostic must never be run automatically.
 
 ## Incident Categories
 
