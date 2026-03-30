@@ -1672,7 +1672,6 @@ export async function searchPerformanceByPerformerAndClass(
 			SELECT
 				p.id,
 				perf.full_name AS performer_name,
-				mp.printed_name AS musical_piece_printed_name,
 				p.performer_id,
 				p.performance_order,
 				p.class_name,
@@ -1687,8 +1686,6 @@ export async function searchPerformanceByPerformerAndClass(
 				p.warm_up_room_end
 			FROM performance p
 			JOIN performer perf ON p.performer_id = perf.id
-			JOIN adjudicated_pieces pp ON p.id = pp.performance_id
-			JOIN musical_piece mp ON pp.musical_piece_id = mp.id
 			WHERE p.performer_id = $1
 				AND p.class_name = $2
 				AND LOWER(p.concert_series) = LOWER($3)

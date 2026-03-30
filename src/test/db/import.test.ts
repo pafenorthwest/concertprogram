@@ -6,7 +6,7 @@ import {
 	year,
 	parseMusicalPiece
 } from '$lib/server/common';
-import { lookupByCode, searchPerformanceByPerformerAndClass } from '$lib/server/db';
+import { lookupByCode, pool, searchPerformanceByPerformerAndClass } from '$lib/server/db';
 
 describe('Test Import Code', () => {
 	it('should parse music titles with movements', async () => {
@@ -154,6 +154,94 @@ describe('Test Import Code', () => {
 			'Updated Refresh Piece',
 			'Expected lookup to return the refreshed selected piece'
 		);
+	});
+	it('reuses a partially imported performance row when a corrected retry succeeds', async () => {
+		const lottery = 753251;
+		const className = 'WEP.9-13.A';
+		const performerName = 'Ivy Qi';
+		const concertSeries = 'Eastside';
+		const correctedTitle = 'Various Trouts - First Set for Three Flutes';
+		const malformedImport = {
+			class_name: className,
+			performer: performerName,
+			age: 12,
+			lottery,
+			email: 'keaijiazi@gmail.com',
+			phone: '757-240-8239',
+			instrument: 'Flute',
+			musical_piece: [
+				{
+					title: correctedTitle,
+					composers: [{ name: 'Sefton Cottom', yearsActive: 'None' }]
+				}
+			],
+			concert_series: concertSeries
+		} as unknown as ImportPerformanceInterface;
+		const correctedImport: ImportPerformanceInterface = {
+			class_name: className,
+			performer: performerName,
+			age: 12,
+			lottery,
+			email: 'keaijiazi@gmail.com',
+			phone: '757-240-8239',
+			instrument: 'Flute',
+			musical_piece: [
+				{
+					title: correctedTitle,
+					contributors: [{ name: 'Sefton Cottom', yearsActive: 'None' }]
+				}
+			],
+			concert_series: concertSeries
+		};
+
+		const failedPerformance = new Performance();
+		const recoveredPerformance = new Performance();
+
+		try {
+			await expect(failedPerformance.initialize(malformedImport)).rejects.toBeInstanceOf(Error);
+
+			const partialRowResult = await pool.query(
+				`SELECT p.id
+				   FROM performance p
+				   JOIN performer perf ON perf.id = p.performer_id
+				  WHERE LOWER(perf.full_name) = LOWER($1)
+				    AND p.class_name = $2
+				    AND LOWER(p.concert_series) = LOWER($3)
+				    AND p.year = $4`,
+				[performerName, className, concertSeries, year()]
+			);
+
+			assert.equal(partialRowResult.rowCount, 1, 'Expected one partial performance row');
+
+			const recoveredResults = await recoveredPerformance.initialize(correctedImport);
+			const recoveredRowResult = await pool.query(
+				`SELECT p.id
+				   FROM performance p
+				   JOIN performer perf ON perf.id = p.performer_id
+				  WHERE LOWER(perf.full_name) = LOWER($1)
+				    AND p.class_name = $2
+				    AND LOWER(p.concert_series) = LOWER($3)
+				    AND p.year = $4`,
+				[performerName, className, concertSeries, year()]
+			);
+			const lookupResult = await lookupByCode(String(lottery));
+
+			assert.isFalse(recoveredResults.new, 'Expected corrected retry to update existing data');
+			assert.equal(
+				recoveredResults.performanceId,
+				partialRowResult.rows[0].id,
+				'Expected retry to reuse the original performance row'
+			);
+			assert.equal(recoveredRowResult.rowCount, 1, 'Expected a single performance row after retry');
+			assert.equal(
+				lookupResult?.musical_piece,
+				correctedTitle,
+				'Expected corrected retry to restore the selected piece'
+			);
+		} finally {
+			await recoveredPerformance.deleteAll();
+			await failedPerformance.deleteAll();
+		}
 	});
 	it('normalizes contributor role before lookup', async () => {
 		const imported: ImportPerformanceInterface = {

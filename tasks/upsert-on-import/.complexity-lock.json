@@ -1,0 +1,23 @@
+{
+  "selected_signals_path": "/Users/eric/side-projects/concertprogram/tasks/upsert-on-import/complexity-signals.json",
+  "selected_signals_sha256": "6b5f4e295798aaa7557f522b6bf989acf8afc252d928df0e599c773c9120acdc",
+  "score_script_path": "/Users/eric/side-projects/concertprogram/.codex/scripts/complexity-score.sh",
+  "score_script_sha256": "45a062dd25a8938ad1fba76e1be65815c40d7d722a20ff07c22c74ed0e479699",
+  "ranges": {
+    "goals": {
+      "min": 3,
+      "max": 5
+    },
+    "phases": {
+      "min": 2,
+      "max": 4
+    }
+  },
+  "recommended": {
+    "goals": 4,
+    "phases": 3
+  },
+  "complexity_input": "@tasks/upsert-on-import/complexity-signals.json",
+  "complexity_descriptor": "scored:L2 (focused)",
+  "captured_at": "2026-03-30T03:15:05Z"
+}
