@@ -545,6 +545,12 @@ describe('Rank-choice variants', () => {
 				await submitScheduleForm(page, 'form#ranked-choice-form', 200);
 
 				await gotoSchedulePage(page, lottery);
+				await page.waitForFunction((slotId) => {
+					const rankSelect = document.querySelector(
+						`#slot-${slotId}-rank`
+					) as HTMLSelectElement | null;
+					return rankSelect?.value === '1';
+				}, firstSlot.id);
 				const firstRankValue = await page.$eval(
 					`#slot-${firstSlot.id}-rank`,
 					(element) => (element as HTMLSelectElement).value
