@@ -20,6 +20,7 @@ import { actions, load } from '../../routes/schedule/+page.server';
 const TEST_YEAR = 2026;
 type MultiClassFixtures = Awaited<ReturnType<typeof setupMultiClassFixtures>>;
 type SameSeriesFixtures = Awaited<ReturnType<typeof setupSameSeriesFixtures>>;
+type ProtectedEnsembleFixtures = Awaited<ReturnType<typeof setupProtectedEnsembleFixtures>>;
 type LookupResult = NonNullable<Awaited<ReturnType<typeof lookupByCode>>>;
 
 async function fetchPerformerEmail(performerId: number) {
@@ -51,6 +52,20 @@ async function fetchPieceTitles(performanceId: number) {
 		[performanceId]
 	);
 	return result.rows.map((row) => row.printed_name);
+}
+
+async function fetchAdjudicatedMergeState(performanceIds: number[]) {
+	const result = await pool.query(
+		`SELECT performance_id,
+		        BOOL_OR(is_merged) AS has_merged_rows,
+		        COUNT(*)::int AS piece_count
+		   FROM adjudicated_pieces
+		  WHERE performance_id = ANY($1)
+		  GROUP BY performance_id
+		  ORDER BY performance_id`,
+		[performanceIds]
+	);
+	return result.rows;
 }
 
 async function selectPerformancePieceForTest(performanceId: number, musicalPieceId: number) {
@@ -406,6 +421,114 @@ async function setupSameSeriesFixtures() {
 	};
 }
 
+async function setupProtectedEnsembleFixtures() {
+	const basePerformer = {
+		fullName: 'Protected Ensemble Performer',
+		age: 13,
+		instrument: 'Violin',
+		email: 'protected.ensemble.performer@example.com',
+		phone: '555-0303'
+	};
+
+	const concertSeries = 'LookupSeriesEnsembleGuard';
+	const ensembleImport: ImportPerformanceInterface = {
+		class_name: 'WEP.8-13.A1',
+		performer: basePerformer.fullName,
+		lottery: 22222,
+		age: basePerformer.age,
+		email: basePerformer.email,
+		phone: basePerformer.phone,
+		accompanist: null,
+		instrument: basePerformer.instrument,
+		musical_piece: [
+			{
+				title: 'Festival Overture',
+				contributors: [{ name: 'Composer Ensemble', yearsActive: '1900-1960' }]
+			}
+		],
+		concert_series: concertSeries
+	};
+
+	const soloImport: ImportPerformanceInterface = {
+		class_name: 'WS.12-13.A1',
+		performer: basePerformer.fullName,
+		lottery: 11111,
+		age: basePerformer.age,
+		email: basePerformer.email,
+		phone: basePerformer.phone,
+		accompanist: null,
+		instrument: basePerformer.instrument,
+		musical_piece: [
+			{
+				title: 'Solo Nocturne',
+				contributors: [{ name: 'Composer Solo', yearsActive: '1880-1940' }]
+			}
+		],
+		concert_series: concertSeries
+	};
+
+	const ensemblePerformance = new Performance();
+	const soloPerformance = new Performance();
+	const performanceIds: number[] = [];
+	const musicalPieceIds: number[] = [];
+	const classNames: string[] = [ensembleImport.class_name, soloImport.class_name];
+	const scheduleYear = year();
+	let performerId: number | null = null;
+
+	await seedConcertTimes([concertSeries], scheduleYear);
+
+	await ensemblePerformance.initialize(ensembleImport);
+	await soloPerformance.initialize(soloImport);
+
+	if (ensemblePerformance.performer?.id != null) {
+		performerId = ensemblePerformance.performer.id;
+	}
+	if (soloPerformance.performer?.id != null && performerId == null) {
+		performerId = soloPerformance.performer.id;
+	}
+	if (ensemblePerformance.performance?.id != null) {
+		performanceIds.push(ensemblePerformance.performance.id);
+	}
+	if (soloPerformance.performance?.id != null) {
+		performanceIds.push(soloPerformance.performance.id);
+	}
+	if (ensemblePerformance.musical_piece_1?.id != null) {
+		musicalPieceIds.push(ensemblePerformance.musical_piece_1.id);
+	}
+	if (soloPerformance.musical_piece_1?.id != null) {
+		musicalPieceIds.push(soloPerformance.musical_piece_1.id);
+	}
+
+	const ensembleLookup = await lookupByCode(String(ensembleImport.lottery));
+	const soloLookup = await lookupByCode(String(soloImport.lottery));
+
+	if (ensembleLookup == null || soloLookup == null) {
+		throw new Error('Failed to look up protected ensemble fixtures by lottery code.');
+	}
+	if (ensemblePerformance.performance?.id == null || soloPerformance.performance?.id == null) {
+		throw new Error('Expected protected ensemble fixtures to include performance ids.');
+	}
+
+	return {
+		basePerformer,
+		ensembleImport,
+		soloImport,
+		ensembleLookup,
+		soloLookup,
+		expectedEnsembleTitle: parseMusicalPiece(ensembleImport.musical_piece[0].title)
+			.titleWithoutMovement,
+		expectedSoloTitle: parseMusicalPiece(soloImport.musical_piece[0].title).titleWithoutMovement,
+		ensemblePerformanceId: ensemblePerformance.performance.id,
+		soloPerformanceId: soloPerformance.performance.id,
+		performanceIds,
+		musicalPieceIds,
+		classNames,
+		concertSeries,
+		scheduleYear,
+		performerId
+	};
+}
+
 describe('dbOnly lookupByCode with performer in multiple classes', () => {
 	it('returns performer and musical details for each class lottery', async () => {
 		const fixtures = await setupMultiClassFixtures();
@@ -657,6 +780,66 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 				expect(mergedTitles).toContain(fixtures.expectedFirstTitle);
 				expect(mergedTitles).toContain(fixtures.expectedSecondTitle);
 			}
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: [fixtures.concertSeries],
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
+
+	it('keeps ensemble and solo same-series winners separate when the ensemble class prefix ends in EP', async () => {
+		const fixtures: ProtectedEnsembleFixtures = await setupProtectedEnsembleFixtures();
+
+		try {
+			expect(fixtures.ensembleLookup.performer_id).toBe(fixtures.soloLookup.performer_id);
+
+			expect(fixtures.ensembleLookup.performance_id).toBe(fixtures.ensemblePerformanceId);
+			expect(fixtures.ensembleLookup.primary_class_code).toBe(fixtures.ensembleImport.lottery);
+			expect(fixtures.ensembleLookup.lottery_code).toBe(fixtures.ensembleImport.lottery);
+			expect(fixtures.ensembleLookup.winner_class_display).toContain(
+				fixtures.ensembleImport.class_name
+			);
+			expect(fixtures.ensembleLookup.winner_class_display).not.toContain(
+				fixtures.soloImport.class_name
+			);
+			expect(fixtures.ensembleLookup.musical_piece).toBe(fixtures.expectedEnsembleTitle);
+
+			expect(fixtures.soloLookup.performance_id).toBe(fixtures.soloPerformanceId);
+			expect(fixtures.soloLookup.primary_class_code).toBe(fixtures.soloImport.lottery);
+			expect(fixtures.soloLookup.lottery_code).toBe(fixtures.soloImport.lottery);
+			expect(fixtures.soloLookup.winner_class_display).toContain(fixtures.soloImport.class_name);
+			expect(fixtures.soloLookup.winner_class_display).not.toContain(
+				fixtures.ensembleImport.class_name
+			);
+			expect(fixtures.soloLookup.musical_piece).toBe(fixtures.expectedSoloTitle);
+
+			const ensembleTitles = await fetchPieceTitles(fixtures.ensemblePerformanceId);
+			expect(ensembleTitles).toEqual([fixtures.expectedEnsembleTitle]);
+
+			const soloTitles = await fetchPieceTitles(fixtures.soloPerformanceId);
+			expect(soloTitles).toEqual([fixtures.expectedSoloTitle]);
+
+			const mergeState = await fetchAdjudicatedMergeState(fixtures.performanceIds);
+			expect(mergeState).toHaveLength(2);
+			expect(mergeState).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						performance_id: fixtures.ensemblePerformanceId,
+						has_merged_rows: false,
+						piece_count: 1
+					}),
+					expect.objectContaining({
+						performance_id: fixtures.soloPerformanceId,
+						has_merged_rows: false,
+						piece_count: 1
+					})
+				])
+			);
 		} finally {
 			await cleanupDb({
 				performanceIds: fixtures.performanceIds,

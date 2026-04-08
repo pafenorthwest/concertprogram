@@ -13,10 +13,11 @@ notes:
   - "Store env var names only; never store token values in this file."
 
 
+
 # PREPARE-TAKEOFF BOOTSTRAP START
 bootstrap:
-  codex_root: "/Users/eric/side-projects/concertprogram/.codex"
-  codex_scripts_dir: "/Users/eric/side-projects/concertprogram/.codex/scripts"
+  codex_root: "/Users/eric/.codex/worktrees/3a2f/concertprogram/.codex"
+  codex_scripts_dir: "/Users/eric/.codex/worktrees/3a2f/concertprogram/.codex/scripts"
   canonical_scripts_path: "./.codex/scripts"
   repository_local_fallback_scripts_path: "./codex/scripts"
   home_fallback_scripts_path: "$HOME/.codex/scripts"

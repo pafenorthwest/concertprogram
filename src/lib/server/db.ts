@@ -22,6 +22,22 @@ export const pool = new Pool({
 	ssl: DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
 });
 
+function getClassFamilyPrefix(className: string | null | undefined): string {
+	return className?.split('.')[0]?.trim().toUpperCase() ?? '';
+}
+
+function isProtectedEnsembleClass(className: string | null | undefined): boolean {
+	const prefix = getClassFamilyPrefix(className);
+	return prefix.length === 3 && prefix.endsWith('EP');
+}
+
+function sharesPerformanceMergeGroup(
+	className: string | null | undefined,
+	referenceClassName: string | null | undefined
+): boolean {
+	return isProtectedEnsembleClass(className) === isProtectedEnsembleClass(referenceClassName);
+}
+
 function normalizeTableName(table: string): string {
 	if (table === 'composer') {
 		return 'contributor';
@@ -81,6 +97,7 @@ export async function queryTable(table: string, id?: number) {
 
 type PerformanceLookupContext = {
 	performer_id: number;
+	class_name: string;
 	concert_series: string;
 	year: number;
 };
@@ -90,62 +107,65 @@ async function lookupByPerformanceContext(
 	context: PerformanceLookupContext,
 	fallbackCode?: number
 ): Promise<PerformerSearchResultsInterface | null> {
+	const performancesResult = await connection.query(
+		`SELECT p.id,
+		        p.class_name,
+		        cl.lottery
+		   FROM performance p
+		   LEFT JOIN class_lottery cl ON cl.class_name = p.class_name
+		  WHERE p.performer_id = $1
+		    AND LOWER(p.concert_series) = LOWER($2)
+		    AND p.year = $3
+		  ORDER BY cl.lottery ASC NULLS LAST, p.id ASC`,
+		[context.performer_id, context.concert_series, context.year]
+	);
+
+	const scopedPerformances = performancesResult.rows.filter((row) =>
+		sharesPerformanceMergeGroup(row.class_name, context.class_name)
+	);
+	if (scopedPerformances.length === 0) {
+		return null;
+	}
+
+	const primaryPerformanceId = scopedPerformances[0].id as number;
+	const scopedPerformanceIds = scopedPerformances.map((row) => row.id as number);
 	const lookupQuery = `
-		WITH performances AS (
-			SELECT p.id,
-			       p.performer_id,
-			       p.class_name,
-			       p.concert_series,
-			       p.year,
-			       p.duration,
-			       p.comment,
-			       cl.lottery
-			  FROM performance p
-			  LEFT JOIN class_lottery cl ON cl.class_name = p.class_name
-			 WHERE p.performer_id = $1
-			   AND LOWER(p.concert_series) = LOWER($2)
-			   AND p.year = $3
-		),
-		primary_perf AS (
-			SELECT id, performer_id, concert_series, year, duration, comment, class_name, lottery
-			  FROM performances
-			 ORDER BY lottery ASC NULLS LAST, id ASC
-			 LIMIT 1
-		)
 		SELECT perf.id AS performer_id,
 		       perf.full_name AS performer_name,
 		       primary_perf.id AS performance_id,
 		       primary_perf.concert_series AS concert_series,
 		       primary_perf.duration AS performance_duration,
 		       primary_perf.comment AS performance_comment,
-		       MIN(performances.lottery) AS primary_class_code,
-		       STRING_AGG(DISTINCT performances.class_name, ', ' ORDER BY performances.class_name)
+		       primary_lottery.lottery AS primary_class_code,
+		       STRING_AGG(DISTINCT scoped_perf.class_name, ', ' ORDER BY scoped_perf.class_name)
 		         AS winner_class_display,
 		       COALESCE(
 		         STRING_AGG(DISTINCT mp.printed_name, '; ' ORDER BY mp.printed_name),
 		         STRING_AGG(DISTINCT ap_mp.printed_name, '; ' ORDER BY ap_mp.printed_name)
 		       ) AS musical_piece
-		  FROM performances
-		  JOIN performer perf ON perf.id = performances.performer_id
+		  FROM performance primary_perf
+		  JOIN performer perf ON perf.id = primary_perf.performer_id
+		  LEFT JOIN class_lottery primary_lottery ON primary_lottery.class_name = primary_perf.class_name
+		  JOIN performance scoped_perf ON scoped_perf.id = ANY($1)
 		  LEFT JOIN performance_pieces pp
-		         ON pp.performance_id = performances.id
+		         ON pp.performance_id = scoped_perf.id
 		        AND pp.is_performance_piece = true
 		  LEFT JOIN musical_piece mp ON mp.id = pp.musical_piece_id
-		  LEFT JOIN adjudicated_pieces ap ON ap.performance_id = performances.id
+		  LEFT JOIN adjudicated_pieces ap ON ap.performance_id = scoped_perf.id
 		  LEFT JOIN musical_piece ap_mp ON ap_mp.id = ap.musical_piece_id
-		  JOIN primary_perf ON primary_perf.performer_id = performances.performer_id
+		 WHERE primary_perf.id = $2
 		 GROUP BY perf.id,
 		          perf.full_name,
 		          primary_perf.id,
 		          primary_perf.concert_series,
 		          primary_perf.duration,
-		          primary_perf.comment;
+		          primary_perf.comment,
+		          primary_lottery.lottery;
 	`;
 
 	const lookupResult = await connection.query(lookupQuery, [
-		context.performer_id,
-		context.concert_series,
-		context.year
+		scopedPerformanceIds,
+		primaryPerformanceId
 	]);
 
 	if (!lookupResult.rowCount) {
@@ -172,6 +192,134 @@ async function lookupByPerformanceContext(
 	};
 }
 
+async function rebuildPerformancePiecesForGroup(
+	connection: PoolClient,
+	orderedPerformanceIds: number[]
+): Promise<void> {
+	if (orderedPerformanceIds.length === 0) {
+		return;
+	}
+
+	const primaryPerformanceId = orderedPerformanceIds[0];
+	const currentSelectionResult = await connection.query(
+		`SELECT musical_piece_id
+       FROM performance_pieces
+      WHERE performance_id = $1
+        AND is_performance_piece = true
+      LIMIT 1`,
+		[primaryPerformanceId]
+	);
+	const previouslySelectedPieceId =
+		(currentSelectionResult.rows[0]?.musical_piece_id as number | undefined) ?? null;
+
+	const restoreSelection = async (performanceId: number, preferredPieceId: number | null) => {
+		const piecesResult = await connection.query(
+			`SELECT musical_piece_id
+         FROM performance_pieces
+        WHERE performance_id = $1
+        ORDER BY musical_piece_id`,
+			[performanceId]
+		);
+		if (!piecesResult.rowCount || piecesResult.rowCount < 1) {
+			return;
+		}
+
+		const selectedPieceStillExists =
+			preferredPieceId != null &&
+			piecesResult.rows.some((row) => row.musical_piece_id === preferredPieceId);
+
+		if (selectedPieceStillExists) {
+			await connection.query(
+				`UPDATE performance_pieces
+           SET is_performance_piece = false
+         WHERE performance_id = $1
+           AND is_performance_piece = true`,
+				[performanceId]
+			);
+			await connection.query(
+				`UPDATE performance_pieces
+           SET is_performance_piece = true
+         WHERE performance_id = $1
+           AND musical_piece_id = $2`,
+				[performanceId, preferredPieceId]
+			);
+			return;
+		}
+
+		if (piecesResult.rowCount === 1) {
+			await connection.query(
+				`UPDATE performance_pieces
+           SET is_performance_piece = true
+         WHERE performance_id = $1`,
+				[performanceId]
+			);
+		}
+	};
+
+	if (orderedPerformanceIds.length === 1) {
+		await connection.query('DELETE FROM performance_pieces WHERE performance_id = $1', [
+			primaryPerformanceId
+		]);
+
+		await connection.query(
+			`INSERT INTO performance_pieces (performance_id, musical_piece_id, movement)
+       SELECT $1, rebuilt.musical_piece_id, rebuilt.movement
+         FROM (
+           SELECT ap.musical_piece_id,
+                  MAX(ap.movement) AS movement
+             FROM adjudicated_pieces ap
+            WHERE ap.performance_id = $1
+              AND ap.is_merged = false
+            GROUP BY ap.musical_piece_id
+         ) AS rebuilt
+       ON CONFLICT (performance_id, musical_piece_id)
+       DO UPDATE SET movement = EXCLUDED.movement`,
+			[primaryPerformanceId]
+		);
+		await restoreSelection(primaryPerformanceId, previouslySelectedPieceId);
+		return;
+	}
+
+	const secondaryPerformanceIds = orderedPerformanceIds.slice(1);
+
+	await connection.query(
+		`DELETE FROM performance_pieces
+      WHERE performance_id = ANY($1)`,
+		[orderedPerformanceIds]
+	);
+
+	await connection.query(
+		`UPDATE adjudicated_pieces
+        SET is_merged = false
+      WHERE performance_id = ANY($1)`,
+		[orderedPerformanceIds]
+	);
+
+	await connection.query(
+		`INSERT INTO performance_pieces (performance_id, musical_piece_id, movement)
+     SELECT $1, merged.musical_piece_id, merged.movement
+       FROM (
+         SELECT ap.musical_piece_id,
+                MAX(ap.movement) AS movement
+           FROM adjudicated_pieces ap
+          WHERE ap.performance_id = ANY($2)
+            AND ap.is_merged = false
+          GROUP BY ap.musical_piece_id
+       ) AS merged
+     ON CONFLICT (performance_id, musical_piece_id)
+     DO UPDATE SET movement = EXCLUDED.movement`,
+		[primaryPerformanceId, orderedPerformanceIds]
+	);
+	await restoreSelection(primaryPerformanceId, previouslySelectedPieceId);
+
+	await connection.query(
+		`UPDATE adjudicated_pieces
+        SET is_merged = true
+      WHERE performance_id = ANY($1)`,
+		[secondaryPerformanceIds]
+	);
+}
+
 async function resolveLookupContextByCode(
 	connection: PoolClient,
 	code: number,
@@ -179,6 +327,7 @@ async function resolveLookupContextByCode(
 ): Promise<PerformanceLookupContext | null> {
 	const contextQuery = `
 		SELECT p.performer_id,
+		       p.class_name,
 		       p.concert_series,
 		       p.year
 		  FROM performance p
@@ -209,6 +358,7 @@ async function resolveLookupContextByDetails(
 
 	const contextQuery = `
 		SELECT performer.id AS performer_id,
+		       performance.class_name,
 		       performance.concert_series,
 		       performance.year
 		  FROM performer
@@ -306,6 +456,7 @@ export async function mergePerformancePiecesForPerformerSeries(
 	try {
 		const performancesResult = await connection.query(
 			`SELECT p.id,
+              p.class_name,
               cl.lottery
          FROM performance p
          LEFT JOIN class_lottery cl ON cl.class_name = p.class_name
@@ -316,146 +467,22 @@ export async function mergePerformancePiecesForPerformerSeries(
 			[performerId, concertSeries, scheduleYear]
 		);
 
-		// Case 4: 0 or undefined -> no-op
 		if (!performancesResult.rowCount || performancesResult.rowCount < 1) {
 			return;
 		}
 
-		const primaryPerformanceId = performancesResult.rows[0].id;
-		const currentSelectionResult = await connection.query(
-			`SELECT musical_piece_id
-         FROM performance_pieces
-        WHERE performance_id = $1
-          AND is_performance_piece = true
-        LIMIT 1`,
-			[primaryPerformanceId]
-		);
-		const previouslySelectedPieceId =
-			(currentSelectionResult.rows[0]?.musical_piece_id as number | undefined) ?? null;
+		const mergeGroups = [
+			performancesResult.rows
+				.filter((row) => !isProtectedEnsembleClass(row.class_name))
+				.map((row) => row.id as number),
+			performancesResult.rows
+				.filter((row) => isProtectedEnsembleClass(row.class_name))
+				.map((row) => row.id as number)
+		].filter((group) => group.length > 0);
 
-		const restoreSelection = async (performanceId: number, preferredPieceId: number | null) => {
-			const piecesResult = await connection.query(
-				`SELECT musical_piece_id
-           FROM performance_pieces
-          WHERE performance_id = $1
-          ORDER BY musical_piece_id`,
-				[performanceId]
-			);
-			if (!piecesResult.rowCount || piecesResult.rowCount < 1) {
-				return;
-			}
-
-			const selectedPieceStillExists =
-				preferredPieceId != null &&
-				piecesResult.rows.some((row) => row.musical_piece_id === preferredPieceId);
-
-			if (selectedPieceStillExists) {
-				await connection.query(
-					`UPDATE performance_pieces
-             SET is_performance_piece = false
-           WHERE performance_id = $1
-             AND is_performance_piece = true`,
-					[performanceId]
-				);
-				await connection.query(
-					`UPDATE performance_pieces
-             SET is_performance_piece = true
-           WHERE performance_id = $1
-             AND musical_piece_id = $2`,
-					[performanceId, preferredPieceId]
-				);
-				return;
-			}
-
-			if (piecesResult.rowCount === 1) {
-				await connection.query(
-					`UPDATE performance_pieces
-             SET is_performance_piece = true
-           WHERE performance_id = $1`,
-					[performanceId]
-				);
-			}
-		};
-
-		// Case 3: exactly 1 -> rebuild associations from adjudicated_pieces and preserve selection if possible
-		if (performancesResult.rowCount === 1) {
-			await connection.query('DELETE FROM performance_pieces WHERE performance_id = $1', [
-				primaryPerformanceId
-			]);
-
-			await connection.query(
-				`INSERT INTO performance_pieces (performance_id, musical_piece_id, movement)
-         SELECT $1, merged.musical_piece_id, merged.movement
-           FROM (
-             SELECT ap.musical_piece_id,
-                    MAX(ap.movement) AS movement
-               FROM adjudicated_pieces ap
-              WHERE ap.performance_id = $1
-                AND ap.is_merged = false
-              GROUP BY ap.musical_piece_id
-           ) AS merged
-         ON CONFLICT (performance_id, musical_piece_id)
-         DO UPDATE SET movement = EXCLUDED.movement`,
-				[primaryPerformanceId]
-			);
-			await restoreSelection(primaryPerformanceId, previouslySelectedPieceId);
-
-			return;
+		for (const performanceIds of mergeGroups) {
+			await rebuildPerformancePiecesForGroup(connection, performanceIds);
 		}
-
-		// Case 1/2: rowCount >= 2 -> reset + fresh merge
-		const allPerformanceIds: number[] = performancesResult.rows
-			.map((r) => r.id)
-			.filter((id) => id != null);
-
-		const secondaryPerformanceIds: number[] = allPerformanceIds.slice(1);
-
-		// Defensive: if somehow no secondaries, nothing to merge
-		if (secondaryPerformanceIds.length === 0) {
-			return;
-		}
-
-		// 1) Reset performance_pieces for BOTH primary + secondary performances
-		await connection.query(
-			`DELETE FROM performance_pieces
-        WHERE performance_id = ANY($1)`,
-			[allPerformanceIds]
-		);
-
-		// 2) Reset adjudicated_pieces merge flags for involved performances
-		await connection.query(
-			`UPDATE adjudicated_pieces
-          SET is_merged = false
-        WHERE performance_id = ANY($1)`,
-			[allPerformanceIds]
-		);
-
-		// 3) Fresh merge into primary from adjudicated_pieces across ALL involved performances
-		//    (primary + secondaries), grouped by musical_piece_id with MAX(movement)
-		await connection.query(
-			`INSERT INTO performance_pieces (performance_id, musical_piece_id, movement)
-       SELECT $1, merged.musical_piece_id, merged.movement
-         FROM (
-           SELECT ap.musical_piece_id,
-                  MAX(ap.movement) AS movement
-             FROM adjudicated_pieces ap
-            WHERE ap.performance_id = ANY($2)
-              AND ap.is_merged = false
-            GROUP BY ap.musical_piece_id
-         ) AS merged
-       ON CONFLICT (performance_id, musical_piece_id)
-       DO UPDATE SET movement = EXCLUDED.movement`,
-			[primaryPerformanceId, allPerformanceIds]
-		);
-		await restoreSelection(primaryPerformanceId, previouslySelectedPieceId);
-
-		// 4) Mark secondaries as merged (primary remains unmerged)
-		await connection.query(
-			`UPDATE adjudicated_pieces
-          SET is_merged = true
-        WHERE performance_id = ANY($1)`,
-			[secondaryPerformanceIds]
-		);
 	} finally {
 		connection.release();
 	}

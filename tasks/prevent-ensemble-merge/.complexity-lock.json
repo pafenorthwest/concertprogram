@@ -1,0 +1,23 @@
+{
+  "selected_signals_path": "/Users/eric/.codex/worktrees/3a2f/concertprogram/tasks/prevent-ensemble-merge/complexity-signals.json",
+  "selected_signals_sha256": "5d96ebf01e6d8ef3d104c8b395471a53f26ca5380124f90c31754137601bb9da",
+  "score_script_path": "/Users/eric/.codex/worktrees/3a2f/concertprogram/.codex/scripts/complexity-score.sh",
+  "score_script_sha256": "45a062dd25a8938ad1fba76e1be65815c40d7d722a20ff07c22c74ed0e479699",
+  "ranges": {
+    "goals": {
+      "min": 3,
+      "max": 5
+    },
+    "phases": {
+      "min": 2,
+      "max": 4
+    }
+  },
+  "recommended": {
+    "goals": 4,
+    "phases": 3
+  },
+  "complexity_input": "focused",
+  "complexity_descriptor": "focused",
+  "captured_at": "2026-04-08T04:28:33Z"
+}
