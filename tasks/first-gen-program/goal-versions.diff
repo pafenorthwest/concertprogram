@@ -1,0 +1,28 @@
+# goals.v0.md -> goals.v1.md
+--- /Users/eric/.codex/worktrees/38c1/concertprogram/goals/first-gen-program/goals.v0.md	2026-03-15 20:49:28
++++ /Users/eric/.codex/worktrees/38c1/concertprogram/goals/first-gen-program/goals.v1.md	2026-03-15 20:49:28
+@@ -1,12 +1,12 @@
+ # Goals Extract
+ 
+ - Task name: first-gen-program
+-- Iteration: v0
++- Iteration: v1
+ - State: locked
+ 
+ ## Goals (1-20, verifiable)
+ 
+-1. Replace the `Export to csv` text link on the admin program page with a `CSV` button that still downloads a CSV file.
++1. A button labeled `CSV` replaces the current text link and still downloads CSV.
+ 2. Add a `Program` button to the right of the `CSV` button on the admin program page.
+ 3. Implement a server-side Word document export path that returns a downloadable `.docx` file for the currently selected concert only.
+ 4. Disable the `Program` button when the selected filter is `All` or `Waitlist`.
+@@ -26,7 +26,7 @@
+ 
+ > Tie each criterion to a goal number when possible.
+ 
+-- [G1] The admin page renders a `CSV` button instead of the existing `Export to csv` link, and activating it still triggers a CSV file download.
++- [G1] The admin page renders a button labeled `CSV` instead of the existing text link, and activating it still triggers a CSV file download.
+ - [G2] The admin page renders a `Program` button immediately to the right of the `CSV` button.
+ - [G3][G4] The `Program` button is enabled only when a specific concert is selected and does not allow export for `All` or `Waitlist`.
+ - [G3][G5][G6][G7][G8] The Word export endpoint returns a `.docx` file for the selected concert whose content matches the provided template structure and includes the approved header text, concert time, entry values, and stacked contributor lines where applicable.
+

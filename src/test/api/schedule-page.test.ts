@@ -2,19 +2,17 @@ import { afterAll, beforeAll, describe, it, assert, expect } from 'vitest';
 import { chromium } from 'playwright';
 import { Performance } from '$lib/server/import';
 import { type ImportPerformanceInterface, year, parseMusicalPiece } from '$lib/server/common';
-import { lookupByCode, pool } from '$lib/server/db';
+import { fetchPerformancePieces, lookupByCode, pool, selectPerformancePiece } from '$lib/server/db';
 import { ScheduleRepository } from '$lib/server/scheduleRepository';
 import { SlotCatalog } from '$lib/server/slotCatalog';
 
+const schedulePageTestTimeoutMs = 30_000;
 const emmaCarterLottery = Math.floor(10000 + Math.random() * 90000);
 const emmaCarterSuffix = Math.random().toString(36).slice(2, 5);
 const emmaCarterName = `Emma Carter Scheduler ${emmaCarterSuffix}`;
 const emmaCarterEmail = `${emmaCarterName.toLowerCase().replaceAll(' ', '.')}@example.com`;
 const emmaCarterClassName = `QQ.9-10.${Math.random().toString(36).slice(2, 5)}`;
 const emmaCarterPerformance = `{ "class_name": "${emmaCarterClassName}", "performer": "${emmaCarterName}", "age": 12, "lottery": ${emmaCarterLottery}, "email": "${emmaCarterEmail}","phone": "999-555-4444","accompanist": "Zhi, Zhou","instrument": "Cello","musical_piece": [ {"title": "Concerto in C minor 3rd movement", "contributors": [ { "name": "Johann Christian Bach", "yearsActive": "None" }  ]  },{ "title": "Scherzo no.2 in B Flat Minor, op.31", "contributors": [  { "name": "Frédéric Chopin", "yearsActive": "None" }  ] } ], "concert_series": "Eastside"}`;
-
-const organSonataPerformance =
-	'{ "class_name": "ORG.11-12.A", "performer": "Kai Organ", "age": 17, "lottery": 456, "email": "kai.organ@example.com","phone": "222-333-4444","accompanist": "Pat Riley","instrument": "Piano","musical_piece": [ {"title": "Organ Sonata No.6 in G major, BWV 530", "contributors": [ { "name": "Johann Sebastian Bach", "yearsActive": "1685-1750", "role": "Composer" }, { "name": "Béla Bartók", "yearsActive": "1881-1945", "role": "Arranger" } ] } ], "concert_series": "Concerto"}';
 
 const twoSlotSeries = 'TwoSlotTest';
 const tenSlotSeries = 'TenSlotTest';
@@ -25,6 +23,60 @@ async function importPerformance(performanceJson: string) {
 	const imported: ImportPerformanceInterface = JSON.parse(performanceJson);
 	const singlePerformance: Performance = new Performance();
 	return singlePerformance.initialize(imported);
+}
+
+async function waitForSchedulePostResponse(
+	page: import('playwright').Page,
+	status: number | number[]
+) {
+	const statuses = Array.isArray(status) ? status : [status];
+	return page.waitForResponse(
+		(response) =>
+			response.request().method() === 'POST' &&
+			response.url().includes('/schedule') &&
+			statuses.includes(response.status())
+	);
+}
+
+async function submitScheduleForm(
+	page: import('playwright').Page,
+	formSelector: string,
+	status: number | number[]
+) {
+	await Promise.all([
+		waitForSchedulePostResponse(page, status),
+		page.waitForURL((url) => url.toString().includes('/schedule?/add'), {
+			waitUntil: 'domcontentloaded'
+		}),
+		page.$eval(formSelector, (form: HTMLFormElement) => form.submit())
+	]);
+}
+
+async function requestSubmitScheduleForm(
+	page: import('playwright').Page,
+	formSelector: string,
+	status: number | number[]
+) {
+	await page.waitForFunction((selector) => {
+		const submitButton = document.querySelector(
+			`${selector} button[type="submit"]`
+		) as HTMLButtonElement | null;
+		return submitButton != null && submitButton.disabled === false;
+	}, formSelector);
+
+	await Promise.all([
+		waitForSchedulePostResponse(page, status),
+		page.waitForURL((url) => url.toString().includes('/schedule?/add'), {
+			waitUntil: 'domcontentloaded'
+		}),
+		page.$eval(formSelector, (form: HTMLFormElement) => form.requestSubmit())
+	]);
+}
+
+async function gotoSchedulePage(page: import('playwright').Page, code: number | string) {
+	await page.goto(`http://localhost:8888/schedule?code=${code}`, {
+		waitUntil: 'domcontentloaded'
+	});
 }
 
 function makePerformanceJson({
@@ -97,6 +149,10 @@ function makeMultiPiecePerformanceJson({
 	});
 }
 
+function uniqueTestId(prefix: string) {
+	return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 async function seedConcertTimes(series: string, seedYear: number, slotCount: number) {
 	const connection = await pool.connect();
 	try {
@@ -162,13 +218,17 @@ afterAll(async () => {
 });
 
 describe('Valid Eastside page', () => {
-	it('should insert carter', async () => {
-		const importResults = await importPerformance(emmaCarterPerformance);
-		console.log(
-			`Success perfomerId ${importResults.performerId} performanceId ${importResults.performanceId}`
-		);
-		assert.isAbove(importResults.performerId, 0, 'expected performer ID greater than 0');
-	});
+	it(
+		'should insert carter',
+		async () => {
+			const importResults = await importPerformance(emmaCarterPerformance);
+			console.log(
+				`Success perfomerId ${importResults.performerId} performanceId ${importResults.performanceId}`
+			);
+			assert.isAbove(importResults.performerId, 0, 'expected performer ID greater than 0');
+		},
+		schedulePageTestTimeoutMs
+	);
 
 	it('should display schedule page with ranked choices (playwright)', async () => {
 		const lottery = Math.floor(10000 + Math.random() * 90000);
@@ -184,21 +244,36 @@ describe('Valid Eastside page', () => {
 		const EmmaCarterRecord = JSON.parse(performanceJson);
 		const EmmaCarterFirstPiece = parseMusicalPiece(EmmaCarterRecord.musical_piece[0].title);
 		const expectedSelectedPiece = EmmaCarterFirstPiece.titleWithoutMovement;
+		const performancePieces = await fetchPerformancePieces(importEmmaCarterResults.performanceId);
+		const firstPerformancePieceId = Number(performancePieces.rows[0]?.musical_piece_id);
+		expect(Number.isInteger(firstPerformancePieceId)).toBe(true);
+		await selectPerformancePiece(importEmmaCarterResults.performanceId, firstPerformancePieceId);
 		const slotCatalog = await SlotCatalog.load(EmmaCarterRecord.concert_series, scheduleYear);
 		const [firstSlot, secondSlot, thirdSlot, fourthSlot] = slotCatalog.slots;
 
 		const browser = await chromium.launch({ headless: true });
 		const page = await browser.newPage();
 		try {
-			await page.goto(`http://localhost:8888/schedule?code=${lottery}`);
-			await page.waitForSelector(`text=Scheduling for ${performerName}`);
-			await page.waitForSelector('text=Primary lookup code');
-			await page.waitForSelector('form#ranked-choice-form');
-			await page.waitForSelector('text=Select your performance piece to continue.');
+			await gotoSchedulePage(page, lottery);
+			await page.getByRole('heading', { name: 'Step 1: Review concert information' }).waitFor();
+			await page.getByText(performerName).waitFor();
+			await page.locator('.review-card .review-label', { hasText: 'Lookup code' }).waitFor();
+			await page.locator('form#ranked-choice-form').waitFor();
+			await page.getByRole('heading', { name: 'How to complete this form' }).waitFor();
+			await page
+				.locator('.help-panel')
+				.getByText('If more than one song is listed, choose one piece below.')
+				.waitFor();
+			await page.getByRole('heading', { name: 'Step 2: Choose one performance piece' }).waitFor();
 			const pieceOptions = page.locator('input[name="performancePiece"]');
 			expect(await pieceOptions.count()).toBe(2);
-			await pieceOptions.first().check();
-			await page.waitForSelector(`text=Performing ${expectedSelectedPiece}`);
+			expect(await pieceOptions.first().isChecked()).toBe(true);
+			await page.waitForSelector(`text=${expectedSelectedPiece}`);
+			await page.getByText('Step 3: Rank concert times').waitFor();
+			await page.waitForSelector('text=The limit is 8 minutes.');
+			await page.waitForSelector(
+				'text=You can come back and edit this page later if anything changes.'
+			);
 
 			const rankSelectIds = [
 				`#slot-${firstSlot.id}-rank`,
@@ -228,12 +303,9 @@ describe('Valid Eastside page', () => {
 			await page.selectOption('#duration', '3');
 			await page.fill('#comment', 'Thank you');
 
-			await Promise.all([
-				page.waitForURL('**', { waitUntil: 'networkidle' }),
-				page.click('form#ranked-choice-form button[type="submit"]')
-			]);
+			await submitScheduleForm(page, 'form#ranked-choice-form', 200);
 			const validateFormValues = async () => {
-				await page.waitForSelector('text=Primary lookup code');
+				await page.waitForSelector('text=Lookup code');
 				await page.waitForFunction(
 					([firstSlotId, secondSlotId, thirdSlotId, fourthSlotId]) => {
 						const firstRank = document.querySelector(
@@ -294,10 +366,10 @@ describe('Valid Eastside page', () => {
 				expect(commentValue).toBe('Thank you');
 			};
 
-			await page.goto(`http://localhost:8888/schedule?code=${lottery}`);
+			await gotoSchedulePage(page, lottery);
 			await validateFormValues();
 
-			await page.reload({ waitUntil: 'networkidle' });
+			await page.reload({ waitUntil: 'domcontentloaded' });
 			await validateFormValues();
 			const performanceResults = await lookupByCode(String(lottery));
 			expect(performanceResults?.performance_duration).toBe(3);
@@ -338,238 +410,295 @@ describe('Valid Eastside page', () => {
 		}
 	}, 45000);
 
-	it('Valid Concerto page', async () => {
-		const OrganSonataResults = await importPerformance(organSonataPerformance);
-		const OrganSonataRecord = JSON.parse(organSonataPerformance);
-		const OrganSonataMusicPeice = parseMusicalPiece(OrganSonataRecord.musical_piece[0].title);
-		const slotCatalog = await SlotCatalog.load(OrganSonataRecord.concert_series, scheduleYear);
-		const [slot] = slotCatalog.slots;
-
-		const browser = await chromium.launch({ headless: true });
-		const page = await browser.newPage();
-		try {
-			await page.goto('http://localhost:8888/schedule?code=456');
-			await page.waitForSelector('text=Scheduling for Kai Organ');
-			await page.waitForSelector('text=Performing Organ Sonata No.6 in G major, BWV 530');
-			await page.waitForSelector('text=Primary lookup code');
-
-			const checkboxTag = await page.$eval('#concert-confirm', (element) =>
-				element.tagName.toLowerCase()
+	it(
+		'Valid Concerto page',
+		async () => {
+			const lottery = Math.floor(20000 + Math.random() * 70000);
+			const performerName = uniqueTestId('Kai Organ');
+			const organSonataTitle = 'Organ Sonata No.6 in G major, BWV 530';
+			const organSonataPerformance = makePerformanceJson({
+				className: uniqueTestId('ORG-11-12-A'),
+				performer: performerName,
+				age: 17,
+				lottery,
+				concertSeries: 'Concerto',
+				musicalPieceTitle: organSonataTitle
+			});
+			const organPerformance = new Performance();
+			const OrganSonataResults = await organPerformance.initialize(
+				JSON.parse(organSonataPerformance)
 			);
-			expect(checkboxTag).toBe('input');
+			const OrganSonataRecord = JSON.parse(organSonataPerformance);
+			const OrganSonataMusicPeice = parseMusicalPiece(OrganSonataRecord.musical_piece[0].title);
+			const slotCatalog = await SlotCatalog.load(OrganSonataRecord.concert_series, scheduleYear);
+			const [slot] = slotCatalog.slots;
 
-			const durationTag = await page.$eval('#duration', (element) => element.tagName.toLowerCase());
-			expect(durationTag).toBe('select');
+			const browser = await chromium.launch({ headless: true });
+			const page = await browser.newPage();
+			try {
+				await gotoSchedulePage(page, lottery);
+				await page.getByRole('heading', { name: 'Step 1: Review concert information' }).waitFor();
+				await page.locator('.review-card').getByText(performerName).waitFor();
+				await page.locator('.review-card').getByText(organSonataTitle).waitFor();
+				await page.locator('.review-card .review-label', { hasText: 'Lookup code' }).waitFor();
+				await page
+					.locator('.help-panel')
+					.getByText('If only one eligible piece is listed, it stays selected for you by default.')
+					.waitFor();
+				await page.getByRole('heading', { name: 'Step 3: Confirm your concert time' }).waitFor();
+				await page.locator('label[for="duration"]').getByText('Step 4: Duration').waitFor();
+				await page.locator('label[for="comment"]').getByText('Step 5: Comments').waitFor();
 
-			const commentTag = await page.$eval('#comment', (element) => element.tagName.toLowerCase());
-			expect(commentTag).toBe('input');
+				const checkboxTag = await page.$eval('#concert-confirm', (element) =>
+					element.tagName.toLowerCase()
+				);
+				expect(checkboxTag).toBe('input');
 
-			await page.check('#concert-confirm');
-			await page.selectOption('#duration', '5');
-			await page.fill('#comment', 'See you there');
-			await Promise.all([
-				page.waitForURL('**', { waitUntil: 'networkidle' }),
-				page.click('form#concerto-confirmation button[type="submit"]')
-			]);
+				const durationTag = await page.$eval('#duration', (element) =>
+					element.tagName.toLowerCase()
+				);
+				expect(durationTag).toBe('select');
 
-			// Reload the schedule page to verify confirmation message and absence of form
-			await page.goto('http://localhost:8888/schedule?code=456');
+				const commentTag = await page.$eval('#comment', (element) => element.tagName.toLowerCase());
+				expect(commentTag).toBe('input');
 
-			await page.waitForSelector('text=You are all set, thank you for confirming you attendance');
-			const concertoFormAfterSubmit = await page.$('form#concerto-confirmation');
-			expect(concertoFormAfterSubmit).toBeNull();
+				await page.check('#concert-confirm');
+				await page.selectOption('#duration', '5');
+				await page.fill('#comment', 'See you there');
+				await requestSubmitScheduleForm(page, 'form#concerto-confirmation', 200);
 
-			await page.reload();
-			await page.waitForSelector('text=You are all set, thank you for confirming you attendance');
-			const concertoFormAfterReload = await page.$('form#concerto-confirmation');
-			expect(concertoFormAfterReload).toBeNull();
+				// Reload the schedule page to verify confirmation message and absence of form
+				await gotoSchedulePage(page, lottery);
 
-			const performanceResults = await lookupByCode('456');
-			expect(performanceResults?.performance_duration).toBe(5);
-			expect(performanceResults?.performance_comment).toBe('See you there');
-			expect(performanceResults?.lottery_code).toBe(456);
-			expect(performanceResults?.musical_piece).toBe(OrganSonataMusicPeice.titleWithoutMovement);
-			expect(performanceResults?.concert_series).toBe(OrganSonataRecord.concert_series);
+				await page
+					.getByRole('heading', {
+						name: /You are all set, thank you for confirming your attendance/
+					})
+					.waitFor();
+				const concertoFormAfterSubmit = await page.$('form#concerto-confirmation');
+				expect(concertoFormAfterSubmit).toBeNull();
 
-			const performanceSchedule = await scheduleRepository.fetchChoices(
-				OrganSonataResults.performerId,
-				OrganSonataRecord.concert_series,
-				scheduleYear
-			);
-			expect(performanceSchedule?.slots).toEqual([
-				{ slotId: slot.id, rank: 1, notAvailable: false }
-			]);
-		} finally {
-			await deleteScheduleChoices(
-				OrganSonataResults.performerId,
-				OrganSonataRecord.concert_series,
-				scheduleYear
-			);
-			await browser.close();
-		}
-	});
+				await page.reload({ waitUntil: 'domcontentloaded' });
+				await page
+					.getByRole('heading', {
+						name: /You are all set, thank you for confirming your attendance/
+					})
+					.waitFor();
+				const concertoFormAfterReload = await page.$('form#concerto-confirmation');
+				expect(concertoFormAfterReload).toBeNull();
+
+				const performanceResults = await lookupByCode(String(lottery));
+				expect(performanceResults?.performance_duration).toBe(5);
+				expect(performanceResults?.performance_comment).toBe('See you there');
+				expect(performanceResults?.lottery_code).toBe(lottery);
+				expect(performanceResults?.musical_piece).toBe(OrganSonataMusicPeice.titleWithoutMovement);
+				expect(performanceResults?.concert_series).toBe(OrganSonataRecord.concert_series);
+
+				const performanceSchedule = await scheduleRepository.fetchChoices(
+					OrganSonataResults.performerId,
+					OrganSonataRecord.concert_series,
+					scheduleYear
+				);
+				expect(performanceSchedule?.slots).toEqual([
+					{ slotId: slot.id, rank: 1, notAvailable: false }
+				]);
+			} finally {
+				await deleteScheduleChoices(
+					OrganSonataResults.performerId,
+					OrganSonataRecord.concert_series,
+					scheduleYear
+				);
+				await organPerformance.deleteAll();
+				await browser.close();
+			}
+		},
+		schedulePageTestTimeoutMs
+	);
 });
 
 describe('Rank-choice variants', () => {
-	it('supports rank-choice with two slots and partial rankings', async () => {
-		const performanceJson = makePerformanceJson({
-			className: 'TS.2.A',
-			performer: 'Duo Player',
-			age: 11,
-			lottery: 2345,
-			concertSeries: twoSlotSeries,
-			musicalPieceTitle: 'Test Sonata in C'
-		});
-		const importResults = await importPerformance(performanceJson);
-		const slotCatalog = await SlotCatalog.load(twoSlotSeries, scheduleYear);
-		const [firstSlot, secondSlot] = slotCatalog.slots;
+	it(
+		'supports rank-choice with two slots and partial rankings',
+		async () => {
+			const lottery = Math.floor(20000 + Math.random() * 70000);
+			const performanceJson = makePerformanceJson({
+				className: uniqueTestId('TS-2-A'),
+				performer: uniqueTestId('Duo Player'),
+				age: 11,
+				lottery,
+				concertSeries: twoSlotSeries,
+				musicalPieceTitle: 'Test Sonata in C'
+			});
+			const importResults = await importPerformance(performanceJson);
+			const slotCatalog = await SlotCatalog.load(twoSlotSeries, scheduleYear);
+			const [firstSlot, secondSlot] = slotCatalog.slots;
 
-		const browser = await chromium.launch({ headless: true });
-		const page = await browser.newPage();
-		try {
-			await page.goto('http://localhost:8888/schedule?code=2345');
-			const rankSelects = page.locator('select[id$="-rank"]');
-			const rankSelectCount = await rankSelects.count();
-			expect(rankSelectCount).toBe(2);
+			const browser = await chromium.launch({ headless: true });
+			const page = await browser.newPage();
+			try {
+				await gotoSchedulePage(page, lottery);
+				const rankSelects = page.locator('select[id$="-rank"]');
+				const rankSelectCount = await rankSelects.count();
+				expect(rankSelectCount).toBe(2);
 
-			await page.selectOption(`#slot-${firstSlot.id}-rank`, '1');
-			await Promise.all([
-				page.waitForURL('**', { waitUntil: 'networkidle' }),
-				page.click('form#ranked-choice-form button[type="submit"]')
-			]);
+				await page.selectOption(`#slot-${firstSlot.id}-rank`, '1');
+				await submitScheduleForm(page, 'form#ranked-choice-form', 200);
 
-			await page.goto('http://localhost:8888/schedule?code=2345');
-			const firstRankValue = await page.$eval(
-				`#slot-${firstSlot.id}-rank`,
-				(element) => (element as HTMLSelectElement).value
-			);
-			const secondRankValue = await page.$eval(
-				`#slot-${secondSlot.id}-rank`,
-				(element) => (element as HTMLSelectElement).value
-			);
-			expect(firstRankValue).toBe('1');
-			expect(secondRankValue).toBe('');
+				await gotoSchedulePage(page, lottery);
+				await page.waitForFunction((slotId) => {
+					const rankSelect = document.querySelector(
+						`#slot-${slotId}-rank`
+					) as HTMLSelectElement | null;
+					return rankSelect?.value === '1';
+				}, firstSlot.id);
+				const firstRankValue = await page.$eval(
+					`#slot-${firstSlot.id}-rank`,
+					(element) => (element as HTMLSelectElement).value
+				);
+				const secondRankValue = await page.$eval(
+					`#slot-${secondSlot.id}-rank`,
+					(element) => (element as HTMLSelectElement).value
+				);
+				expect(firstRankValue).toBe('1');
+				expect(secondRankValue).toBe('');
 
-			const stored = await scheduleRepository.fetchChoices(
-				importResults.performerId,
-				twoSlotSeries,
-				scheduleYear
-			);
-			expect(stored?.slots).toEqual([
-				{ slotId: firstSlot.id, rank: 1, notAvailable: false },
-				{ slotId: secondSlot.id, rank: null, notAvailable: false }
-			]);
-		} finally {
-			await deleteScheduleChoices(importResults.performerId, twoSlotSeries, scheduleYear);
-			await browser.close();
-		}
-	});
+				const stored = await scheduleRepository.fetchChoices(
+					importResults.performerId,
+					twoSlotSeries,
+					scheduleYear
+				);
+				expect(stored?.slots).toEqual([
+					{ slotId: firstSlot.id, rank: 1, notAvailable: false },
+					{ slotId: secondSlot.id, rank: null, notAvailable: false }
+				]);
+			} finally {
+				await deleteScheduleChoices(importResults.performerId, twoSlotSeries, scheduleYear);
+				await browser.close();
+			}
+		},
+		schedulePageTestTimeoutMs
+	);
 
-	it('supports rank-choice with ten slots', async () => {
-		const performanceJson = makePerformanceJson({
-			className: 'TS.10.A',
-			performer: 'Ten Slot Performer',
-			age: 12,
-			lottery: 3456,
-			concertSeries: tenSlotSeries,
-			musicalPieceTitle: 'Test Suite in D'
-		});
-		const importResults = await importPerformance(performanceJson);
+	it(
+		'supports rank-choice with ten slots',
+		async () => {
+			const lottery = Math.floor(20000 + Math.random() * 70000);
+			const performanceJson = makePerformanceJson({
+				className: uniqueTestId('TS-10-A'),
+				performer: uniqueTestId('Ten Slot Performer'),
+				age: 12,
+				lottery,
+				concertSeries: tenSlotSeries,
+				musicalPieceTitle: 'Test Suite in D'
+			});
+			const importResults = await importPerformance(performanceJson);
 
-		const browser = await chromium.launch({ headless: true });
-		const page = await browser.newPage();
-		try {
-			await page.goto('http://localhost:8888/schedule?code=3456');
-			const rankSelects = page.locator('select[id$="-rank"]');
-			const rankSelectCount = await rankSelects.count();
-			expect(rankSelectCount).toBe(10);
-			const optionCount = await rankSelects.first().locator('option').count();
-			expect(optionCount).toBe(11);
-		} finally {
-			await deleteScheduleChoices(importResults.performerId, tenSlotSeries, scheduleYear);
-			await browser.close();
-		}
-	});
+			const browser = await chromium.launch({ headless: true });
+			const page = await browser.newPage();
+			try {
+				await gotoSchedulePage(page, lottery);
+				const rankSelects = page.locator('select[id$="-rank"]');
+				const rankSelectCount = await rankSelects.count();
+				expect(rankSelectCount).toBe(10);
+				const optionCount = await rankSelects.first().locator('option').count();
+				expect(optionCount).toBe(11);
+			} finally {
+				await deleteScheduleChoices(importResults.performerId, tenSlotSeries, scheduleYear);
+				await browser.close();
+			}
+		},
+		schedulePageTestTimeoutMs
+	);
 
-	it('rejects duplicate rankings', async () => {
-		const performanceJson = makePerformanceJson({
-			className: 'TS.2.B',
-			performer: 'Duplicate Rank',
-			age: 13,
-			lottery: 3457,
-			concertSeries: twoSlotSeries,
-			musicalPieceTitle: 'Duplicate Sonata'
-		});
-		const importResults = await importPerformance(performanceJson);
-		const slotCatalog = await SlotCatalog.load(twoSlotSeries, scheduleYear);
-		const [firstSlot, secondSlot] = slotCatalog.slots;
+	it(
+		'rejects duplicate rankings',
+		async () => {
+			const lottery = Math.floor(20000 + Math.random() * 70000);
+			const performanceJson = makePerformanceJson({
+				className: uniqueTestId('TS-2-B'),
+				performer: uniqueTestId('Duplicate Rank'),
+				age: 13,
+				lottery,
+				concertSeries: twoSlotSeries,
+				musicalPieceTitle: 'Duplicate Sonata'
+			});
+			const importResults = await importPerformance(performanceJson);
+			const slotCatalog = await SlotCatalog.load(twoSlotSeries, scheduleYear);
+			const [firstSlot, secondSlot] = slotCatalog.slots;
 
-		const browser = await chromium.launch({ headless: true });
-		const page = await browser.newPage();
-		try {
-			await page.goto('http://localhost:8888/schedule?code=3457');
-			await page.selectOption(`#slot-${firstSlot.id}-rank`, '1');
-			await page.selectOption(`#slot-${secondSlot.id}-rank`, '1');
+			const browser = await chromium.launch({ headless: true });
+			const page = await browser.newPage();
+			try {
+				await gotoSchedulePage(page, lottery);
+				await page.selectOption(`#slot-${firstSlot.id}-rank`, '1');
+				await page.selectOption(`#slot-${secondSlot.id}-rank`, '1');
 
-			const [response] = await Promise.all([
-				page.waitForResponse(
-					(resp) => resp.url().includes('/schedule?/add') && resp.request().method() === 'POST'
-				),
-				page.$eval('form#ranked-choice-form', (form: HTMLFormElement) => form.submit())
-			]);
-			expect(response.status()).toBe(400);
+				const [response] = await Promise.all([
+					waitForSchedulePostResponse(page, 400),
+					page.waitForURL((url) => url.toString().includes('/schedule?/add'), {
+						waitUntil: 'domcontentloaded'
+					}),
+					page.$eval('form#ranked-choice-form', (form: HTMLFormElement) => form.submit())
+				]);
+				expect(response.status()).toBe(400);
 
-			const stored = await scheduleRepository.fetchChoices(
-				importResults.performerId,
-				twoSlotSeries,
-				scheduleYear
-			);
-			expect(stored).toBeNull();
-		} finally {
-			await deleteScheduleChoices(importResults.performerId, twoSlotSeries, scheduleYear);
-			await browser.close();
-		}
-	});
+				const stored = await scheduleRepository.fetchChoices(
+					importResults.performerId,
+					twoSlotSeries,
+					scheduleYear
+				);
+				expect(stored).toBeNull();
+			} finally {
+				await deleteScheduleChoices(importResults.performerId, twoSlotSeries, scheduleYear);
+				await browser.close();
+			}
+		},
+		schedulePageTestTimeoutMs
+	);
 
-	it('rejects submissions missing rank 1', async () => {
-		const performanceJson = makePerformanceJson({
-			className: 'TS.2.C',
-			performer: 'Missing Rank',
-			age: 13,
-			lottery: 3458,
-			concertSeries: twoSlotSeries,
-			musicalPieceTitle: 'Missing Rank Sonata'
-		});
-		const importResults = await importPerformance(performanceJson);
-		const slotCatalog = await SlotCatalog.load(twoSlotSeries, scheduleYear);
-		const [firstSlot, secondSlot] = slotCatalog.slots;
+	it(
+		'rejects submissions missing rank 1',
+		async () => {
+			const lottery = Math.floor(20000 + Math.random() * 70000);
+			const performanceJson = makePerformanceJson({
+				className: uniqueTestId('TS-2-C'),
+				performer: uniqueTestId('Missing Rank'),
+				age: 13,
+				lottery,
+				concertSeries: twoSlotSeries,
+				musicalPieceTitle: 'Missing Rank Sonata'
+			});
+			const importResults = await importPerformance(performanceJson);
+			const slotCatalog = await SlotCatalog.load(twoSlotSeries, scheduleYear);
+			const [firstSlot, secondSlot] = slotCatalog.slots;
 
-		const browser = await chromium.launch({ headless: true });
-		const page = await browser.newPage();
-		try {
-			await page.goto('http://localhost:8888/schedule?code=3458');
-			console.log(`Waiting for #slot-${firstSlot.id}-rank and #slot-${secondSlot.id}-rank`);
-			await page.selectOption(`#slot-${firstSlot.id}-rank`, '2');
-			await page.selectOption(`#slot-${secondSlot.id}-rank`, '');
+			const browser = await chromium.launch({ headless: true });
+			const page = await browser.newPage();
+			try {
+				await gotoSchedulePage(page, lottery);
+				await page.selectOption(`#slot-${firstSlot.id}-rank`, '2');
+				await page.selectOption(`#slot-${secondSlot.id}-rank`, '');
 
-			console.log('Wait for All');
-			const [response] = await Promise.all([
-				page.waitForResponse(
-					(resp) => resp.url().includes('/schedule?/add') && resp.request().method() === 'POST'
-				),
-				page.$eval('form#ranked-choice-form', (form: HTMLFormElement) => form.submit())
-			]);
-			expect(response.status()).toBe(400);
+				const [response] = await Promise.all([
+					waitForSchedulePostResponse(page, 400),
+					page.waitForURL((url) => url.toString().includes('/schedule?/add'), {
+						waitUntil: 'domcontentloaded'
+					}),
+					page.$eval('form#ranked-choice-form', (form: HTMLFormElement) => form.submit())
+				]);
+				expect(response.status()).toBe(400);
 
-			const stored = await scheduleRepository.fetchChoices(
-				importResults.performerId,
-				twoSlotSeries,
-				scheduleYear
-			);
-			expect(stored).toBeNull();
-		} finally {
-			await deleteScheduleChoices(importResults.performerId, twoSlotSeries, scheduleYear);
-			await browser.close();
-		}
-	});
+				const stored = await scheduleRepository.fetchChoices(
+					importResults.performerId,
+					twoSlotSeries,
+					scheduleYear
+				);
+				expect(stored).toBeNull();
+			} finally {
+				await deleteScheduleChoices(importResults.performerId, twoSlotSeries, scheduleYear);
+				await browser.close();
+			}
+		},
+		schedulePageTestTimeoutMs
+	);
 });

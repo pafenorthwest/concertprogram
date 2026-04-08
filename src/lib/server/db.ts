@@ -747,20 +747,28 @@ export async function updateConcertPerformance(
 ): Promise<bool> {
 	try {
 		const connection = await pool.connect();
-		let setSQL = 'SET duration = ' + duration;
-		if (comment != null) {
-			setSQL = setSQL + ", comment = '" + comment + "'";
-		}
-		const updateSQL = 'UPDATE performance ' + setSQL + ' WHERE performance.id = ' + performanceId;
-		const result = await connection.query(updateSQL);
+		try {
+			const setClauses = ['duration = $1'];
+			const values: Array<number | string | null> = [duration];
 
-		// Release the connection back to the pool
-		connection.release();
+			if (comment != null) {
+				values.push(comment);
+				setClauses.push(`comment = $${values.length}`);
+			}
 
-		if (result.rowCount != 0) {
-			return true;
+			values.push(performanceId);
+			const updateSQL =
+				`UPDATE performance SET ${setClauses.join(', ')}` +
+				` WHERE performance.id = $${values.length}`;
+			const result = await connection.query(updateSQL, values);
+
+			if (result.rowCount != 0) {
+				return true;
+			}
+			return false;
+		} finally {
+			connection.release();
 		}
-		return false;
 	} catch (error) {
 		console.error('Error executing insertPerformance:', error);
 		throw error;
@@ -1672,7 +1680,6 @@ export async function searchPerformanceByPerformerAndClass(
 			SELECT
 				p.id,
 				perf.full_name AS performer_name,
-				mp.printed_name AS musical_piece_printed_name,
 				p.performer_id,
 				p.performance_order,
 				p.class_name,
@@ -1687,8 +1694,6 @@ export async function searchPerformanceByPerformerAndClass(
 				p.warm_up_room_end
 			FROM performance p
 			JOIN performer perf ON p.performer_id = perf.id
-			JOIN adjudicated_pieces pp ON p.id = pp.performance_id
-			JOIN musical_piece mp ON pp.musical_piece_id = mp.id
 			WHERE p.performer_id = $1
 				AND p.class_name = $2
 				AND LOWER(p.concert_series) = LOWER($3)

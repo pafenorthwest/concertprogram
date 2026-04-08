@@ -1,15 +1,23 @@
 code_review:
   base_branch: clear_schedule_page
 
+github_cli:
+  owner_token_env:
+    ericpassmore: GH_PROMPT_TOKEN
+    pafenorthwest: GH_PAFE_TOKEN
+
 notes:
   - "Update this manifest only when the repository's canonical commands change."
   - "Tasks must also copy the chosen commands into /tasks/<task-name>/spec.md under Verification Commands."
+  - "github_cli.owner_token_env maps a GitHub owner/org to the env var name a wrapper should use for GH_TOKEN rebinding."
+  - "Store env var names only; never store token values in this file."
+
 
 
 # PREPARE-TAKEOFF BOOTSTRAP START
 bootstrap:
-  codex_root: "/Users/eric/.codex/worktrees/488d/concertprogram/.codex"
-  codex_scripts_dir: "/Users/eric/.codex/worktrees/488d/concertprogram/.codex/scripts"
+  codex_root: "/Users/eric/.codex/worktrees/fe54/concertprogram/.codex"
+  codex_scripts_dir: "/Users/eric/.codex/worktrees/fe54/concertprogram/.codex/scripts"
   canonical_scripts_path: "./.codex/scripts"
   repository_local_fallback_scripts_path: "./codex/scripts"
   home_fallback_scripts_path: "$HOME/.codex/scripts"
