@@ -70,14 +70,15 @@ function buildRankChoiceFormData(
 	performerId: number,
 	concertSeries: string,
 	performanceId: number,
-	slotIds: number[]
+	slotIds: number[],
+	comment = 'Schedule me'
 ) {
 	const formData = new FormData();
 	formData.set('performerId', String(performerId));
 	formData.set('concertSeries', concertSeries);
 	formData.set('performanceId', String(performanceId));
 	formData.set('duration', '4');
-	formData.set('comment', 'Schedule me');
+	formData.set('comment', comment);
 	slotIds.forEach((slotId, index) => {
 		formData.set(`slot-${slotId}-rank`, String(index + 1));
 	});
@@ -834,6 +835,56 @@ describe('dbOnly lookupByCode with performer in multiple classes', () => {
 			expect((blocked as { data?: { error?: string } }).data?.error).toBe(
 				'performance id is required'
 			);
+		} finally {
+			await cleanupDb({
+				performanceIds: fixtures.performanceIds,
+				musicalPieceIds: fixtures.musicalPieceIds,
+				classNames: fixtures.classNames,
+				concertSeries: [fixtures.concertSeries],
+				scheduleYear: fixtures.scheduleYear,
+				performerId: fixtures.performerId
+			});
+		}
+	});
+
+	it('accepts apostrophes in schedule comments during submission', async () => {
+		const fixtures: SameSeriesFixtures = await setupSameSeriesFixtures();
+
+		try {
+			if (fixtures.primaryPerformanceId == null || fixtures.performerId == null) {
+				throw new Error('Expected same-series fixtures to include performer and performance ids.');
+			}
+
+			const slotCatalog = await SlotCatalog.load(fixtures.concertSeries, fixtures.scheduleYear);
+			const apostropheComment = "I'm available after 5";
+
+			const success = await actions.add({
+				request: new Request('http://localhost:8888/schedule?/add', {
+					method: 'POST',
+					body: buildRankChoiceFormData(
+						fixtures.performerId,
+						fixtures.concertSeries,
+						fixtures.primaryPerformanceId,
+						slotCatalog.slots.slice(0, 2).map((slot) => slot.id),
+						apostropheComment
+					)
+				})
+			} as Parameters<(typeof actions)['add']>[0]);
+
+			expect(success).toEqual({ submissionStatus: 'success' });
+
+			const savedChoices = await new ScheduleRepository().fetchChoices(
+				fixtures.performerId,
+				fixtures.concertSeries,
+				fixtures.scheduleYear
+			);
+			expect(savedChoices?.slots).toEqual([
+				{ slotId: slotCatalog.slots[0].id, rank: 1, notAvailable: false },
+				{ slotId: slotCatalog.slots[1].id, rank: 2, notAvailable: false }
+			]);
+
+			const refreshedLookup = await lookupByCode(String(fixtures.primaryLottery));
+			expect(refreshedLookup?.performance_comment).toBe(apostropheComment);
 		} finally {
 			await cleanupDb({
 				performanceIds: fixtures.performanceIds,

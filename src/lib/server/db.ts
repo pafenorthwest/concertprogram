@@ -747,20 +747,28 @@ export async function updateConcertPerformance(
 ): Promise<bool> {
 	try {
 		const connection = await pool.connect();
-		let setSQL = 'SET duration = ' + duration;
-		if (comment != null) {
-			setSQL = setSQL + ", comment = '" + comment + "'";
-		}
-		const updateSQL = 'UPDATE performance ' + setSQL + ' WHERE performance.id = ' + performanceId;
-		const result = await connection.query(updateSQL);
+		try {
+			const setClauses = ['duration = $1'];
+			const values: Array<number | string | null> = [duration];
 
-		// Release the connection back to the pool
-		connection.release();
+			if (comment != null) {
+				values.push(comment);
+				setClauses.push(`comment = $${values.length}`);
+			}
 
-		if (result.rowCount != 0) {
-			return true;
+			values.push(performanceId);
+			const updateSQL =
+				`UPDATE performance SET ${setClauses.join(', ')}` +
+				` WHERE performance.id = $${values.length}`;
+			const result = await connection.query(updateSQL, values);
+
+			if (result.rowCount != 0) {
+				return true;
+			}
+			return false;
+		} finally {
+			connection.release();
 		}
-		return false;
 	} catch (error) {
 		console.error('Error executing insertPerformance:', error);
 		throw error;
