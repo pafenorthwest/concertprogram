@@ -17,10 +17,9 @@ truthfully, and confirm the task is ready to land.
       implementation.
 
 ## Deliverables
-- Completed verification evidence for lint, build, and test, including explicit
-  blocking notes for the failing full-suite tests.
-- A truthful final-phase ledger ready for Stage 4 validation, even though the
-  expected outcome is blocked on unrelated repo-wide test failures.
+- Completed verification evidence for lint, build, and test with the full
+  pinned suite passing on the branch.
+- A truthful final-phase ledger ready for Stage 4 validation and landing.
 
 ## Gate (must pass before proceeding)
 Phase 3 passes only if the pinned verification commands succeed and the task
@@ -36,12 +35,10 @@ artifacts accurately reflect the resulting code state.
 - [x] Command: `npm run build`
   - Expected: PASS
 - [x] Command: `npm run test`
-  - Expected: PASS when repo-wide tests are green; current run is blocked by
-    unrelated failures in `src/test/db/import.test.ts` and
-    `src/test/api/schedule-page.test.ts`.
+  - Expected: PASS
 
 ## Risks and mitigations
 - Risk: full verification may expose unrelated repo instability after the local
   fix is complete.
-- Mitigation: document any blocker precisely and stop Stage 4 rather than
-  overstating completion.
+- Mitigation: rerun the pinned commands and stop immediately if any branch-wide
+  regression reappears.

@@ -21,7 +21,7 @@
 - [x] Missing cases to add: added schedule submission coverage for apostrophe
       comments in `src/test/db/lookupByCode-multi-class.test.ts`.
 - [ ] Coverage gaps: EVALUATED: none identified for the affected schedule
-      comment path beyond the unrelated repo-wide failures listed below.
+      comment path after the full branch verification run passed.
 
 ## Full verification
 > Use the pinned commands in spec + `./codex/project-structure.md` + `./codex/codex-config.yaml`.
@@ -29,12 +29,7 @@
 
 - [x] Lint: `npm run lint` PASS
 - [x] Build: `npm run build` PASS
-- [ ] Tests: `npm run test` EVALUATED: blocked by unrelated existing failures in
-      `src/test/db/import.test.ts` (`refreshes selected performance pieces for
-      single-performance reimports`) and `src/test/api/schedule-page.test.ts`
-      (`Valid Concerto page` timed out at 30000ms); targeted task verification
-      passed with `npm run test -- src/test/db/lookupByCode-multi-class.test.ts`
-      and `npm run test -- src/test/db/lookupByCode-multi-class.test.ts -t "accepts apostrophes in schedule comments during submission"`.
+- [x] Tests: `npm run test` PASS
 
 ## Manual QA (if applicable)
 - [ ] Steps: EVALUATED: not run separately; the server-action regression test
@@ -58,13 +53,4 @@
       `updateConcertPerformance` change and the apostrophe regression test.
 
 ## Outstanding issues (if any)
-- Severity: medium. Repro: `npm run test` currently fails in
-  `src/test/db/import.test.ts` because `refreshes selected performance pieces
-  for single-performance reimports` expects `Updated Refresh Piece` but receives
-  `Missing Rank Sonata`. Suggested fix: investigate the existing import refresh
-  behavior separately; this task did not touch the import path.
-- Severity: medium. Repro: `npm run test` currently fails in
-  `src/test/api/schedule-page.test.ts` because `Valid Concerto page` times out
-  after 30000ms. Suggested fix: investigate the existing Playwright concerto
-  schedule flow or increase timeout only if the scenario is legitimately
-  longer-running.
+- None.
