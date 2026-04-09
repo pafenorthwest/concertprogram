@@ -163,16 +163,17 @@ async function seedConcertTimes(seriesList: string[], scheduleYear: number) {
 }
 
 async function setupMultiClassFixtures() {
+	const testId = Math.random().toString(36).slice(2, 8);
 	const basePerformer = {
-		fullName: 'Lookup Code Performer',
+		fullName: `Lookup Code Performer ${testId}`,
 		age: 16,
 		instrument: 'Piano',
-		email: 'lookup.code.performer@example.com',
+		email: `lookup.code.performer.${testId}@example.com`,
 		phone: '555-0101'
 	};
 
 	const firstImport: ImportPerformanceInterface = {
-		class_name: 'TST.LOOKUP.1',
+		class_name: `TST.LOOKUP.1.${testId}`,
 		performer: basePerformer.fullName,
 		lottery: 43210,
 		age: basePerformer.age,
@@ -190,7 +191,7 @@ async function setupMultiClassFixtures() {
 	};
 
 	const secondImport: ImportPerformanceInterface = {
-		class_name: 'TST.LOOKUP.2',
+		class_name: `TST.LOOKUP.2.${testId}`,
 		performer: basePerformer.fullName,
 		lottery: 98765,
 		age: basePerformer.age,
@@ -287,17 +288,18 @@ async function setupMultiClassFixtures() {
 }
 
 async function setupSameSeriesFixtures() {
+	const testId = Math.random().toString(36).slice(2, 8);
 	const basePerformer = {
-		fullName: 'Same Series Performer',
+		fullName: `Same Series Performer ${testId}`,
 		age: 15,
 		instrument: 'Violin',
-		email: 'same.series.performer@example.com',
+		email: `same.series.performer.${testId}@example.com`,
 		phone: '555-0202'
 	};
 
 	const concertSeries = 'LookupSeriesShared';
 	const firstImport: ImportPerformanceInterface = {
-		class_name: 'TST.SAME.1',
+		class_name: `TST.SAME.1.${testId}`,
 		performer: basePerformer.fullName,
 		lottery: 22222,
 		age: basePerformer.age,
@@ -315,7 +317,7 @@ async function setupSameSeriesFixtures() {
 	};
 
 	const secondImport: ImportPerformanceInterface = {
-		class_name: 'TST.SAME.2',
+		class_name: `TST.SAME.2.${testId}`,
 		performer: basePerformer.fullName,
 		lottery: 11111,
 		age: basePerformer.age,

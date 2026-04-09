@@ -1836,3 +1836,96 @@ export async function movePerformanceByChair(id: number, concertSeries: string) 
 		throw error;
 	}
 }
+
+export async function forceMoveProgramEntry(
+	performanceId: number,
+	performerId: number,
+	concertSeries: string,
+	concertNum: number,
+	seasonYear: number
+) {
+	const normalizedSeries = concertSeries.trim();
+	if (normalizedSeries !== 'Eastside' && normalizedSeries !== 'Waitlist') {
+		throw new Error('Unsupported concert series for force move.');
+	}
+
+	const connection = await pool.connect();
+	try {
+		await connection.query('BEGIN');
+
+		const performanceResult = await connection.query(
+			`SELECT id
+       FROM performance
+       WHERE id = $1
+         AND performer_id = $2
+         AND year = $3`,
+			[performanceId, performerId, seasonYear]
+		);
+		if (performanceResult.rowCount !== 1) {
+			throw new Error('Performance not found for force move.');
+		}
+
+		if (normalizedSeries === 'Waitlist') {
+			const updateResult = await connection.query(
+				`UPDATE performance
+         SET concert_series = $1,
+             chair_override = false
+         WHERE id = $2
+           AND performer_id = $3
+           AND year = $4`,
+				['Waitlist', performanceId, performerId, seasonYear]
+			);
+			await connection.query('COMMIT');
+			return updateResult.rowCount === 1;
+		}
+
+		const slotResult = await connection.query(
+			`SELECT id
+       FROM concert_times
+       WHERE concert_series = $1
+         AND year = $2
+         AND concert_number_in_series = $3`,
+			['Eastside', seasonYear, concertNum]
+		);
+		if (slotResult.rowCount !== 1) {
+			throw new Error('Target Eastside concert slot not found.');
+		}
+
+		await connection.query(
+			`UPDATE performance
+       SET concert_series = $1,
+           chair_override = true
+       WHERE id = $2
+         AND performer_id = $3
+         AND year = $4`,
+			['Eastside', performanceId, performerId, seasonYear]
+		);
+
+		await connection.query(
+			`DELETE FROM schedule_slot_choice
+       WHERE performer_id = $1
+         AND concert_series = $2
+         AND year = $3`,
+			[performerId, 'Eastside', seasonYear]
+		);
+
+		await connection.query(
+			`INSERT INTO schedule_slot_choice
+       (performer_id, concert_series, year, slot_id, rank, not_available)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (performer_id, concert_series, year, slot_id)
+       DO UPDATE SET rank = EXCLUDED.rank,
+                    not_available = EXCLUDED.not_available,
+                    updated_at = NOW()`,
+			[performerId, 'Eastside', seasonYear, Number(slotResult.rows[0].id), 1, false]
+		);
+
+		await connection.query('COMMIT');
+		return true;
+	} catch (error) {
+		await connection.query('ROLLBACK');
+		throw error;
+	} finally {
+		connection.release();
+	}
+}

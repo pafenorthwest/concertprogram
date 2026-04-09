@@ -14,10 +14,11 @@ notes:
 
 
 
+
 # PREPARE-TAKEOFF BOOTSTRAP START
 bootstrap:
-  codex_root: "/Users/eric/.codex/worktrees/fe54/concertprogram/.codex"
-  codex_scripts_dir: "/Users/eric/.codex/worktrees/fe54/concertprogram/.codex/scripts"
+  codex_root: "/Users/eric/pafenorthwest/concertprogram/.codex"
+  codex_scripts_dir: "/Users/eric/pafenorthwest/concertprogram/.codex/scripts"
   canonical_scripts_path: "./.codex/scripts"
   repository_local_fallback_scripts_path: "./codex/scripts"
   home_fallback_scripts_path: "$HOME/.codex/scripts"
