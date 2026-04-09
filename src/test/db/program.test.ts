@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { Performance } from '$lib/server/import';
 import { type ImportPerformanceInterface, year } from '$lib/server/common';
-import { pool } from '$lib/server/db';
+import { forceMoveProgramEntry, pool } from '$lib/server/db';
 import { Program } from '$lib/server/program';
 
 const testYear = year();
@@ -60,7 +60,7 @@ async function importTestPerformance({
 	concertSeries: string;
 	lottery: number;
 }): Promise<{ performerId: number; performanceId: number; performance: Performance }> {
-	const className = `PT.${uniqueCounter}.A`;
+	const className = `PT.${uniqueCounter}.${Math.random().toString(36).slice(2, 8)}`;
 	const performerName = `Program Test Performer ${uniqueCounter}`;
 	uniqueCounter += 1;
 	const imported: ImportPerformanceInterface = {
@@ -105,16 +105,23 @@ async function updatePerformance(performanceId: number, updates: Record<string, 
 }
 
 afterEach(async () => {
-	const connection = await pool.connect();
-	try {
-		await connection.query(
-			`DELETE FROM schedule_slot_choice
-       WHERE year = $1
-         AND concert_series = ANY($2::text[])`,
-			[testYear, [eastsideSeries, concertoSeries]]
-		);
-	} finally {
-		connection.release();
+	const performerIds = importedPerformances
+		.map((performance) => performance.performer?.id)
+		.filter((performerId): performerId is number => performerId != null);
+
+	if (performerIds.length > 0) {
+		const connection = await pool.connect();
+		try {
+			await connection.query(
+				`DELETE FROM schedule_slot_choice
+         WHERE year = $1
+           AND concert_series = ANY($2::text[])
+           AND performer_id = ANY($3::int[])`,
+				[testYear, [eastsideSeries, concertoSeries], performerIds]
+			);
+		} finally {
+			connection.release();
+		}
 	}
 
 	while (importedPerformances.length > 0) {
@@ -396,5 +403,56 @@ describe('Program integration scheduling', () => {
 		expect(indexA).toBeGreaterThanOrEqual(0);
 		expect(indexB).toBeLessThan(indexC);
 		expect(indexC).toBeLessThan(indexA);
+	});
+
+	it('force-moves a performer into a selected eastside concert', async () => {
+		const entry = await importTestPerformance({ concertSeries: eastsideSeries, lottery: 501 });
+
+		const moved = await forceMoveProgramEntry(
+			entry.performanceId,
+			entry.performerId,
+			eastsideSeries,
+			2,
+			testYear
+		);
+		expect(moved).toBe(true);
+
+		const program = new Program(testYear);
+		await program.build();
+		const placement = program.orderedPerformance.find(
+			(performance) => performance.id === entry.performanceId
+		);
+
+		expect(placement?.concertSeries).toBe(eastsideSeries);
+		expect(placement?.concertNumberInSeries).toBe(2);
+	});
+
+	it('force-moves a performer to the waitlist', async () => {
+		const slotMap = await fetchSlotIdByNumber(eastsideSeries, testYear);
+		const slotOne = slotMap.get(1);
+		expect(slotOne).toBeTypeOf('number');
+
+		const entry = await importTestPerformance({ concertSeries: eastsideSeries, lottery: 502 });
+		await insertScheduleChoices(entry.performerId, eastsideSeries, testYear, [
+			{ slotId: slotOne!, rank: 1, notAvailable: false }
+		]);
+
+		const moved = await forceMoveProgramEntry(
+			entry.performanceId,
+			entry.performerId,
+			'Waitlist',
+			1,
+			testYear
+		);
+		expect(moved).toBe(true);
+
+		const program = new Program(testYear);
+		await program.build();
+		const placement = program.orderedPerformance.find(
+			(performance) => performance.id === entry.performanceId
+		);
+
+		expect(placement?.concertSeries).toBe('Waitlist');
+		expect(placement?.concertNumberInSeries).toBe(1);
 	});
 });
