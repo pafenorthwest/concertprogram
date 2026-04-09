@@ -1,11 +1,7 @@
-import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { promisify } from 'node:util';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import type { OrderedPerformanceInterface, ProgramComposerInterface } from '$lib/server/program';
-
-const execFileAsync = promisify(execFile);
+import { readZipEntryText, replaceZipEntryTexts } from '$lib/server/zip';
 
 const DOCX_TEMPLATE_PATH = resolve(
 	process.cwd(),
@@ -109,33 +105,17 @@ export async function buildProgramDocx(
 	input: ProgramDocxInput,
 	templatePath = DOCX_TEMPLATE_PATH
 ): Promise<Buffer> {
-	const workDir = await mkdtemp(join(tmpdir(), 'program-docx-'));
-	const outputPath = `${workDir}.docx`;
-
 	try {
-		await execFileAsync('unzip', ['-q', templatePath, '-d', workDir]);
+		const templateArchive = await readFile(templatePath);
+		const templateHeaderXml = readZipEntryText(templateArchive, 'word/header1.xml');
+		const templateDocumentXml = readZipEntryText(templateArchive, 'word/document.xml');
 
-		const headerPath = join(workDir, 'word/header1.xml');
-		const documentPath = join(workDir, 'word/document.xml');
-		const [templateHeaderXml, templateDocumentXml] = await Promise.all([
-			readFile(headerPath, 'utf8'),
-			readFile(documentPath, 'utf8')
-		]);
-
-		const [headerXml, documentXml] = [
-			buildProgramHeaderXml(templateHeaderXml, input),
-			buildProgramDocumentXml(templateDocumentXml, input)
-		];
-
-		await Promise.all([writeFile(headerPath, headerXml), writeFile(documentPath, documentXml)]);
-		await execFileAsync('zip', ['-qr', outputPath, '.'], { cwd: workDir });
-
-		return await readFile(outputPath);
+		return replaceZipEntryTexts(templateArchive, {
+			'word/header1.xml': buildProgramHeaderXml(templateHeaderXml, input),
+			'word/document.xml': buildProgramDocumentXml(templateDocumentXml, input)
+		});
 	} catch (error) {
 		throw new Error(`Failed to build program DOCX ${(error as Error).message}`);
-	} finally {
-		await rm(workDir, { force: true, recursive: true });
-		await rm(outputPath, { force: true });
 	}
 }
 

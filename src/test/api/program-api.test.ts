@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { GET as getProgramExport } from '../../routes/api/program/+server';
 import { PUT as moveProgramEntry } from '../../routes/api/program/[id]/+server';
 import { type ImportPerformanceInterface, year } from '$lib/server/common';
+import { DOCX_MIME_TYPE } from '$lib/server/programDocx';
 import { pool } from '$lib/server/db';
 import { Performance } from '$lib/server/import';
 import { Program } from '$lib/server/program';
+import { readZipEntryText } from '$lib/server/zip';
 
 const testYear = year();
 const eastsideSeries = 'Eastside';
@@ -84,6 +87,46 @@ describe('Program move API', () => {
 		const program = new Program(testYear);
 		await program.build();
 		expect(Array.isArray(program.retrieveAllConcertPrograms())).toBe(true);
+	});
+
+	it('returns a docx export for a selected concert', async () => {
+		const entry = await importTestPerformance({ concertSeries: eastsideSeries, lottery: 700 });
+
+		const moveResponse = await moveProgramEntry({
+			url: new URL(`http://localhost:8888/api/program/${entry.performanceId}`),
+			request: new Request(`http://localhost:8888/api/program/${entry.performanceId}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+					origin: 'http://localhost:8888'
+				},
+				body: JSON.stringify({
+					concertSeries: eastsideSeries,
+					concertNum: 3,
+					performerId: entry.performerId
+				})
+			}),
+			cookies: { get: () => '' },
+			params: { id: String(entry.performanceId) }
+		} as Parameters<typeof moveProgramEntry>[0]);
+
+		expect(moveResponse.status).toBe(200);
+
+		const exportResponse = await getProgramExport({
+			url: new URL(
+				'http://localhost:8888/api/program/?concertNum=3&concertSeries=Eastside&format=docx'
+			)
+		} as Parameters<typeof getProgramExport>[0]);
+
+		expect(exportResponse.status).toBe(200);
+		expect(exportResponse.headers.get('Content-Type')).toBe(DOCX_MIME_TYPE);
+		expect(exportResponse.headers.get('Content-Disposition')).toContain(
+			'filename="eastside-3-program.docx"'
+		);
+
+		const docx = Buffer.from(await exportResponse.arrayBuffer());
+		expect(readZipEntryText(docx, 'word/document.xml')).toContain('Program API Performer');
+		expect(readZipEntryText(docx, 'word/header1.xml')).toContain('Eastside Artists Concert #3');
 	});
 
 	it('accepts the admin force-move payload for an eastside destination', async () => {
