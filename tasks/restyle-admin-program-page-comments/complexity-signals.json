@@ -1,0 +1,24 @@
+{
+  "scope": 2,
+  "behavior": 2,
+  "dependency": 0,
+  "uncertainty": 2,
+  "verification": 2,
+  "evidence": {
+    "scope": "files=1 surface=admin program page UI plus bounded task artifacts in one admin subsystem",
+    "behavior": "one user-visible workflow change: comment presentation and popover interaction on the admin program page",
+    "dependency": "interfaces=none",
+    "uncertainty": "restyle must preserve existing drag-and-drop and move/export interactions while changing table markup",
+    "verification": "checks=lint,build,test plus manual validation of enabled/disabled comment popover behavior if no focused UI test exists",
+    "guardrails": "no schema or API contract change; no new deps; localized frontend surface; rollback is straightforward with bounded verification"
+  },
+  "guardrails": {
+    "no_schema_or_api_contract_change": true,
+    "no_new_external_dependencies": true,
+    "localized_surface": true,
+    "reversible_with_straightforward_verification": true
+  },
+  "overrides": {
+    "reason": ""
+  }
+}
