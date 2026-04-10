@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { getCachedTimeStamps, refreshCachedTimeStamps, type ConcertRow } from '$lib/cache';
+import { isAuthorizedRequest } from '$lib/server/apiAuth';
 import {
 	type MusicalTitleInterface,
 	type OrderedPerformanceInterface,
@@ -8,6 +9,7 @@ import {
 } from '$lib/server/program';
 import { year } from '$lib/server/common';
 import { buildProgramDocx, DOCX_MIME_TYPE } from '$lib/server/programDocx';
+import { updateProgramOrders, type ProgramOrderUpdate } from '$lib/server/db';
 import Papa from 'papaparse';
 
 export async function GET({ url }) {
@@ -41,6 +43,86 @@ export async function GET({ url }) {
 			{ status: 'error', message: `Failed to process the request ${(error as Error).message}` },
 			{ status: 500 }
 		);
+	}
+}
+
+function parsePositiveInteger(value: unknown): number | null {
+	const parsed = Number(value);
+	if (!Number.isInteger(parsed) || parsed <= 0) {
+		return null;
+	}
+	return parsed;
+}
+
+function parseNonNegativeInteger(value: unknown): number | null {
+	const parsed = Number(value);
+	if (!Number.isInteger(parsed) || parsed < 0) {
+		return null;
+	}
+	return parsed;
+}
+
+function parseProgramOrderUpdates(body: unknown): ProgramOrderUpdate[] | null {
+	if (!Array.isArray(body) || body.length === 0) {
+		return null;
+	}
+
+	const seenIds = new Set<number>();
+	const updates: ProgramOrderUpdate[] = [];
+	for (const entry of body) {
+		if (!entry || typeof entry !== 'object') {
+			return null;
+		}
+
+		const performanceId = parsePositiveInteger((entry as Record<string, unknown>).id);
+		const order = parseNonNegativeInteger((entry as Record<string, unknown>).order);
+		const concertSeries =
+			typeof (entry as Record<string, unknown>).concertSeries === 'string'
+				? (entry as Record<string, string>).concertSeries.trim()
+				: '';
+
+		if (performanceId == null || order == null || concertSeries.length === 0) {
+			return null;
+		}
+		if (seenIds.has(performanceId)) {
+			return null;
+		}
+		seenIds.add(performanceId);
+		updates.push({ id: performanceId, concertSeries, order });
+	}
+
+	return updates;
+}
+
+export async function POST({ url, request, cookies }) {
+	const pafeAuth = cookies.get('pafe_auth') || '';
+	const origin = request.headers.get('origin');
+	const appOrigin = `${url.protocol}//${url.host}`;
+
+	if (origin !== appOrigin) {
+		if (!isAuthorizedRequest(request.headers.get('Authorization'), pafeAuth)) {
+			return json({ result: 'error', reason: 'Unauthorized' }, { status: 401 });
+		}
+	}
+
+	try {
+		const body = await request.json();
+		const updates = parseProgramOrderUpdates(body);
+		if (updates == null) {
+			return json({ status: 'error', reason: 'Invalid reorder payload' }, { status: 400 });
+		}
+
+		const updatedCount = await updateProgramOrders(updates);
+		return json(
+			{
+				message: 'Program order saved',
+				updatedCount
+			},
+			{ status: 200 }
+		);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : 'Failed to process the request';
+		return json({ status: 'error', reason: message }, { status: 500 });
 	}
 }
 

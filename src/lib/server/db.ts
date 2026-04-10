@@ -1787,30 +1787,45 @@ export async function retrievePerformanceByLottery(year: number) {
 	}
 }
 
-export async function updateProgramOrder(id: number, concertSeries: string, order: number) {
+export interface ProgramOrderUpdate {
+	id: number;
+	concertSeries: string;
+	order: number;
+}
+
+export async function updateProgramOrders(entries: ProgramOrderUpdate[]): Promise<number> {
+	const connection = await pool.connect();
 	try {
-		const connection = await pool.connect();
+		await connection.query('BEGIN');
 
-		const updateSQL =
-			'UPDATE performance \n' +
-			'SET performance_order = ' +
-			order +
-			', \n' +
-			"concert_series = '" +
-			concertSeries +
-			"' \n" +
-			'WHERE id = ' +
-			id +
-			' \n';
+		let updatedCount = 0;
+		for (const entry of entries) {
+			const result = await connection.query(
+				`UPDATE performance
+         SET performance_order = $1,
+             concert_series = $2
+         WHERE id = $3`,
+				[entry.order, entry.concertSeries, entry.id]
+			);
+			if (result.rowCount !== 1) {
+				throw new Error(`Program order update failed for performance ${entry.id}`);
+			}
+			updatedCount += result.rowCount;
+		}
 
-		const result = await connection.query(updateSQL);
-
-		connection.release();
-		return result;
+		await connection.query('COMMIT');
+		return updatedCount;
 	} catch (error) {
+		await connection.query('ROLLBACK').catch(() => undefined);
 		console.error('Error executing query:', error);
 		throw error;
+	} finally {
+		connection.release();
 	}
+}
+
+export async function updateProgramOrder(id: number, concertSeries: string, order: number) {
+	return updateProgramOrders([{ id, concertSeries, order }]);
 }
 
 export async function movePerformanceByChair(id: number, concertSeries: string) {

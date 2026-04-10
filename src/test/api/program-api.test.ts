@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { GET as getProgramExport } from '../../routes/api/program/+server';
+import {
+	GET as getProgramExport,
+	POST as saveProgramOrder
+} from '../../routes/api/program/+server';
 import { PUT as moveProgramEntry } from '../../routes/api/program/[id]/+server';
 import { type ImportPerformanceInterface, year } from '$lib/server/common';
 import { DOCX_MIME_TYPE } from '$lib/server/programDocx';
@@ -66,6 +69,49 @@ async function cleanupScheduleChoices(
 	}
 }
 
+async function fetchProgramOrders(performanceIds: number[]) {
+	const connection = await pool.connect();
+	try {
+		const result = await connection.query(
+			`SELECT id, concert_series, performance_order
+       FROM performance
+       WHERE id = ANY($1::int[])`,
+			[performanceIds]
+		);
+		return new Map(
+			result.rows.map((row) => [
+				Number(row.id),
+				{
+					concertSeries: String(row.concert_series),
+					order: Number(row.performance_order)
+				}
+			])
+		);
+	} finally {
+		connection.release();
+	}
+}
+
+async function forceMoveEntry(performanceId: number, performerId: number, concertNum: number) {
+	return moveProgramEntry({
+		url: new URL(`http://localhost:8888/api/program/${performanceId}`),
+		request: new Request(`http://localhost:8888/api/program/${performanceId}`, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				origin: 'http://localhost:8888'
+			},
+			body: JSON.stringify({
+				concertSeries: eastsideSeries,
+				concertNum,
+				performerId
+			})
+		}),
+		cookies: { get: () => '' },
+		params: { id: String(performanceId) }
+	} as Parameters<typeof moveProgramEntry>[0]);
+}
+
 afterEach(async () => {
 	const performerIds = importedPerformances
 		.map((performance) => performance.performer?.id)
@@ -92,23 +138,7 @@ describe('Program move API', () => {
 	it('returns a docx export for a selected concert', async () => {
 		const entry = await importTestPerformance({ concertSeries: eastsideSeries, lottery: 700 });
 
-		const moveResponse = await moveProgramEntry({
-			url: new URL(`http://localhost:8888/api/program/${entry.performanceId}`),
-			request: new Request(`http://localhost:8888/api/program/${entry.performanceId}`, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-					origin: 'http://localhost:8888'
-				},
-				body: JSON.stringify({
-					concertSeries: eastsideSeries,
-					concertNum: 3,
-					performerId: entry.performerId
-				})
-			}),
-			cookies: { get: () => '' },
-			params: { id: String(entry.performanceId) }
-		} as Parameters<typeof moveProgramEntry>[0]);
+		const moveResponse = await forceMoveEntry(entry.performanceId, entry.performerId, 3);
 
 		expect(moveResponse.status).toBe(200);
 
@@ -132,23 +162,7 @@ describe('Program move API', () => {
 	it('accepts the admin force-move payload for an eastside destination', async () => {
 		const entry = await importTestPerformance({ concertSeries: eastsideSeries, lottery: 701 });
 
-		const response = await moveProgramEntry({
-			url: new URL(`http://localhost:8888/api/program/${entry.performanceId}`),
-			request: new Request(`http://localhost:8888/api/program/${entry.performanceId}`, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-					origin: 'http://localhost:8888'
-				},
-				body: JSON.stringify({
-					concertSeries: eastsideSeries,
-					concertNum: 3,
-					performerId: entry.performerId
-				})
-			}),
-			cookies: { get: () => '' },
-			params: { id: String(entry.performanceId) }
-		} as Parameters<typeof moveProgramEntry>[0]);
+		const response = await forceMoveEntry(entry.performanceId, entry.performerId, 3);
 
 		expect(response.status).toBe(200);
 
@@ -191,5 +205,88 @@ describe('Program move API', () => {
 		);
 		expect(placement?.concertSeries).toBe('Waitlist');
 		expect(placement?.concertNumberInSeries).toBe(1);
+	});
+
+	it('persists reordered program entries from the admin drag payload', async () => {
+		const performerA = await importTestPerformance({ concertSeries: eastsideSeries, lottery: 703 });
+		const performerB = await importTestPerformance({ concertSeries: eastsideSeries, lottery: 704 });
+		const performerC = await importTestPerformance({ concertSeries: eastsideSeries, lottery: 705 });
+
+		for (const entry of [performerA, performerB, performerC]) {
+			const moveResponse = await forceMoveEntry(entry.performanceId, entry.performerId, 3);
+			expect(moveResponse.status).toBe(200);
+		}
+
+		const saveResponse = await saveProgramOrder({
+			url: new URL('http://localhost:8888/api/program'),
+			request: new Request('http://localhost:8888/api/program', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					origin: 'http://localhost:8888'
+				},
+				body: JSON.stringify([
+					{
+						id: performerA.performanceId,
+						concertSeries: eastsideSeries,
+						order: 30,
+						performerId: performerA.performerId
+					},
+					{
+						id: performerB.performanceId,
+						concertSeries: eastsideSeries,
+						order: 10,
+						performerId: performerB.performerId
+					},
+					{
+						id: performerC.performanceId,
+						concertSeries: eastsideSeries,
+						order: 20,
+						performerId: performerC.performerId
+					}
+				])
+			}),
+			cookies: { get: () => '' }
+		} as Parameters<typeof saveProgramOrder>[0]);
+
+		expect(saveResponse.status).toBe(200);
+
+		const savedOrders = await fetchProgramOrders([
+			performerA.performanceId,
+			performerB.performanceId,
+			performerC.performanceId
+		]);
+		expect(savedOrders.get(performerA.performanceId)).toEqual({
+			concertSeries: eastsideSeries,
+			order: 30
+		});
+		expect(savedOrders.get(performerB.performanceId)).toEqual({
+			concertSeries: eastsideSeries,
+			order: 10
+		});
+		expect(savedOrders.get(performerC.performanceId)).toEqual({
+			concertSeries: eastsideSeries,
+			order: 20
+		});
+
+		const program = new Program(testYear);
+		await program.build();
+		const orderedIds = program
+			.retrieveAllConcertPrograms()
+			.filter(
+				(entry) =>
+					entry.concertSeries === eastsideSeries &&
+					entry.concertNumberInSeries === 3 &&
+					[performerA.performanceId, performerB.performanceId, performerC.performanceId].includes(
+						entry.id
+					)
+			)
+			.map((entry) => entry.id);
+
+		expect(orderedIds).toEqual([
+			performerB.performanceId,
+			performerC.performanceId,
+			performerA.performanceId
+		]);
 	});
 });

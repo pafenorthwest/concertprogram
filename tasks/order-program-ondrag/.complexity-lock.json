@@ -1,0 +1,23 @@
+{
+  "selected_signals_path": "/Users/eric/side-projects/concertprogram/tasks/order-program-ondrag/complexity-signals.json",
+  "selected_signals_sha256": "ccae959ada6989d8946b9907577b2b55176acee643574a9e2302a3e6b37c6be4",
+  "score_script_path": "/Users/eric/side-projects/concertprogram/.codex/scripts/complexity-score.sh",
+  "score_script_sha256": "45a062dd25a8938ad1fba76e1be65815c40d7d722a20ff07c22c74ed0e479699",
+  "ranges": {
+    "goals": {
+      "min": 3,
+      "max": 5
+    },
+    "phases": {
+      "min": 2,
+      "max": 4
+    }
+  },
+  "recommended": {
+    "goals": 4,
+    "phases": 3
+  },
+  "complexity_input": "2",
+  "complexity_descriptor": "2",
+  "captured_at": "2026-04-10T03:05:50Z"
+}
