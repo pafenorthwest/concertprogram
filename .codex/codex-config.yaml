@@ -1,5 +1,5 @@
 code_review:
-  base_branch: clear_schedule_page
+  base_branch: main
 
 github_cli:
   owner_token_env:
