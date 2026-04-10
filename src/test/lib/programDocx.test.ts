@@ -1,10 +1,7 @@
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildProgramDocx, DOCX_MIME_TYPE } from '$lib/server/programDocx';
 import type { OrderedPerformanceInterface } from '$lib/server/program';
+import { readZipEntryText } from '$lib/server/zip';
 
 describe('program docx export', () => {
 	it('builds an eastside program with stacked contributors and performer lines', async () => {
@@ -78,19 +75,8 @@ function buildEntry(): OrderedPerformanceInterface {
 }
 
 function inspectDocx(docx: Buffer): { documentXml: string; headerXml: string } {
-	const tempDir = mkdtempSync(join(tmpdir(), 'program-docx-test-'));
-	const docxPath = join(tempDir, 'program.docx');
-
-	try {
-		writeFileSync(docxPath, docx);
-		const headerXml = execFileSync('unzip', ['-p', docxPath, 'word/header1.xml'], {
-			encoding: 'utf8'
-		});
-		const documentXml = execFileSync('unzip', ['-p', docxPath, 'word/document.xml'], {
-			encoding: 'utf8'
-		});
-		return { documentXml, headerXml };
-	} finally {
-		rmSync(tempDir, { force: true, recursive: true });
-	}
+	return {
+		documentXml: readZipEntryText(docx, 'word/document.xml'),
+		headerXml: readZipEntryText(docx, 'word/header1.xml')
+	};
 }
