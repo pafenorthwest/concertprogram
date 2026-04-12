@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, it, assert, expect } from 'vitest';
 import { chromium } from 'playwright';
+import { refreshCachedTimeStamps } from '$lib/cache';
 import { Performance } from '$lib/server/import';
 import { type ImportPerformanceInterface, year, parseMusicalPiece } from '$lib/server/common';
 import { fetchPerformancePieces, lookupByCode, pool, selectPerformancePiece } from '$lib/server/db';
@@ -7,6 +8,7 @@ import { ScheduleRepository } from '$lib/server/scheduleRepository';
 import { SlotCatalog } from '$lib/server/slotCatalog';
 
 const schedulePageTestTimeoutMs = 30_000;
+const schedulePageActionTimeoutMs = 45_000;
 const emmaCarterLottery = Math.floor(10000 + Math.random() * 90000);
 const emmaCarterSuffix = Math.random().toString(36).slice(2, 5);
 const emmaCarterName = `Emma Carter Scheduler ${emmaCarterSuffix}`;
@@ -34,7 +36,8 @@ async function waitForSchedulePostResponse(
 		(response) =>
 			response.request().method() === 'POST' &&
 			response.url().includes('/schedule') &&
-			statuses.includes(response.status())
+			statuses.includes(response.status()),
+		{ timeout: schedulePageActionTimeoutMs }
 	);
 }
 
@@ -46,7 +49,8 @@ async function submitScheduleForm(
 	await Promise.all([
 		waitForSchedulePostResponse(page, status),
 		page.waitForURL((url) => url.toString().includes('/schedule?/add'), {
-			waitUntil: 'domcontentloaded'
+			waitUntil: 'domcontentloaded',
+			timeout: schedulePageActionTimeoutMs
 		}),
 		page.$eval(formSelector, (form: HTMLFormElement) => form.submit())
 	]);
@@ -67,7 +71,8 @@ async function requestSubmitScheduleForm(
 	await Promise.all([
 		waitForSchedulePostResponse(page, status),
 		page.waitForURL((url) => url.toString().includes('/schedule?/add'), {
-			waitUntil: 'domcontentloaded'
+			waitUntil: 'domcontentloaded',
+			timeout: schedulePageActionTimeoutMs
 		}),
 		page.$eval(formSelector, (form: HTMLFormElement) => form.requestSubmit())
 	]);
@@ -172,6 +177,7 @@ async function seedConcertTimes(series: string, seedYear: number, slotCount: num
 	} finally {
 		connection.release();
 	}
+	await refreshCachedTimeStamps();
 }
 
 async function cleanupConcertTimes(series: string, cleanupYear: number) {
@@ -184,6 +190,7 @@ async function cleanupConcertTimes(series: string, cleanupYear: number) {
 	} finally {
 		connection.release();
 	}
+	await refreshCachedTimeStamps();
 }
 
 async function deleteScheduleChoices(

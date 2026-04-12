@@ -8,3 +8,4 @@ number,taskname,first_create_date,first_create_hhmmss,first_create_git_hash
 7,repair-program-button,2026-04-09,224003,9a9e505
 8,restyle-admin-program-page-comments,2026-04-10,142108,1dc0170
 9,order-program-ondrag,2026-04-10,031218,30348aa
+10,stabilize-schedule-page-tests,2026-04-12,153629,0090033
