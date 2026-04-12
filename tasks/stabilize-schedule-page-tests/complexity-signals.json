@@ -1,0 +1,22 @@
+{
+  "scope": 0,
+  "behavior": 0,
+  "dependency": 0,
+  "uncertainty": 0,
+  "verification": 0,
+  "evidence": {
+    "scope": "files=src/test/api/schedule-page.test.ts surface=test-only",
+    "behavior": "Stabilize file-local Playwright and setup behavior without changing product code.",
+    "dependency": "interfaces=existing schedule page form flow, cache refresh helper, and Playwright waits only",
+    "uncertainty": "The failure mode is now reproduced and diagnosed as test/setup behavior, not missing page markup.",
+    "verification": "checks=npm test -- --run src/test/api/schedule-page.test.ts;npm run lint;npm run build;npm run test",
+    "guardrails": "No schema/API changes, no new dependencies, localized edits, and straightforward rollback."
+  },
+  "guardrails": {
+    "no_schema_or_api_contract_change": true,
+    "no_new_external_dependencies": true,
+    "localized_surface": true,
+    "reversible_with_straightforward_verification": true
+  },
+  "overrides": {}
+}

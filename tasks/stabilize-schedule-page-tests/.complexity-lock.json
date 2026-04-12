@@ -1,0 +1,23 @@
+{
+  "selected_signals_path": "/Users/eric/side-projects/concertprogram/tasks/stabilize-schedule-page-tests/complexity-signals.json",
+  "selected_signals_sha256": "0b652381b5f3ad3f5f5386fcb8cc1ab6984ef2dc86c95c309d69edde09291a58",
+  "score_script_path": "/Users/eric/side-projects/concertprogram/.codex/scripts/complexity-score.sh",
+  "score_script_sha256": "45a062dd25a8938ad1fba76e1be65815c40d7d722a20ff07c22c74ed0e479699",
+  "ranges": {
+    "goals": {
+      "min": 1,
+      "max": 3
+    },
+    "phases": {
+      "min": 1,
+      "max": 1
+    }
+  },
+  "recommended": {
+    "goals": 1,
+    "phases": 1
+  },
+  "complexity_input": "surgical",
+  "complexity_descriptor": "surgical",
+  "captured_at": "2026-04-12T04:33:40Z"
+}
