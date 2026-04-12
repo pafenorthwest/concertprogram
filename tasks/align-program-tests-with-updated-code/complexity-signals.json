@@ -1,0 +1,22 @@
+{
+  "scope": 0,
+  "behavior": 0,
+  "dependency": 0,
+  "uncertainty": 0,
+  "verification": 0,
+  "evidence": {
+    "scope": "files=src/test/db/program.test.ts,src/test/lib/programDocx.test.ts surface=test-only",
+    "behavior": "Adjust stale assertions to match reviewed current behavior without changing production code.",
+    "dependency": "interfaces=existing vitest coverage and current program/docx outputs only",
+    "uncertainty": "Diff and failing assertions are concrete; no unresolved product ambiguity remains.",
+    "verification": "checks=npm run lint;npm run build;npm run test;targeted vitest run for the two failing files",
+    "guardrails": "No schema/API changes, no new dependencies, localized edits, and straightforward rollback."
+  },
+  "guardrails": {
+    "no_schema_or_api_contract_change": true,
+    "no_new_external_dependencies": true,
+    "localized_surface": true,
+    "reversible_with_straightforward_verification": true
+  },
+  "overrides": {}
+}

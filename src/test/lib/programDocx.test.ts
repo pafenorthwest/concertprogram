@@ -25,9 +25,8 @@ describe('program docx export', () => {
 		expect(documentXml).toContain('3rd movement');
 		expect(documentXml).toContain('Johann Christian Bach');
 		expect(documentXml).toContain('Librettist Example');
-		expect(documentXml).toContain('Soloist on Cello: ');
 		expect(documentXml).toContain('>Example Performer<');
-		expect(documentXml).toContain('> 14<');
+		expect(documentXml).toContain('> (14), Cello<');
 		expect(documentXml).toContain('Pianist: Example Accompanist');
 	});
 

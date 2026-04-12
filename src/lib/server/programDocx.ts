@@ -165,12 +165,12 @@ function renderPerformerParagraph(label: string, performerName: string, age: str
 	const escapedAge = escapeXml(age.trim());
 	const escapedLabel = escapeXml(label);
 
-	const performerRun = `<w:r w:rsidDel="00000000" w:rsidR="00000000" w:rsidRPr="00000000">${PERFORMER_VALUE_RUN_PROPERTIES}<w:rPr><w:b /></w:rPr><w:t xml:space="preserve">${escapedPerformerName}</w:t></w:r>`;
+	const performerRun = `<w:r w:rsidDel="00000000" w:rsidR="00000000" w:rsidRPr="00000000">${PERFORMER_VALUE_RUN_PROPERTIES}<w:t xml:space="preserve">${escapedPerformerName}</w:t></w:r>`;
 
 	const ageAndLabelText =
 		escapedAge === '' ? `, ${escapedLabel}` : ` (${escapedAge}), ${escapedLabel}`;
 
-	const ageAndLabelRun = `<w:r w:rsidDel="00000000" w:rsidR="00000000" w:rsidRPr="00000000">${PERFORMER_LABEL_RUN_PROPERTIES}<w:rPr><w:b w:val="0" /></w:rPr><w:t xml:space="preserve">${ageAndLabelText}</w:t></w:r>`;
+	const ageAndLabelRun = `<w:r w:rsidDel="00000000" w:rsidR="00000000" w:rsidRPr="00000000">${PERFORMER_LABEL_RUN_PROPERTIES}<w:t xml:space="preserve">${ageAndLabelText}</w:t></w:r>`;
 
 	return `<w:p w:rsidR="00000000" w:rsidDel="00000000" w:rsidP="00000000" w:rsidRDefault="00000000" w:rsidRPr="00000000" w14:paraId="00000005">${PERFORMER_PARAGRAPH_PROPERTIES}${performerRun}${ageAndLabelRun}</w:p>`;
 }
