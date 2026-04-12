@@ -258,7 +258,6 @@
 							<th>Musical Piece</th>
 							<th>Contributors</th>
 							<th>Performer</th>
-							<th>Age</th>
 							<th>Accompanist</th>
 							<th>Move</th>
 						</tr>
@@ -304,8 +303,7 @@
 										</div>
 									{/each}
 								</td>
-								<td>Soloist on {entry.instrument}: {entry.performerName}</td>
-								<td>{entry.age}</td>
+								<td><strong>{entry.performerName}</strong> ({entry.age}), {entry.instrument}</td>
 								<td>
 									{#if entry.accompanist !== ''}
 										Pianist: {entry.accompanist}
