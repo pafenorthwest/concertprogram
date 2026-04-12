@@ -254,39 +254,64 @@ describe('Program integration scheduling', () => {
 		expect(eastsideTwoLotteries).toEqual(expect.arrayContaining(groupBLotteries));
 	});
 
-	it('assigns overflow to rank-2 choices by lottery order', async () => {
+	it('waitlists overflow once rank-1 assignments fill later choices', async () => {
 		const slotMap = await fetchSlotIdByNumber(eastsideSeries, testYear);
 		const slotOne = slotMap.get(1);
 		const slotTwo = slotMap.get(2);
 		expect(slotOne).toBeTypeOf('number');
 		expect(slotTwo).toBeTypeOf('number');
 
-		for (let index = 1; index <= 15; index += 1) {
+		const firstChoiceConcertOne: Array<{ performanceId: number; lottery: number }> = [];
+		for (let index = 1; index <= 10; index += 1) {
+			const entry = await importTestPerformance({ concertSeries: eastsideSeries, lottery: index });
+			await insertScheduleChoices(entry.performerId, eastsideSeries, testYear, [
+				{ slotId: slotOne!, rank: 1, notAvailable: false }
+			]);
+			firstChoiceConcertOne.push({ performanceId: entry.performanceId, lottery: index });
+		}
+
+		const firstChoiceConcertTwo: Array<{ performanceId: number; lottery: number }> = [];
+		for (let index = 11; index <= 20; index += 1) {
+			const entry = await importTestPerformance({ concertSeries: eastsideSeries, lottery: index });
+			await insertScheduleChoices(entry.performerId, eastsideSeries, testYear, [
+				{ slotId: slotTwo!, rank: 1, notAvailable: false }
+			]);
+			firstChoiceConcertTwo.push({ performanceId: entry.performanceId, lottery: index });
+		}
+
+		const overflowPerformances: Array<{ performanceId: number; lottery: number }> = [];
+		for (let index = 21; index <= 25; index += 1) {
 			const entry = await importTestPerformance({ concertSeries: eastsideSeries, lottery: index });
 			await insertScheduleChoices(entry.performerId, eastsideSeries, testYear, [
 				{ slotId: slotOne!, rank: 1, notAvailable: false },
 				{ slotId: slotTwo!, rank: 2, notAvailable: false }
 			]);
+			overflowPerformances.push({ performanceId: entry.performanceId, lottery: index });
 		}
 
 		const program = new Program(testYear);
 		await program.build();
-		const eastsideOneLotteries = program.orderedPerformance
-			.filter(
-				(entry) => entry.concertSeries === eastsideSeries && entry.concertNumberInSeries === 1
+		const placementByLottery = new Map(
+			[...firstChoiceConcertOne, ...firstChoiceConcertTwo, ...overflowPerformances].map(
+				({ performanceId, lottery }) => {
+					const placement = program.orderedPerformance.find((entry) => entry.id === performanceId);
+					return [
+						lottery,
+						placement ? `${placement.concertSeries}:${placement.concertNumberInSeries}` : 'missing'
+					];
+				}
 			)
-			.map((entry) => Number(entry.lottery))
-			.sort((a, b) => a - b);
-		const eastsideTwoLotteries = program.orderedPerformance
-			.filter(
-				(entry) => entry.concertSeries === eastsideSeries && entry.concertNumberInSeries === 2
-			)
-			.map((entry) => Number(entry.lottery))
-			.sort((a, b) => a - b);
+		);
 
-		expect(eastsideOneLotteries.length).toBeGreaterThanOrEqual(10);
-		expect(eastsideOneLotteries).toEqual(expect.arrayContaining([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]));
-		expect(eastsideTwoLotteries).toEqual(expect.arrayContaining([11, 12, 13, 14, 15]));
+		for (let lottery = 1; lottery <= 10; lottery += 1) {
+			expect(placementByLottery.get(lottery)).toBe('Eastside:1');
+		}
+		for (let lottery = 11; lottery <= 20; lottery += 1) {
+			expect(placementByLottery.get(lottery)).toBe('Eastside:2');
+		}
+		for (let lottery = 21; lottery <= 25; lottery += 1) {
+			expect(placementByLottery.get(lottery)).toBe('Waitlist:1');
+		}
 	});
 
 	it('waitlists performers once all ranked concerts are full', async () => {
